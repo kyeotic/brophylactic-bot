@@ -12,6 +12,7 @@ const base = {
 const test = {
   discord: {
     serverId: '472286758030147585',
+    residentRoleId: '472436078465253379',
     newMemberRoleId: '472436224066584576'
   }
 }
@@ -19,6 +20,7 @@ const test = {
 const prod = {
   discord: {
     serverId: '124413689116884992',
+    residentRoleId: '124414188930990081',
     newMemberRoleId: '472454665447931908'
   }
 }
