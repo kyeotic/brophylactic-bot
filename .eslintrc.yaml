@@ -1,0 +1,14 @@
+---
+extends: 'problems' # or extends: 'problems/node6'
+env:
+  # Set your environments here; for example:
+  node: true
+parserOptions:
+  ecmaVersion: 2018
+rules:
+  prefer-const: 0
+  no-console: 0
+# plugins:
+# - prettier
+# rules:
+# - prettier/prettier: error

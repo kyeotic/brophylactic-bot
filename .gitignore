@@ -1,0 +1,7 @@
+env.json
+.env
+*.sublime-workspace
+node_modules/
+.fusebox/
+/.history/
+/build/

@@ -1,0 +1,36 @@
+{
+  "name": "brophylactic-gaming-manager",
+  "version": "0.1.0",
+  "description": "Discord Server Manager",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "stage=test nodemon"
+  },
+  "engines": {
+    "node": ">=8.10"
+  },
+  "author": "Tim Kye",
+  "license": "MIT",
+  "prettier": {
+    "semi": false,
+    "singleQuote": true
+  },
+  "devDependencies": {
+    "babel-eslint": "^8.2.3",
+    "eslint": "^4.19.1",
+    "eslint-config-problems": "^0.1.1",
+    "eslint-plugin-prettier": "^2.6.0",
+    "nodemon": "^1.18.3",
+    "prettier": "^1.13.5"
+  },
+  "dependencies": {
+    "deepmerge": "^2.1.1",
+    "dotenv": "^6.0.0",
+    "eris": "^0.8.6",
+    "koa": "^2.5.2",
+    "ramda": "^0.25.0",
+    "request-micro": "^1.2.3",
+    "trim": "0.0.1"
+  }
+}
