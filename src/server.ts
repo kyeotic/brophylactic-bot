@@ -1,8 +1,7 @@
-'use strict'
+import Koa from 'koa'
+import { start } from './bot'
 
 const port = process.env.PORT || 3000
-const { start } = require('./bot')
-const Koa = require('koa')
 const app = new Koa()
 
 // response

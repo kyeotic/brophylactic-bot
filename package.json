@@ -2,10 +2,20 @@
   "name": "brophylactic-gaming-manager",
   "version": "0.1.0",
   "description": "Discord Server Manager",
-  "main": "src/server.js",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "stage=test nodemon"
+    "start": "npm run serve",
+    "deploy": "npm run build-ts && npm run tslint",
+    "serve": "node dist/server.js",
+    "watch-node": "nodemon dist/server.js",
+    "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
+    "watch-test": "npm run test -- --watchAll",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w",
+    "tslint": "tslint -c tslint.yml -p tsconfig.json",
+    "debug": "npm run build && npm run watch-debug",
+    "serve-debug": "nodemon --inspect dist/server.js",
+    "watch-debug": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run serve-debug\""
   },
   "engines": {
     "node": ">=8.10"
@@ -14,23 +24,35 @@
   "license": "MIT",
   "prettier": {
     "semi": false,
-    "singleQuote": true
-  },
-  "devDependencies": {
-    "babel-eslint": "^8.2.3",
-    "eslint": "^4.19.1",
-    "eslint-config-problems": "^0.1.1",
-    "eslint-plugin-prettier": "^2.6.0",
-    "nodemon": "^1.18.3",
-    "prettier": "^1.13.5"
+    "singleQuote": true,
+    "parser": "typescript"
   },
   "dependencies": {
     "deepmerge": "^2.1.1",
+    "discord.js": "^11.3.2",
     "dotenv": "^6.0.0",
     "eris": "^0.8.6",
     "koa": "^2.5.2",
     "ramda": "^0.25.0",
     "request-micro": "^1.2.3",
     "trim": "0.0.1"
+  },
+  "devDependencies": {
+    "@types/deepmerge": "^2.1.0",
+    "@types/dotenv": "^4.0.3",
+    "@types/koa": "^2.0.46",
+    "@types/node": "^10.5.4",
+    "@types/ramda": "github:types/npm-ramda#dist",
+    "@types/yargs": "^11.1.1",
+    "babel-eslint": "^8.2.3",
+    "concurrently": "^3.6.1",
+    "eslint": "^4.19.1",
+    "eslint-config-problems": "^0.1.1",
+    "eslint-plugin-prettier": "^2.6.0",
+    "nodemon": "^1.18.3",
+    "prettier": "^1.13.5",
+    "tslint": "^5.11.0",
+    "tslint-config-prettier": "^1.14.0",
+    "typescript": "^2.9.2"
   }
 }

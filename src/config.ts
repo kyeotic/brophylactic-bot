@@ -1,7 +1,7 @@
-'use strict'
+import merge from 'deepmerge'
+import dotenv from 'dotenv'
 
-require('dotenv').config()
-const merge = require('deepmerge')
+dotenv.config()
 
 const base = {
   discord: {
@@ -25,5 +25,4 @@ const prod = {
   }
 }
 
-// module.exports = merge(base, test)
-module.exports = merge(base, process.env.stage === 'test' ? test : prod)
+export default merge(base, process.env.stage === 'test' ? test : prod)
