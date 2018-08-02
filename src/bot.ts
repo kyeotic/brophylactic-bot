@@ -7,8 +7,7 @@ import { asMarkdown } from './utils/messages'
 import { getResidentRole, hasRole } from './utils/roles'
 import parse from './utils/shellParse'
 
-// import handleNewUser from './handlers/newUser'
-import { not } from '../node_modules/@types/ramda'
+import handleNewUser from './commands/newUser'
 import promoteCommand from './commands/promotion'
 import rollCommand from './commands/roll'
 
@@ -17,7 +16,7 @@ const bot = new Client()
 
 export const start = () => bot.login(config.discord.botToken)
 
-// bot.on('guildMemberAdd', handleNewUser)
+bot.on('guildMemberAdd', handleNewUser)
 // bot.on('message', handlePromotion)
 // bot.on('message', handleRoll)
 
