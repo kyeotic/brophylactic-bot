@@ -6,7 +6,7 @@ env:
 parserOptions:
   ecmaVersion: 2018
 rules:
-  prefer-const: 0
+  prefer-const: false
   no-console: 0
 # plugins:
 # - prettier
