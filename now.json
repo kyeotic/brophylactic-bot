@@ -3,7 +3,8 @@
   "alias": "brophylactic-bot",
   "env": {
     "NODE_ENV": "production",
-    "BOT_TOKEN": "@bot_token"
+    "BOT_TOKEN": "@bot_token",
+    "FIREBASE_64": "@bro-firebase"
   },
   "scale": {
     "sfo1": {

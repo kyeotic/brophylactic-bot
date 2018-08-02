@@ -6,6 +6,11 @@ dotenv.config()
 const base = {
   discord: {
     botToken: process.env.BOT_TOKEN
+  },
+  firebase: {
+    cert: JSON.parse(
+      Buffer.from(process.env.FIREBASE_64, 'base64').toString('utf8')
+    )
   }
 }
 

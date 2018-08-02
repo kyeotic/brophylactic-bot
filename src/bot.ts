@@ -17,8 +17,6 @@ const bot = new Client()
 export const start = () => bot.login(config.discord.botToken)
 
 bot.on('guildMemberAdd', handleNewUser)
-// bot.on('message', handlePromotion)
-// bot.on('message', handleRoll)
 
 bot.on('message', async (message: Message) => {
   let { content, channel, guild, member } = message
@@ -43,6 +41,7 @@ bot.on('message', async (message: Message) => {
     .demandCommand(1, 'Must provide at least one command')
     .recommendCommands()
     .help()
+    .fail((_, error) => notifyOwner(error, message))
     .parse(command as string[], { message }, async (err, argv, output) => {
       // Hack to get around parse not waiting for promises
       if (argv.promisedResult) {
