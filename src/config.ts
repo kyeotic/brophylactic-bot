@@ -8,6 +8,7 @@ const base = {
     botToken: process.env.BOT_TOKEN
   },
   firebase: {
+    databaseUrl: 'https://brophylactic-gaming.firebaseio.com',
     cert: JSON.parse(
       Buffer.from(process.env.FIREBASE_64, 'base64').toString('utf8')
     )

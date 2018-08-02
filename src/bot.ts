@@ -10,6 +10,7 @@ import parse from './utils/shellParse'
 import handleNewUser from './commands/newUser'
 import promoteCommand from './commands/promotion'
 import rollCommand from './commands/roll'
+import { bgpCommand } from './reputation/commands'
 
 const commandCharacter = '!'
 const bot = new Client()
@@ -38,6 +39,7 @@ bot.on('message', async (message: Message) => {
     .scriptName(commandCharacter)
     .command(rollCommand())
     .command(promoteCommand(guild))
+    .command(bgpCommand())
     .demandCommand(1, 'Must provide at least one command')
     .recommendCommands()
     .help()
