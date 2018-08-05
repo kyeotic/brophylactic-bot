@@ -1,7 +1,7 @@
 import { Guild, GuildMember, Message, Role } from 'discord.js'
 import { CommandModule } from 'yargs'
 
-import { getIntroRole, getResidentRole, hasRole } from '../utils/roles'
+import { getIntroRole, getResidentRole, hasRole } from '../util/roles'
 
 export default function promoteCommand(guild: Guild): CommandModule {
   const residentRole = getResidentRole(guild)

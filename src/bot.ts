@@ -3,9 +3,11 @@ import config from './config'
 
 import yargs from 'yargs'
 
-import { asMarkdown } from './utils/messages'
-import { getResidentRole, hasRole } from './utils/roles'
-import parse from './utils/shellParse'
+import { asMarkdown } from './util/messages'
+import { getResidentRole, hasRole } from './util/roles'
+import parse from './util/shellParse'
+
+import { initDb } from './util/firebase'
 
 import handleNewUser from './commands/newUser'
 import promoteCommand from './commands/promotion'
@@ -33,7 +35,9 @@ bot.on('message', async (message: Message) => {
   }
 
   // Check permission
-  if (!hasRole(member, getResidentRole(guild))) return
+  if (!hasRole(member, getResidentRole(guild))) {
+    return
+  }
 
   yargs
     .scriptName(commandCharacter)
@@ -43,7 +47,12 @@ bot.on('message', async (message: Message) => {
     .demandCommand(1, 'Must provide at least one command')
     .recommendCommands()
     .help()
-    .fail((_, error) => notifyOwner(error, message))
+    .fail((help, error) => {
+      channel.send(asMarkdown(help))
+      if (error) {
+        notifyOwner(error, message)
+      }
+    })
     .parse(command as string[], { message }, async (err, argv, output) => {
       // Hack to get around parse not waiting for promises
       if (argv.promisedResult) {

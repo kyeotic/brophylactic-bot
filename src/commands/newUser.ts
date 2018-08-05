@@ -1,5 +1,5 @@
 import { GuildMember, TextChannel } from 'discord.js'
-import { getIntroRole, isResident } from '../utils/roles'
+import { getIntroRole, isResident } from '../util/roles'
 
 export default async function assignNewUser(
   member: GuildMember

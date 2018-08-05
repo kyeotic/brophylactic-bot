@@ -5,17 +5,12 @@
   "main": "dist/server.js",
   "scripts": {
     "start": "npm run serve",
-    "deploy": "npm run build-ts && npm run tslint",
+    "build": "npm run build-ts && npm run tslint",
     "serve": "node dist/server.js",
-    "watch-node": "nodemon dist/server.js",
-    "watch": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm:watch-ts\" \"npm:watch-node\"",
+    "watch": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node' src/server.ts",
     "watch-test": "npm run test -- --watchAll",
     "build-ts": "tsc",
-    "watch-ts": "tsc -w",
-    "tslint": "tslint -c tslint.yml -p tsconfig.json",
-    "debug": "npm run build && npm run watch-debug",
-    "serve-debug": "nodemon --inspect dist/server.js",
-    "watch-debug": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm:watch-ts\" \"npm:serve-debug\""
+    "tslint": "tslint -c tslint.yml -p tsconfig.json"
   },
   "engines": {
     "node": ">=8.10"
@@ -56,6 +51,7 @@
     "eslint-plugin-prettier": "^2.6.0",
     "nodemon": "^1.18.3",
     "prettier": "^1.13.5",
+    "ts-node": "^7.0.0",
     "tslint": "^5.11.0",
     "tslint-config-prettier": "^1.14.0",
     "typescript": "^2.9.2"

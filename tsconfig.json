@@ -13,7 +13,8 @@
           "*": [
               "node_modules/*",
               "src/types/*"
-          ]
+          ],
+          "shell-quote": ["src/@types/shell-quote"]
       }
   },
   "include": [
