@@ -1,18 +1,20 @@
 import { Client, Guild, Message } from 'discord.js'
 import config from './config'
 
-import yargs from 'yargs'
+import { Argv } from 'yargs'
 
+import { makeContext } from './context'
 import { asMarkdown } from './util/messages'
 import { getResidentRole, hasRole } from './util/roles'
 import parse from './util/shellParse'
 
-import { initDb } from './util/firebase'
-
 import handleNewUser from './commands/newUser'
 import promoteCommand from './commands/promotion'
 import rollCommand from './commands/roll'
-import { bgpCommand } from './reputation/commands'
+import { bgrCommand } from './reputation/bgr'
+import { lotteryCommand } from './reputation/lottery'
+
+const yargs = require('yargs/yargs')
 
 const commandCharacter = '!'
 const bot = new Client()
@@ -24,6 +26,7 @@ bot.on('guildMemberAdd', handleNewUser)
 bot.on('message', async (message: Message) => {
   let { content, channel, guild, member } = message
   if (!content || !content.startsWith(commandCharacter + ' ')) return
+  const context = makeContext()
   let command: string[]
 
   try {
@@ -39,19 +42,20 @@ bot.on('message', async (message: Message) => {
     return
   }
 
-  yargs
+  ;(yargs() as Argv)
     .scriptName(commandCharacter)
     .command(rollCommand())
     .command(promoteCommand(guild))
-    .command(bgpCommand())
+    .command(bgrCommand(context))
+    // .command(lotteryCommand(context))
     .demandCommand(1, 'Must provide at least one command')
     .recommendCommands()
+    .strict()
+    .exitProcess(false)
     .help()
-    .fail((help, error) => {
-      channel.send(asMarkdown(help))
-      if (error) {
-        notifyOwner(error, message)
-      }
+    .fail(async (help, error) => {
+      console.log('fail handler ', help, error)
+      await channel.send(asMarkdown(error ? error.toString() : help))
     })
     .parse(command as string[], { message }, async (err, argv, output) => {
       // Hack to get around parse not waiting for promises
@@ -61,11 +65,11 @@ bot.on('message', async (message: Message) => {
         })
       }
       if (err) {
-        notifyOwner(err, message)
-        return
+        console.log('parse error')
+        return await notifyOwner(err, message)
       }
       if (output) {
-        await channel.send(asMarkdown(output))
+        await channel.send(asMarkdown('output' + output))
       }
     })
 })

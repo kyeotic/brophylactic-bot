@@ -22,6 +22,7 @@ export default function rollCommand(): CommandModule {
         }),
     handler: argv => {
       argv.promisedResult = handler(argv)
+      return argv.promisedResult
     }
   }
 }

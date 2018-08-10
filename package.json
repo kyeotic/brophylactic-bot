@@ -5,8 +5,9 @@
   "main": "dist/server.js",
   "scripts": {
     "start": "npm run serve",
-    "build": "npm run build-ts && npm run tslint",
+    "deploy": "npm run build-ts && npm run tslint",
     "serve": "node dist/server.js",
+    "debug": "ts-node src/server.ts",
     "watch": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node' src/server.ts",
     "watch-test": "npm run test -- --watchAll",
     "build-ts": "tsc",
