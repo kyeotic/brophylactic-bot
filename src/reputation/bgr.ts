@@ -12,7 +12,7 @@ export function bgrCommand(context: IAppContext): CommandModule {
       yargs
         .command({
           command: 'send [to] [amount]',
-          describe: 'send Brophylactic Gaming Reputation (℞)',
+          describe: 'send ℞',
           builder: y =>
             y
               .positional('to', {
@@ -28,7 +28,7 @@ export function bgrCommand(context: IAppContext): CommandModule {
         })
         .command({
           command: 'view',
-          describe: 'view Brophylactic Gaming Reputation (℞)',
+          describe: 'view ℞',
           handler: handleWrapper(context)
         }),
     // tslint:disable-next-line:no-empty

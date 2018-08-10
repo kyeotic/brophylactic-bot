@@ -6,7 +6,7 @@ import {
   Transaction,
   UpdateData
 } from '@google-cloud/firestore'
-import { GuildMember, Message } from 'discord.js'
+import { Guild, GuildMember, Message } from 'discord.js'
 
 const delimiter = '.'
 
@@ -63,6 +63,34 @@ export class ReputationStore {
       await Promise.all([
         this.setUserRep(sender, senderRep - amount, transaction),
         this.setUserRep(receiver, receiverRep + amount, transaction)
+      ])
+    })
+  }
+
+  public async transferUserRep(
+    receiver: GuildMember,
+    senders: GuildMember[],
+    amountToSend: number
+  ) {
+    if (!amountToSend || Number.isNaN(amountToSend) || !Number.isInteger) {
+      return Promise.reject(
+        `must provide a valid integer amount ${
+          amountToSend === undefined ? `, got ℞${amountToSend}` : ''
+        }`
+      )
+    }
+    return this.collection.firestore.runTransaction(async transaction => {
+      let receiverRep = await this.getUserRep(receiver, transaction)
+      let senderReps = await Promise.all(
+        senders.map(s =>
+          this.getUserRep(s, transaction).then(rep => ({ rep, sender: s }))
+        )
+      )
+      await Promise.all([
+        this.setUserRep(receiver, receiverRep + amountToSend, transaction),
+        ...senderReps.map(s =>
+          this.setUserRep(s.sender, s.rep - amountToSend, transaction)
+        )
       ])
     })
   }

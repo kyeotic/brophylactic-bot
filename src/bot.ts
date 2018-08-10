@@ -47,7 +47,7 @@ bot.on('message', async (message: Message) => {
     .command(rollCommand())
     .command(promoteCommand(guild))
     .command(bgrCommand(context))
-    // .command(lotteryCommand(context))
+    .command(lotteryCommand(context))
     .demandCommand(1, 'Must provide at least one command')
     .recommendCommands()
     .strict()
