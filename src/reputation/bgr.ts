@@ -7,7 +7,7 @@ import { IAppContext } from '../context'
 export function bgrCommand(context: IAppContext): CommandModule {
   return {
     command: 'bgr <command>',
-    describe: 'Brophylactic Gaming Reputation (℞), the server currenc',
+    describe: 'Brophylactic Gaming Reputation (℞), the server currency',
     builder: yargs =>
       yargs
         .command({
