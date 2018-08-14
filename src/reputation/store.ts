@@ -7,33 +7,17 @@ import {
   UpdateData
 } from '@google-cloud/firestore'
 import { Guild, GuildMember, Message } from 'discord.js'
+import { isPositiveInteger } from '../util/number'
 
 const delimiter = '.'
 
 export class ReputationStore {
   constructor(private collection: CollectionReference) {}
 
-  public async getUserRep(
-    member: GuildMember,
-    transaction?: Transaction
-  ): Promise<number> {
+  public async getUserRep(member: GuildMember): Promise<number> {
     let baseRep = calculateRepFromJoinedDate(member)
-    let doc = await get(this.getUserDoc(member), transaction)
-    return doc.exists ? parseFloat(doc.data().reputation) : baseRep
-  }
-
-  public async setUserRep(
-    member: GuildMember,
-    reputation: number,
-    transaction?: Transaction
-  ): Promise<number> {
-    await set(
-      this.getUserDoc(member),
-      { reputation },
-      { merge: true },
-      transaction
-    )
-    return reputation
+    let offset = await this.getUserRepOffset(member)
+    return baseRep + offset
   }
 
   public async exchangeUserRep(
@@ -41,7 +25,7 @@ export class ReputationStore {
     receiver: GuildMember,
     amount: number
   ): Promise<void> {
-    if (!amount || Number.isNaN(amount) || !Number.isInteger || amount < 1) {
+    if (!isPositiveInteger(amount)) {
       return Promise.reject(
         `must provide a valid, positive, integer amount ${
           amount === undefined ? `, got ℞${amount}` : ''
@@ -50,10 +34,10 @@ export class ReputationStore {
     }
     return this.collection.firestore.runTransaction(async transaction => {
       let [senderRep, receiverRep] = await Promise.all([
-        this.getUserRep(sender, transaction),
-        this.getUserRep(receiver, transaction)
+        this.getFullUserRep(sender, transaction),
+        this.getFullUserRep(receiver, transaction)
       ])
-      if (senderRep - amount < 0) {
+      if (senderRep.reputation + senderRep.reputationOffset - amount < 0) {
         return Promise.reject(
           `${
             sender.displayName
@@ -61,8 +45,16 @@ export class ReputationStore {
         )
       }
       await Promise.all([
-        this.setUserRep(sender, senderRep - amount, transaction),
-        this.setUserRep(receiver, receiverRep + amount, transaction)
+        this.setUserRepOffset(
+          sender,
+          senderRep.reputationOffset - amount,
+          transaction
+        ),
+        this.setUserRepOffset(
+          receiver,
+          receiverRep.reputationOffset + amount,
+          transaction
+        )
       ])
     })
   }
@@ -72,7 +64,7 @@ export class ReputationStore {
     senders: GuildMember[],
     amountToSend: number
   ) {
-    if (!amountToSend || Number.isNaN(amountToSend) || !Number.isInteger) {
+    if (!isPositiveInteger(amountToSend)) {
       return Promise.reject(
         `must provide a valid integer amount ${
           amountToSend === undefined ? `, got ℞${amountToSend}` : ''
@@ -80,19 +72,57 @@ export class ReputationStore {
       )
     }
     return this.collection.firestore.runTransaction(async transaction => {
-      let receiverRep = await this.getUserRep(receiver, transaction)
+      let receiverRep = await this.getFullUserRep(receiver, transaction)
       let senderReps = await Promise.all(
         senders.map(s =>
-          this.getUserRep(s, transaction).then(rep => ({ rep, sender: s }))
+          this.getFullUserRep(s, transaction).then(rep => ({ rep, sender: s }))
         )
       )
       await Promise.all([
-        this.setUserRep(receiver, receiverRep + amountToSend, transaction),
+        this.setUserRepOffset(
+          receiver,
+          receiverRep.reputationOffset + amountToSend * senders.length,
+          transaction
+        ),
         ...senderReps.map(s =>
-          this.setUserRep(s.sender, s.rep - amountToSend, transaction)
+          this.setUserRepOffset(
+            s.sender,
+            s.rep.reputationOffset - amountToSend,
+            transaction
+          )
         )
       ])
     })
+  }
+
+  private async getFullUserRep(
+    member: GuildMember,
+    transaction?: Transaction
+  ): Promise<{ reputation: number; reputationOffset: number }> {
+    let reputation = calculateRepFromJoinedDate(member)
+    let reputationOffset = await this.getUserRepOffset(member, transaction)
+    return { reputation, reputationOffset }
+  }
+
+  private async getUserRepOffset(
+    member: GuildMember,
+    transaction?: Transaction
+  ) {
+    let doc = await get(this.getUserDoc(member), transaction)
+    return doc.exists ? parseFloat(doc.data().reputationOffset) : 0
+  }
+
+  private async setUserRepOffset(
+    member: GuildMember,
+    reputationOffset: number,
+    transaction?: Transaction
+  ) {
+    return await set(
+      this.getUserDoc(member),
+      { reputationOffset, name: member.displayName },
+      { merge: true },
+      transaction
+    )
   }
 
   private getUserDoc(member: GuildMember): DocumentReference {

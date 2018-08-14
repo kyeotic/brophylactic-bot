@@ -14,7 +14,8 @@
               "node_modules/*",
               "typings/*"
           ],
-          "shell-quote": ["typings/shell-quote"]
+          "shell-quote": ["src/typings/shell-quote"],
+          "high-res-timeout": ["src/typings/high-res-timeout"],
       }
   },
   "include": [

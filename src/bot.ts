@@ -41,7 +41,7 @@ bot.on('message', async (message: Message) => {
   if (!hasRole(member, getResidentRole(guild))) {
     return
   }
-
+  console.log('starting command', command)
   ;(yargs() as Argv)
     .scriptName(commandCharacter)
     .command(rollCommand())
@@ -65,6 +65,8 @@ bot.on('message', async (message: Message) => {
           err = e
         })
       }
+      console.log('finishing command', command)
+
       if (err) {
         console.log('parse error')
         return await notifyOwner(err, message)
@@ -97,14 +99,4 @@ async function notifyOwner(error: Error, message: Message) {
 
 bot.on('ready', () => {
   console.log('Ready!')
-
-  // console.log(
-  //   bot.guilds.map(R.pick(['name', 'id'])),
-  //   bot.guilds.map(
-  //     R.pipe(
-  //       getIntroRole,
-  //       R.pick(['id', 'name', 'calculatedPosition'])
-  //     )
-  //   )
-  // )
 })

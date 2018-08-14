@@ -30,7 +30,8 @@ export function bgrCommand(context: IAppContext): CommandModule {
           command: 'view',
           describe: 'view ℞',
           handler: handleWrapper(context)
-        }),
+        })
+        .demandCommand(1, 'use a subcommand, or --help for options'),
     // tslint:disable-next-line:no-empty
     handler: () => {}
   }

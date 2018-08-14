@@ -1,4 +1,6 @@
 import { Guild, GuildMember, Message, MessageReaction, User } from 'discord.js'
+import HighResTimeout from 'high-res-timeout'
+import throttle from 'p-throttle'
 import R from 'ramda'
 import { CommandModule } from 'yargs'
 import { IAppContext } from '../context'
@@ -16,7 +18,7 @@ export function lotteryCommand(context: IAppContext): CommandModule {
         type: 'number'
       }),
     handler: argv => {
-      console.log('handling lottery')
+      console.log('handling lottery', argv.amount)
       argv.promisedResult = lotteryHandler(context, argv)
       return argv.promisedResult
     }
@@ -40,9 +42,13 @@ export async function lotteryHandler(
     return
   }
 
+  if (!Number.isInteger(amount)) {
+    return await channel.send('amount must be an integer')
+  }
+
   // Require user has enough rep to bet
   let bgr = await reputation.getUserRep(member)
-  if (bgr < amount) return notEnoughRep(member, bgr, amount)
+  if (bgr < 0 || bgr < amount) return notEnoughRep(member, bgr, amount)
 
   // Setup lotery
   let lottery = new Map<string, GuildMember>()
@@ -58,8 +64,8 @@ export async function lotteryHandler(
     banner(lotteryTimeSeconds)
   )) as Message
   // For testing
-  let mur = await guild.members.find(m => m.displayName === 'Mur')
-  lottery.set(mur.displayName, mur)
+  // let mur = await guild.members.find(m => m.displayName === 'Mur')
+  // lottery.set(mur.displayName, mur)
 
   let match = R.curry(isReactionTo)(lotteryMessage)
 
@@ -73,7 +79,7 @@ export async function lotteryHandler(
     // Need enough rep
     let rep = await reputation.getUserRep(newMember)
     if (rep < amount) {
-      return await channel.send(notEnoughRep(member, rep, amount))
+      return await channel.send(notEnoughRep(newMember, rep, amount))
     }
     // Add to lottery
     lottery.set(name, newMember)
@@ -90,7 +96,6 @@ export async function lotteryHandler(
   client.on('messageReactionAdd', reactionHandler)
   client.on('messageReactionRemove', unreactionHandler)
 
-  // Let lottery finish
   await delay(lotteryTimeSeconds * 1000)
 
   // Cleanup Listeners
@@ -105,10 +110,10 @@ export async function lotteryHandler(
   let winner = lottery.get(names[inclusiveRange(0, names.length - 1)])
   lottery.delete(winner.displayName)
 
-  // Send winnings
+  // Send winningsa
   await reputation.transferUserRep(winner, Array.from(lottery.values()), amount)
   let newBgr = await reputation.getUserRep(winner)
-  return `The lottery has ended. ${names.join(', ')} bet ℞${amount}. ${
+  return `The lottery has ended. ${names.join(', ')} all bet ℞${amount}. ${
     winner.displayName
   } won ℞${amount * (lottery.size + 1)} and now has ℞${newBgr}.`
 }
