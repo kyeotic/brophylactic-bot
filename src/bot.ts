@@ -59,8 +59,9 @@ bot.on('message', async (message: Message) => {
     })
     .parse(command as string[], { message }, async (err, argv, output) => {
       // Hack to get around parse not waiting for promises
+      let additionalOutput
       if (argv.promisedResult) {
-        await argv.promisedResult.catch((e: Error) => {
+        additionalOutput = await argv.promisedResult.catch((e: Error) => {
           err = e
         })
       }
@@ -69,7 +70,10 @@ bot.on('message', async (message: Message) => {
         return await notifyOwner(err, message)
       }
       if (output) {
-        await channel.send(asMarkdown('output' + output))
+        await channel.send(asMarkdown(output))
+      }
+      if (additionalOutput) {
+        await channel.send(additionalOutput)
       }
     })
 })

@@ -12,9 +12,9 @@
       "paths": {
           "*": [
               "node_modules/*",
-              "src/types/*"
+              "typings/*"
           ],
-          "shell-quote": ["src/@types/shell-quote"]
+          "shell-quote": ["typings/shell-quote"]
       }
   },
   "include": [
