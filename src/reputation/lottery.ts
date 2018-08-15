@@ -64,8 +64,8 @@ export async function lotteryHandler(
     banner(lotteryTimeSeconds)
   )) as Message
   // For testing
-  let mur = await guild.members.find(m => m.displayName === 'Mur')
-  lottery.set(mur.displayName, mur)
+  // let mur = await guild.members.find(m => m.displayName === 'Mur')
+  // lottery.set(mur.displayName, mur)
 
   let match = R.curry(isReactionTo)(lotteryMessage)
 
