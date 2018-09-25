@@ -11,8 +11,12 @@
     "watch": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node' src/server.ts --files",
     "watch-test": "npm run test -- --watchAll",
     "build-ts": "tsc",
+    "ls": "now ls brophylactic-bot -a",
     "tslint": "tslint -c tslint.yml -p tsconfig.json"
   },
+  "files": [
+    "dist/"
+  ],
   "engines": {
     "node": ">=8.10"
   },

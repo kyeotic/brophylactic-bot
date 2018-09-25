@@ -22,13 +22,13 @@ export default function promoteCommand(guild: Guild): CommandModule {
 export async function handlePromotion(
   residentRole: Role,
   introRole: Role,
-  { message }: { message: Message }
+  { message, username }: { message: Message; username: string }
 ) {
-  if (!message.content || !message.content.startsWith('!promote')) return
+  // if (!message.content || !message.content.startsWith('!promote')) return
   // Init
   const { channel, guild, member } = message
 
-  const username = message.content.replace('!promote ', '')
+  // const username = message.content.replace('!promote ', '')
 
   // Residents Only
   if (!hasRole(member, residentRole)) {

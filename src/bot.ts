@@ -23,6 +23,10 @@ export const start = () => bot.login(config.discord.botToken)
 
 bot.on('guildMemberAdd', handleNewUser)
 
+bot.on('error', (error) => {
+  console.error('bot error handler', error.toString(), error.stack)
+})
+
 bot.on('message', async (message: Message) => {
   let { content, channel, guild, member } = message
   if (!content || !content.startsWith(commandCharacter + ' ')) return
