@@ -7,7 +7,7 @@
     "FIREBASE_64": "@bro-firebase"
   },
   "scale": {
-    "sfo1": {
+    "sfo": {
       "min": 1,
       "max": 1
     }
