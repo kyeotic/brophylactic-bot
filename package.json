@@ -59,7 +59,7 @@
     "eslint-plugin-prettier": "^2.6.0",
     "install": "^0.12.1",
     "nodemon": "^1.18.3",
-    "npm": "^6.3.0",
+    "npm": "^6.13.4",
     "prettier": "^1.13.5",
     "ts-node": "^7.0.0",
     "tslint": "^5.11.0",
