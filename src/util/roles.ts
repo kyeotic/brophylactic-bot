@@ -1,9 +1,5 @@
-import { Guild, GuildMember, Message, Role } from 'discord.js'
-import R from 'ramda'
-
-const userRolesFilter = R.filter(
-  (r: Role) => r.name !== '@everyone' && !r.managed
-)
+import { Guild, GuildMember, Role } from 'discord.js'
+import _ from 'lodash'
 
 export function hasRole(member: GuildMember, role: Role) {
   return member.roles.has(role.id)
@@ -26,12 +22,7 @@ export function hasIntroRole(member: GuildMember): boolean {
  * @returns {Role}
  */
 export function getIntroRole(guild: Guild): Role {
-  return R.pipe(
-    userRolesFilter,
-    R.reduce(R.minBy((r: Role) => r.calculatedPosition), {
-      calculatedPosition: Infinity
-    } as Role)
-  )(Array.from(guild.roles.values()))
+  return minCalculatedRole(Array.from(guild.roles.values()).filter(userRoleFilter))
 }
 
 /**
@@ -41,17 +32,23 @@ export function getIntroRole(guild: Guild): Role {
  * @returns {boolean}
  */
 export function isResident(member: GuildMember): boolean {
-  return (
-    R.length(userRolesFilter(member.roles.array())) && !hasIntroRole(member)
-  )
+  return !!member.roles.array().filter(userRoleFilter).length && !hasIntroRole(member)
 }
 
 export function getResidentRole(guild: Guild): Role {
-  return R.pipe(
-    userRolesFilter,
-    R.reject(R.equals(getIntroRole(guild))),
-    R.reduce(R.minBy((r: Role) => r.calculatedPosition), {
-      calculatedPosition: Infinity
-    } as Role)
-  )(Array.from(guild.roles.values()))
+  const introRole = getIntroRole(guild)
+  return minCalculatedRole(
+    Array.from(guild.roles.values())
+      .filter(userRoleFilter)
+      .filter((r) => r !== introRole)
+  )
+}
+
+function userRoleFilter(role: Role): boolean {
+  return role.name !== '@everyone' && !role.managed
+}
+
+function minCalculatedRole(roles: Role[]): Role {
+  if (!roles.length) throw new Error('"roles" cannot be an empty array')
+  return _.minBy(roles, (r: Role) => r.calculatedPosition) || roles[0]
 }

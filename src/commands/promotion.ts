@@ -1,4 +1,4 @@
-import { Guild, GuildMember, Message, Role } from 'discord.js'
+import { Guild, Message, Role } from 'discord.js'
 import { CommandModule } from 'yargs'
 
 import { getIntroRole, getResidentRole, hasRole } from '../util/roles'
@@ -9,13 +9,13 @@ export default function promoteCommand(guild: Guild): CommandModule {
   return {
     command: 'promote <username>',
     describe: `Promote a ${introRole.name} to a ${residentRole.name}`,
-    builder: yargs =>
+    builder: (yargs) =>
       yargs.positional('username', {
-        describe: 'A username or nickname'
+        describe: 'A username or nickname',
       }),
-    handler: argv => {
+    handler: (argv: any) => {
       argv.promisedResult = handlePromotion(residentRole, introRole, argv)
-    }
+    },
   }
 }
 
@@ -23,7 +23,7 @@ export async function handlePromotion(
   residentRole: Role,
   introRole: Role,
   { message, username }: { message: Message; username: string }
-) {
+): Promise<void> {
   // if (!message.content || !message.content.startsWith('!promote')) return
   // Init
   const { channel, guild, member } = message
@@ -37,7 +37,7 @@ export async function handlePromotion(
   }
 
   // Find User
-  const memberToPromote = guild.members.find(m => m.displayName === username)
+  const memberToPromote = guild.members.find((m) => m.displayName === username)
   if (!memberToPromote) {
     channel.send(`Unable to find member with the username ${username}`)
     return
@@ -46,9 +46,7 @@ export async function handlePromotion(
   // Interns Only
   if (!hasRole(memberToPromote, introRole)) {
     channel.send(
-      `Promote can only be used to promote from ${introRole.name} to ${
-        residentRole.name
-      }`
+      `Promote can only be used to promote from ${introRole.name} to ${residentRole.name}`
     )
     return
   }
@@ -57,9 +55,7 @@ export async function handlePromotion(
   try {
     await memberToPromote.addRole(residentRole.id, 'promotion')
     await memberToPromote.removeRole(introRole.id, 'promotion')
-    channel.send(
-      `Promoted ${memberToPromote.displayName} to ${residentRole.name}`
-    )
+    channel.send(`Promoted ${memberToPromote.displayName} to ${residentRole.name}`)
   } catch (e) {
     console.error(e, e.stack)
   }

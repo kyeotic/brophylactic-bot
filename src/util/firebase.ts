@@ -3,11 +3,11 @@ import config from '../config'
 
 export const init = () => {
   if (!admin.apps.length) {
-    let app = admin.initializeApp({
+    const app = admin.initializeApp({
       credential: admin.credential.cert(config.firebase.cert),
-      databaseURL: config.firebase.databaseUrl
+      databaseURL: config.firebase.databaseUrl,
     })
-    let store = app.firestore()
+    const store = app.firestore()
     store.settings({ timestampsInSnapshots: true })
   }
   return admin.app()

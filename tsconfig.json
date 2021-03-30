@@ -1,24 +1,32 @@
 {
-  "compilerOptions": {
-      "module": "commonjs",
-      "esModuleInterop": true,
-      "target": "es2017",
-      "noImplicitAny": true,
-      "moduleResolution": "node",
-      "allowSyntheticDefaultImports": true,
-      "sourceMap": true,
+    "compilerOptions": {
+      "lib": ["esnext"],
+      "target": "ESNext",
+      "module": "CommonJS",
+      "strict": true,
+      "noUnusedLocals": true,
+      "rootDir": "src",
       "outDir": "dist",
       "baseUrl": ".",
+      "moduleResolution": "Node",
+      "esModuleInterop": true,
+      "inlineSourceMap": false,
+      "skipLibCheck": true,
+      "resolveJsonModule": true,
+      "importHelpers": false,
+      "allowJs": true,
+      "allowSyntheticDefaultImports": true,
+      "isolatedModules": true,
       "paths": {
-          "*": [
-              "node_modules/*",
-              "typings/*"
-          ],
-          "shell-quote": ["src/typings/shell-quote"],
-          "high-res-timeout": ["src/typings/high-res-timeout"],
+        "shell-quote": ["./src/typings/shell-quote"],
+        "high-res-timeout": ["./src/typings/high-res-timeout"],
       }
-  },
-  "include": [
+    },
+    "ts-node": {
+      "transpileOnly": true
+    },
+    "include": [
       "src/**/*"
-  ]
-}
+    ],
+    "exclude": ["node_modules", "**/__tests__/*"]
+  }

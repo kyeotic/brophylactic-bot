@@ -1,9 +1,0 @@
-extends:
-  - 'tslint:recommended'
-  - tslint-config-prettier
-rules:
-  object-literal-sort-keys: false
-  no-console: false
-  no-var-requires: false
-  curly: false
-  prefer-const: false

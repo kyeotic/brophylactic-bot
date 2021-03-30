@@ -1,7 +1,4 @@
-import { Guild, GuildMember, Message, MessageReaction, User } from 'discord.js'
-import HighResTimeout from 'high-res-timeout'
-import throttle from 'p-throttle'
-import R from 'ramda'
+import { GuildMember, Message, MessageReaction, User } from 'discord.js'
 import { CommandModule } from 'yargs'
 import { IAppContext } from '../context'
 import { delay } from '../util/delay'
@@ -12,16 +9,16 @@ export function lotteryCommand(context: IAppContext): CommandModule {
   return {
     command: 'lottery <amount>',
     describe: 'Starts a lottery with the server.',
-    builder: yargs =>
+    builder: (yargs) =>
       yargs.positional('amount', {
         description: 'amount of rep to bet. Cannot exceed your total rep.',
-        type: 'number'
+        type: 'number',
       }),
-    handler: argv => {
+    handler: (argv: any) => {
       console.log('handling lottery', argv.amount)
       argv.promisedResult = lotteryHandler(context, argv)
       return argv.promisedResult
-    }
+    },
   }
 }
 
@@ -32,7 +29,7 @@ export async function lotteryHandler(
 ) {
   // Init
   const {
-    stores: { reputation }
+    stores: { reputation },
   } = context
   const { channel, member, guild } = message
   const { client } = channel
@@ -47,46 +44,42 @@ export async function lotteryHandler(
   }
 
   // Require user has enough rep to bet
-  let bgr = await reputation.getUserRep(member)
+  const bgr = await reputation.getUserRep(member)
   if (bgr < 0 || bgr < amount) return notEnoughRep(member, bgr, amount)
 
   // Setup lotery
-  let lottery = new Map<string, GuildMember>()
+  const lottery = new Map<string, GuildMember>()
   lottery.set(member.displayName, member)
 
-  let banner = (timeRemaining: number) =>
-    `${
-      member.displayName
-    } now started a lottery for ℞${amount}. React to this message with an emoji within ${timeRemaining} seconds to place an equal bet and join the lottery.`
+  const banner = (timeRemaining: number) =>
+    `${member.displayName} now started a lottery for ℞${amount}. React to this message with an emoji within ${timeRemaining} seconds to place an equal bet and join the lottery.`
 
   // Create a message to track reactions
-  let lotteryMessage = (await channel.send(
-    banner(lotteryTimeSeconds)
-  )) as Message
+  const lotteryMessage = (await channel.send(banner(lotteryTimeSeconds))) as Message
   // For testing
   // let mur = await guild.members.find(m => m.displayName === 'Mur')
   // lottery.set(mur.displayName, mur)
 
-  let match = R.curry(isReactionTo)(lotteryMessage)
+  const match = (reaction: MessageReaction): boolean => isReactionTo(lotteryMessage, reaction)
 
-  let reactionHandler = async (reaction: MessageReaction, user: User) => {
+  const reactionHandler = async (reaction: MessageReaction, user: User) => {
     // Can't register handler for specific message, so filter everything else out
     if (!match(reaction)) return
-    let newMember = await guild.fetchMember(user)
-    let name = newMember.displayName
+    const newMember = await guild.fetchMember(user)
+    const name = newMember.displayName
     // Can only bet once
     if (lottery.has(name)) return
     // Need enough rep
-    let rep = await reputation.getUserRep(newMember)
+    const rep = await reputation.getUserRep(newMember)
     if (rep < amount) {
       return await channel.send(notEnoughRep(newMember, rep, amount))
     }
     // Add to lottery
     lottery.set(name, newMember)
   }
-  let unreactionHandler = async (reaction: MessageReaction, user: User) => {
+  const unreactionHandler = async (reaction: MessageReaction, user: User) => {
     if (!match(reaction)) return
-    let newMember = await guild.fetchMember(user)
+    const newMember = await guild.fetchMember(user)
     // The player who started the lottery cannot withdraw
     if (newMember.id === member.id) return
     lottery.delete(newMember.displayName)
@@ -106,20 +99,19 @@ export async function lotteryHandler(
   if (lottery.size < 2) return `The lottery has ended. Not enough members bet.`
 
   // Select a winner
-  let names = Array.from(lottery.keys())
-  let winner = lottery.get(names[inclusiveRange(0, names.length - 1)])
+  const names = Array.from(lottery.keys())
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const winner = lottery.get(names[inclusiveRange(0, names.length - 1)])!
   lottery.delete(winner.displayName)
 
   // Send winningsa
   await reputation.transferUserRep(winner, Array.from(lottery.values()), amount)
-  let newBgr = await reputation.getUserRep(winner)
+  const newBgr = await reputation.getUserRep(winner)
   return `The lottery has ended. ${names.join(', ')} all bet ℞${amount}. ${
     winner.displayName
   } won ℞${amount * (lottery.size + 1)} and now has ℞${newBgr}.`
 }
 
 function notEnoughRep(member: GuildMember, bgr: number, amount: number) {
-  return `${
-    member.displayName
-  } only has ${bgr} and cannot bet in a lottery for ℞${amount}`
+  return `${member.displayName} only has ${bgr} and cannot bet in a lottery for ℞${amount}`
 }

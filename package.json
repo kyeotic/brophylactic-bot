@@ -4,66 +4,47 @@
   "description": "Discord Server Manager",
   "main": "dist/server.js",
   "scripts": {
-    "start": "npm run serve",
-    "deploy": "npm run build-ts && npm run tslint",
-    "serve": "node dist/server.js",
+    "start": "nodemon dist/server.js",
     "debug": "ts-node src/server.ts",
-    "watch": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node' src/server.ts --files",
-    "watch-test": "npm run test -- --watchAll",
-    "build-ts": "tsc",
-    "ls": "now ls brophylactic-bot -a",
-    "tslint": "tslint -c tslint.yml -p tsconfig.json"
+    "build": "tsc",
+    "style": "prettier --write \"{src,test}/**/*.ts\"",
+    "lint": "eslint 'src/**/*.{js,ts,tsx}' --quiet --fix",
+    "check": "npm run style && npm run lint"
   },
   "files": [
     "dist/"
   ],
   "engines": {
-    "node": ">=8.10"
+    "node": ">=14.10"
   },
   "author": "Tim Kye",
   "license": "MIT",
-  "prettier": {
-    "semi": false,
-    "singleQuote": true,
-    "parser": "typescript"
-  },
   "dependencies": {
     "d20": "^1.4.1",
+    "date-fns": "^2.19.0",
     "deepmerge": "^2.1.1",
-    "discord.js": "^11.3.2",
-    "dotenv": "^6.0.0",
-    "eris": "^0.8.6",
-    "firebase-admin": "^5.13.1",
-    "high-res-timeout": "^1.0.6",
-    "koa": "^2.5.2",
-    "moment": "^2.22.2",
-    "p-throttle": "^1.1.0",
-    "ramda": "^0.25.0",
-    "request-micro": "^1.2.3",
-    "shell-quote": "^1.6.1",
-    "trim": "0.0.1",
+    "discord.js": "11.6.x",
+    "dotenv": "^8.2.0",
+    "firebase-admin": "^9.6.0",
+    "lodash": "^4.17.21",
+    "ramda": "^0.27.1",
+    "shell-quote": "^1.7.2",
     "yargs": "^12.0.1"
   },
   "devDependencies": {
-    "@types/deepmerge": "^2.1.0",
-    "@types/dotenv": "^4.0.3",
-    "@types/koa": "^2.0.46",
-    "@types/node": "^10.5.4",
-    "@types/p-throttle": "^1.1.0",
-    "@types/ramda": "github:types/npm-ramda#dist",
-    "@types/yargs": "^11.1.1",
-    "babel-eslint": "^8.2.3",
-    "concurrently": "^3.6.1",
-    "eslint": "^4.19.1",
-    "eslint-config-problems": "^0.1.1",
-    "eslint-plugin-prettier": "^2.6.0",
-    "install": "^0.12.1",
-    "nodemon": "^1.18.3",
-    "npm": "^6.3.0",
-    "prettier": "^1.13.5",
-    "ts-node": "^7.0.0",
-    "tslint": "^5.11.0",
-    "tslint-config-prettier": "^1.14.0",
-    "typescript": "^2.9.2"
+    "@types/lodash": "^4.14.168",
+    "@types/ramda": "^0.27.39",
+    "@types/yargs": "^12.0.19",
+    "@typescript-eslint/eslint-plugin": "^4.20.0",
+    "@typescript-eslint/parser": "^4.20.0",
+    "eslint": "^7.23.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-plugin-prettier": "^3.3.1",
+    "nodemon": "^2.0.7",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^2.2.1",
+    "ts-node": "^9.1.1",
+    "tslib": "^1.14.1",
+    "typescript": "^4.2.3"
   }
 }

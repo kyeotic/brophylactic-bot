@@ -1,20 +1,18 @@
-import R from 'ramda'
+import _ from 'lodash'
 
 export default function roll(dice: string): number[] {
-  let results: number[] = []
+  const results: number[] = []
 
   if (!dice) {
     throw new Error('Missing dice parameter.')
   }
 
-  let { rollCount, modifier, dieSize } = parseDice(dice)
+  const { rollCount, modifier, dieSize } = parseDice(dice)
 
   if (dieSize === 0) throw new Error('Die Size cannot be 0')
   if (Number.isNaN(dieSize)) return []
 
-  results.push(
-    ...R.times(() => Math.floor(Math.random() * dieSize + 1), rollCount)
-  )
+  results.push(..._.times(rollCount, (): number => Math.floor(Math.random() * dieSize + 1)))
 
   if (modifier !== 0) {
     results.push(modifier)
@@ -23,13 +21,13 @@ export default function roll(dice: string): number[] {
 }
 
 export function parseDice(dice: string) {
-  let result: { rollCount: number; dieSize: number; modifier: number } = {
+  const result: { rollCount: number; dieSize: number; modifier: number } = {
     rollCount: 1,
     modifier: 0,
-    dieSize: 0
+    dieSize: 0,
   }
 
-  let match = dice.match(/^\s*(\d+)?\s*d\s*(\d+)\s*(.*?)\s*$/)
+  const match = dice.match(/^\s*(\d+)?\s*d\s*(\d+)\s*(.*?)\s*$/)
   if (!match) {
     result.dieSize = parseFloat(dice)
     return result
@@ -42,8 +40,9 @@ export function parseDice(dice: string) {
     result.dieSize = parseFloat(match[2])
   }
   if (match[3]) {
-    result.modifier = R.sum(
-      match[3].match(/([+-]\s*\d+)/g).map(m => parseFloat(m.replace(/\s/g, '')))
+    result.modifier = _.sum(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      match[3].match(/([+-]\s*\d+)/g)!.map((m) => parseFloat(m.replace(/\s/g, '')))
     )
   }
 

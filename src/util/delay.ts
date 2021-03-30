@@ -1,11 +1,11 @@
 const createDelay = (willResolve: boolean) => (ms: number, value?: any) => {
-  let timeoutId: NodeJS.Timer
-  let settle: (value?: {} | PromiseLike<{}>) => void
+  let timeoutId: NodeJS.Timer | null
+  let settle: (value?: any | PromiseLike<any>) => void
 
   const delayPromise = new Promise((resolve, reject) => {
     settle = willResolve ? resolve : reject
     timeoutId = setTimeout(settle, ms, value)
-  }) as IClearablePromise<{}>
+  }) as IClearablePromise<any>
 
   delayPromise.clear = () => {
     if (timeoutId) {

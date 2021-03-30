@@ -4,9 +4,9 @@ import {
   DocumentReference,
   SetOptions,
   Transaction,
-  UpdateData
+  // UpdateData,
 } from '@google-cloud/firestore'
-import { Guild, GuildMember, Message } from 'discord.js'
+import { GuildMember } from 'discord.js'
 import { isPositiveInteger } from '../util/number'
 
 const delimiter = '.'
@@ -15,8 +15,8 @@ export class ReputationStore {
   constructor(private collection: CollectionReference) {}
 
   public async getUserRep(member: GuildMember): Promise<number> {
-    let baseRep = calculateRepFromJoinedDate(member)
-    let offset = await this.getUserRepOffset(member)
+    const baseRep = calculateRepFromJoinedDate(member)
+    const offset = await this.getUserRepOffset(member)
     return baseRep + offset
   }
 
@@ -32,29 +32,19 @@ export class ReputationStore {
         }`
       )
     }
-    return this.collection.firestore.runTransaction(async transaction => {
-      let [senderRep, receiverRep] = await Promise.all([
+    return this.collection.firestore.runTransaction(async (transaction) => {
+      const [senderRep, receiverRep] = await Promise.all([
         this.getFullUserRep(sender, transaction),
-        this.getFullUserRep(receiver, transaction)
+        this.getFullUserRep(receiver, transaction),
       ])
       if (senderRep.reputation + senderRep.reputationOffset - amount < 0) {
         return Promise.reject(
-          `${
-            sender.displayName
-          } only has ℞${senderRep}, unable to send ℞${amount}`
+          `${sender.displayName} only has ℞${senderRep}, unable to send ℞${amount}`
         )
       }
       await Promise.all([
-        this.setUserRepOffset(
-          sender,
-          senderRep.reputationOffset - amount,
-          transaction
-        ),
-        this.setUserRepOffset(
-          receiver,
-          receiverRep.reputationOffset + amount,
-          transaction
-        )
+        this.setUserRepOffset(sender, senderRep.reputationOffset - amount, transaction),
+        this.setUserRepOffset(receiver, receiverRep.reputationOffset + amount, transaction),
       ])
     })
   }
@@ -71,12 +61,10 @@ export class ReputationStore {
         }`
       )
     }
-    return this.collection.firestore.runTransaction(async transaction => {
-      let receiverRep = await this.getFullUserRep(receiver, transaction)
-      let senderReps = await Promise.all(
-        senders.map(s =>
-          this.getFullUserRep(s, transaction).then(rep => ({ rep, sender: s }))
-        )
+    return this.collection.firestore.runTransaction(async (transaction) => {
+      const receiverRep = await this.getFullUserRep(receiver, transaction)
+      const senderReps = await Promise.all(
+        senders.map((s) => this.getFullUserRep(s, transaction).then((rep) => ({ rep, sender: s })))
       )
       await Promise.all([
         this.setUserRepOffset(
@@ -84,13 +72,9 @@ export class ReputationStore {
           receiverRep.reputationOffset + amountToSend * senders.length,
           transaction
         ),
-        ...senderReps.map(s =>
-          this.setUserRepOffset(
-            s.sender,
-            s.rep.reputationOffset - amountToSend,
-            transaction
-          )
-        )
+        ...senderReps.map((s) =>
+          this.setUserRepOffset(s.sender, s.rep.reputationOffset - amountToSend, transaction)
+        ),
       ])
     })
   }
@@ -99,17 +83,15 @@ export class ReputationStore {
     member: GuildMember,
     transaction?: Transaction
   ): Promise<{ reputation: number; reputationOffset: number }> {
-    let reputation = calculateRepFromJoinedDate(member)
-    let reputationOffset = await this.getUserRepOffset(member, transaction)
+    const reputation = calculateRepFromJoinedDate(member)
+    const reputationOffset = await this.getUserRepOffset(member, transaction)
     return { reputation, reputationOffset }
   }
 
-  private async getUserRepOffset(
-    member: GuildMember,
-    transaction?: Transaction
-  ) {
-    let doc = await get(this.getUserDoc(member), transaction)
-    return doc.exists ? parseFloat(doc.data().reputationOffset) : 0
+  private async getUserRepOffset(member: GuildMember, transaction?: Transaction) {
+    const doc = await get(this.getUserDoc(member), transaction)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return doc.exists ? parseFloat(doc.data()!.reputationOffset) : 0
   }
 
   private async setUserRepOffset(
@@ -134,13 +116,9 @@ function get(doc: DocumentReference, transaction?: Transaction) {
   return transaction ? transaction.get(doc) : doc.get()
 }
 
-function update(
-  doc: DocumentReference,
-  data: UpdateData,
-  transaction?: Transaction
-) {
-  return transaction ? transaction.update(doc, data) : doc.update(data)
-}
+// function update(doc: DocumentReference, data: UpdateData, transaction?: Transaction) {
+//   return transaction ? transaction.update(doc, data) : doc.update(data)
+// }
 
 function set(
   doc: DocumentReference,
@@ -148,6 +126,7 @@ function set(
   options?: SetOptions,
   transaction?: Transaction
 ) {
+  // @ts-ignore
   transaction ? transaction.set(doc, data, options) : doc.set(data, options)
 }
 
@@ -158,7 +137,5 @@ function getId(member: GuildMember) {
 }
 
 function calculateRepFromJoinedDate(member: GuildMember): number {
-  return Math.floor(
-    (Date.now() - member.joinedAt.getTime()) / millisecondsInADay
-  )
+  return Math.floor((Date.now() - member.joinedAt.getTime()) / millisecondsInADay)
 }
