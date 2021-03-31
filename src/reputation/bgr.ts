@@ -68,7 +68,7 @@ export async function bgrHandler(
   const sendMessage = (await channel.send(
     `${member.displayName} is sending ${memberToReceive.displayName} ℞${amount}`
   )) as Message
-  await reputation.exchangeUserRep(member, memberToReceive, amount)
+  await reputation.transferUserRep(member, memberToReceive, amount)
   const [senderRep, receiverRep] = await Promise.all([
     reputation.getUserRep(member),
     reputation.getUserRep(memberToReceive),

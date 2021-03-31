@@ -20,7 +20,7 @@ export class ReputationStore {
     return baseRep + offset
   }
 
-  public async exchangeUserRep(
+  public async transferUserRep(
     sender: GuildMember,
     receiver: GuildMember,
     amount: number
@@ -49,7 +49,7 @@ export class ReputationStore {
     })
   }
 
-  public async transferUserRep(
+  public async transferUserReps(
     receiver: GuildMember,
     senders: GuildMember[],
     amountToSend: number

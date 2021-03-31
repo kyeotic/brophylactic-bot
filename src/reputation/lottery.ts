@@ -39,8 +39,8 @@ export async function lotteryHandler(
     return
   }
 
-  if (!Number.isInteger(amount)) {
-    return await channel.send('amount must be an integer')
+  if (!Number.isInteger(amount) && amount > 0) {
+    return await channel.send('amount must be a positive integer')
   }
 
   // Require user has enough rep to bet
@@ -104,8 +104,8 @@ export async function lotteryHandler(
   const winner = lottery.get(names[inclusiveRange(0, names.length - 1)])!
   lottery.delete(winner.displayName)
 
-  // Send winningsa
-  await reputation.transferUserRep(winner, Array.from(lottery.values()), amount)
+  // Send winnings
+  await reputation.transferUserReps(winner, Array.from(lottery.values()), amount)
   const newBgr = await reputation.getUserRep(winner)
   return `The lottery has ended. ${names.join(', ')} all bet ℞${amount}. ${
     winner.displayName
