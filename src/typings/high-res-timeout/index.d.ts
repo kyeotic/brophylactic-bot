@@ -4,7 +4,7 @@ declare module 'high-res-timeout' {
   import { EventEmitter } from 'events'
   export default class Timeout extends EventEmitter {
     // tslint:disable-next-line:variable-name
-    public _promise: Promise<{}>
+    public _promise: Promise<any>
     constructor(ms: number)
     public start(): Timeout
     public on(

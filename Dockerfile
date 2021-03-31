@@ -1,8 +1,8 @@
 FROM node:14 as base
 
 # Create the directory
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
+RUN mkdir -p /root/app
+WORKDIR /root/app
 
 # Copy and Install our bot
 COPY . .
@@ -27,7 +27,8 @@ RUN  npm run check && npm run build
 # ---- Release ----
 FROM base AS release
 # copy production node_modules
-COPY --from=dependencies /usr/src/app/prod_node_modules ./node_modules
+COPY --from=dependencies /root/app/prod_node_modules ./node_modules
+COPY --from=test /root/app/dist ./dist
 # copy app sources
 COPY . .
 # expose port and define CMD

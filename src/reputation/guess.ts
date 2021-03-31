@@ -1,9 +1,7 @@
-import { GuildMember, Message, MessageReaction, User } from 'discord.js'
+import { Message } from 'discord.js'
 import { CommandModule } from 'yargs'
 import { IAppContext } from '../context'
 import { isSameDay, startOfDay, formatDistanceToNow } from 'date-fns'
-import { delay } from '../util/delay'
-import { isReactionTo } from '../util/messages'
 import { seededRandomInclusive } from '../util/random'
 
 const magicNumberReward = 100
