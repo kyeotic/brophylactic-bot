@@ -13,6 +13,7 @@ import promoteCommand from './commands/promotion'
 import rollCommand from './commands/roll'
 import { bgrCommand } from './reputation/bgr'
 import { lotteryCommand } from './reputation/lottery'
+import { guessCommand } from './reputation/guess'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const yargs = require('yargs/yargs')
@@ -53,6 +54,7 @@ bot.on('message', async (message: Message) => {
     .command(promoteCommand(guild))
     .command(bgrCommand(context))
     .command(lotteryCommand(context))
+    .command(guessCommand(context))
     .demandCommand(1, 'Must provide at least one command')
     .recommendCommands()
     .strict()

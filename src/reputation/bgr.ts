@@ -65,6 +65,10 @@ export async function bgrHandler(
     await channel.send(`Unable to find member with the username ${to}`)
     return
   }
+  if (memberToReceive.id == member.id) {
+    await channel.send(`Unable to send ℞ to yourself`)
+    return
+  }
   const sendMessage = (await channel.send(
     `${member.displayName} is sending ${memberToReceive.displayName} ℞${amount}`
   )) as Message
@@ -76,5 +80,6 @@ export async function bgrHandler(
   await sendMessage.edit(
     `${member.displayName} sent ${memberToReceive.displayName} ℞${amount}. ${member.displayName}: ℞${senderRep}, ${memberToReceive.displayName}: ℞${receiverRep}`
   )
-  await message.delete()
+  // pause cleanup
+  // await message.delete()
 }

@@ -3,7 +3,7 @@ import { CommandModule } from 'yargs'
 import { IAppContext } from '../context'
 import { delay } from '../util/delay'
 import { isReactionTo } from '../util/messages'
-import { inclusiveRange } from '../util/random'
+import { randomInclusive } from '../util/random'
 
 export function lotteryCommand(context: IAppContext): CommandModule {
   return {
@@ -101,7 +101,7 @@ export async function lotteryHandler(
   // Select a winner
   const names = Array.from(lottery.keys())
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const winner = lottery.get(names[inclusiveRange(0, names.length - 1)])!
+  const winner = lottery.get(names[randomInclusive(0, names.length - 1)])!
   lottery.delete(winner.displayName)
 
   // Send winnings

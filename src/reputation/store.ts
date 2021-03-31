@@ -20,6 +20,25 @@ export class ReputationStore {
     return baseRep + offset
   }
 
+  public async addUserRep(member: GuildMember, amount: number): Promise<void> {
+    if (!Number.isInteger(amount)) {
+      return Promise.reject(
+        `must provide a valid integer amount ${amount === undefined ? `, got ℞${amount}` : ''}`
+      )
+    }
+    return this.collection.firestore.runTransaction(async (transaction) => {
+      const memberRep = await this.getFullUserRep(member, transaction)
+
+      if (memberRep.reputation + memberRep.reputationOffset - amount < 0) {
+        return Promise.reject(
+          `${member.displayName} only has ℞${memberRep}, unable to add ℞${amount}`
+        )
+      }
+
+      await this.setUserRepOffset(member, memberRep.reputationOffset + amount, transaction)
+    })
+  }
+
   public async transferUserRep(
     sender: GuildMember,
     receiver: GuildMember,
@@ -88,7 +107,7 @@ export class ReputationStore {
     return { reputation, reputationOffset }
   }
 
-  private async getUserRepOffset(member: GuildMember, transaction?: Transaction) {
+  private async getUserRepOffset(member: GuildMember, transaction?: Transaction): Promise<number> {
     const doc = await get(this.getUserDoc(member), transaction)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return doc.exists ? parseFloat(doc.data()!.reputationOffset) : 0
@@ -102,6 +121,28 @@ export class ReputationStore {
     return await set(
       this.getUserDoc(member),
       { reputationOffset, name: member.displayName },
+      { merge: true },
+      transaction
+    )
+  }
+
+  public async getUserLastGuess(
+    member: GuildMember,
+    transaction?: Transaction
+  ): Promise<Date | null> {
+    const doc = await get(this.getUserDoc(member), transaction)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return doc.exists && doc.data()?.lastGuessDate ? new Date(doc.data()!.lastGuessDate) : null
+  }
+
+  public async setUserLastGuess(
+    member: GuildMember,
+    lastGuessDate: Date,
+    transaction?: Transaction
+  ): Promise<void> {
+    return await set(
+      this.getUserDoc(member),
+      { lastGuessDate: lastGuessDate.getTime(), name: member.displayName },
       { merge: true },
       transaction
     )

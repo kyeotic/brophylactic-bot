@@ -28,12 +28,15 @@
     "firebase-admin": "^9.6.0",
     "lodash": "^4.17.21",
     "ramda": "^0.27.1",
+    "random": "^3.0.3",
+    "seedrandom": "^3.0.5",
     "shell-quote": "^1.7.2",
     "yargs": "^12.0.1"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.168",
     "@types/ramda": "^0.27.39",
+    "@types/seedrandom": "^3.0.0",
     "@types/yargs": "^12.0.19",
     "@typescript-eslint/eslint-plugin": "^4.20.0",
     "@typescript-eslint/parser": "^4.20.0",

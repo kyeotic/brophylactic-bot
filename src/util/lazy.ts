@@ -7,7 +7,7 @@ export const value = <T>(initFn: () => T) => {
   }
 }
 
-export const getter = <T>(obj: object, property: string, initFn: () => T) => {
+export const getter = <T>(obj: any, property: string, initFn: () => T) => {
   Object.defineProperty(obj, property, {
     get: value(initFn),
   })
