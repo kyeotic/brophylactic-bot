@@ -38,6 +38,11 @@ export async function guessHandler(
 
   const today = new Date()
 
+  if (!member) {
+    await channel.send('Guild context missing')
+    return
+  }
+
   const lastGuess = await reputation.getUserLastGuess(member)
   if (!guess) {
     await channel.send(

@@ -1,4 +1,4 @@
-FROM node:14 as base
+FROM mhart/alpine-node:14 as base
 
 # Create the directory
 RUN mkdir -p /root/app
@@ -26,6 +26,9 @@ RUN  npm run check && npm run build
 #
 # ---- Release ----
 FROM base AS release
+RUN apk add --no-cache tini
+RUN npm install pm2 -g
+
 # copy production node_modules
 COPY --from=dependencies /root/app/prod_node_modules ./node_modules
 COPY --from=test /root/app/dist ./dist
@@ -33,4 +36,6 @@ COPY --from=test /root/app/dist ./dist
 COPY . .
 # expose port and define CMD
 # EXPOSE 5000
-CMD npm run start
+
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD [ "pm2-runtime", "npm", "--", "start" ]

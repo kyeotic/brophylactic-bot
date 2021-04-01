@@ -39,6 +39,10 @@ export async function handler({
   // Init
   const { channel, member } = message
 
+  if (!member) {
+    throw new Error('Guild context missing')
+  }
+
   command = _.trim(command)
   try {
     const rollResult = roll(command)

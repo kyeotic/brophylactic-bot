@@ -12,7 +12,15 @@ if (!firebase64) {
 const base = {
   discord: {
     botToken: process.env.BOT_TOKEN,
-    // botToken: process.env.BOT_TOKEN_TEST,
+    clientConfig: {
+      intents: [
+        'GUILDS',
+        'GUILD_MEMBERS',
+        'GUILD_MESSAGES',
+        'GUILD_MESSAGE_REACTIONS',
+        'DIRECT_MESSAGES',
+      ],
+    },
   },
   firebase: {
     databaseUrl: 'https://brophylactic-gaming.firebaseio.com',
@@ -22,6 +30,7 @@ const base = {
 
 const test = {
   discord: {
+    botToken: process.env.BOT_TOKEN_TEST,
     serverId: '472286758030147585',
     residentRoleId: '472436078465253379',
     newMemberRoleId: '472436224066584576',

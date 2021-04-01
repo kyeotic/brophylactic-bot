@@ -178,5 +178,5 @@ function getId(member: GuildMember) {
 }
 
 function calculateRepFromJoinedDate(member: GuildMember): number {
-  return Math.floor((Date.now() - member.joinedAt.getTime()) / millisecondsInADay)
+  return Math.floor((Date.now() - (member.joinedAt || new Date()).getTime()) / millisecondsInADay)
 }

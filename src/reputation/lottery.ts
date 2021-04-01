@@ -34,6 +34,11 @@ export async function lotteryHandler(
   const { channel, member, guild } = message
   const { client } = channel
 
+  if (!member || !guild) {
+    await channel.send('Guild context missing')
+    return
+  }
+
   // Validate
   if (!amount || Number.isNaN(amount)) {
     return
@@ -62,31 +67,34 @@ export async function lotteryHandler(
 
   const match = (reaction: MessageReaction): boolean => isReactionTo(lotteryMessage, reaction)
 
-  const reactionHandler = async (reaction: MessageReaction, user: User) => {
+  const reactionHandler = async (reaction: MessageReaction, user: User): Promise<void> => {
     // Can't register handler for specific message, so filter everything else out
     if (!match(reaction)) return
-    const newMember = await guild.fetchMember(user)
+    const newMember = await guild.members.fetch(user)
     const name = newMember.displayName
     // Can only bet once
     if (lottery.has(name)) return
     // Need enough rep
     const rep = await reputation.getUserRep(newMember)
     if (rep < amount) {
-      return await channel.send(notEnoughRep(newMember, rep, amount))
+      await channel.send(notEnoughRep(newMember, rep, amount))
+      return
     }
     // Add to lottery
     lottery.set(name, newMember)
   }
-  const unreactionHandler = async (reaction: MessageReaction, user: User) => {
+  const unreactionHandler = async (reaction: MessageReaction, user: User): Promise<void> => {
     if (!match(reaction)) return
-    const newMember = await guild.fetchMember(user)
+    const newMember = await guild.members.fetch(user)
     // The player who started the lottery cannot withdraw
     if (newMember.id === member.id) return
     lottery.delete(newMember.displayName)
   }
 
   // Register Listeners
+  // @ts-ignore
   client.on('messageReactionAdd', reactionHandler)
+  // @ts-ignore
   client.on('messageReactionRemove', unreactionHandler)
 
   await delay(lotteryTimeSeconds * 1000)

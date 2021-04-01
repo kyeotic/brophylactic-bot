@@ -30,6 +30,13 @@ export async function handlePromotion(
 
   // const username = message.content.replace('!promote ', '')
 
+  if (!member || !guild) {
+    channel.send('Guild context missing')
+    return
+  }
+
+  channel.send(`${residentRole.name} ${introRole.name}`)
+
   // Residents Only
   if (!hasRole(member, residentRole)) {
     channel.send(`Promote can only be used by a ${residentRole.name}`)
@@ -37,8 +44,10 @@ export async function handlePromotion(
   }
 
   // Find User
-  const memberToPromote = guild.members.find((m) => m.displayName === username)
+  const members = await guild.members.fetch({ query: username })
+  const memberToPromote = members.find((m) => m.displayName === username)
   if (!memberToPromote) {
+    console.log(members.map((m) => JSON.stringify(m)))
     channel.send(`Unable to find member with the username ${username}`)
     return
   }
@@ -53,8 +62,8 @@ export async function handlePromotion(
 
   // Promote
   try {
-    await memberToPromote.addRole(residentRole.id, 'promotion')
-    await memberToPromote.removeRole(introRole.id, 'promotion')
+    await memberToPromote.roles.add(residentRole.id, 'promotion')
+    await memberToPromote.roles.remove(introRole.id, 'promotion')
     channel.send(`Promoted ${memberToPromote.displayName} to ${residentRole.name}`)
   } catch (e) {
     console.error(e, e.stack)

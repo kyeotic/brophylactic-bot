@@ -2,7 +2,7 @@ import { Guild, GuildMember, Role } from 'discord.js'
 import _ from 'lodash'
 
 export function hasRole(member: GuildMember, role: Role) {
-  return member.roles.has(role.id)
+  return member.roles.cache.has(role.id)
 }
 
 /**
@@ -12,7 +12,7 @@ export function hasRole(member: GuildMember, role: Role) {
  * @returns {boolean}
  */
 export function hasIntroRole(member: GuildMember): boolean {
-  return member.roles.has(getIntroRole(member.guild).id)
+  return member.roles.cache.has(getIntroRole(member.guild).id)
 }
 
 /**
@@ -22,7 +22,7 @@ export function hasIntroRole(member: GuildMember): boolean {
  * @returns {Role}
  */
 export function getIntroRole(guild: Guild): Role {
-  return minCalculatedRole(Array.from(guild.roles.values()).filter(userRoleFilter))
+  return minCalculatedRole(Array.from(guild.roles.cache.values()).filter(userRoleFilter))
 }
 
 /**
@@ -32,13 +32,13 @@ export function getIntroRole(guild: Guild): Role {
  * @returns {boolean}
  */
 export function isResident(member: GuildMember): boolean {
-  return !!member.roles.array().filter(userRoleFilter).length && !hasIntroRole(member)
+  return !!member.roles.cache.array().filter(userRoleFilter).length && !hasIntroRole(member)
 }
 
 export function getResidentRole(guild: Guild): Role {
   const introRole = getIntroRole(guild)
   return minCalculatedRole(
-    Array.from(guild.roles.values())
+    Array.from(guild.roles.cache.values())
       .filter(userRoleFilter)
       .filter((r) => r !== introRole)
   )
@@ -50,5 +50,5 @@ function userRoleFilter(role: Role): boolean {
 
 function minCalculatedRole(roles: Role[]): Role {
   if (!roles.length) throw new Error('"roles" cannot be an empty array')
-  return _.minBy(roles, (r: Role) => r.calculatedPosition) || roles[0]
+  return _.minBy(roles, (r: Role) => r.position) || roles[0]
 }

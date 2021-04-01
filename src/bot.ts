@@ -1,4 +1,4 @@
-import { Client, Message } from 'discord.js'
+import { Client, Message, IntentsString } from 'discord.js'
 import config from './config'
 
 import { Argv } from 'yargs'
@@ -19,7 +19,9 @@ import { guessCommand } from './reputation/guess'
 const yargs = require('yargs/yargs')
 
 const commandCharacter = '!'
-const bot = new Client()
+const bot = new Client({
+  ws: { intents: config.discord.clientConfig.intents as IntentsString[] },
+})
 
 export const start = (): Promise<any> => bot.login(config.discord.botToken)
 
@@ -31,9 +33,15 @@ bot.on('error', (error) => {
 
 bot.on('message', async (message: Message) => {
   const { content, channel, guild, member } = message
+  console.log(content)
   if (!content || !content.startsWith(commandCharacter + ' ')) return
   const context = makeContext()
   let command: string[]
+
+  if (!member || !guild) {
+    await channel.send('Guild context missing')
+    return
+  }
 
   try {
     command = parse(content.substring(2))
@@ -45,6 +53,7 @@ bot.on('message', async (message: Message) => {
 
   // Check permission
   if (!hasRole(member, getResidentRole(guild))) {
+    console.log(`${member.displayName} does not have bot permission`)
     return
   }
   console.log('starting command', command)
@@ -93,9 +102,15 @@ bot.on('message', async (message: Message) => {
 
 async function notifyOwner(error: Error, message: Message) {
   const { content, channel, guild, member } = message
+
+  if (!member || !guild) {
+    await channel.send('Guild context missing')
+    return
+  }
+
   console.log('error', error)
   await channel.send(`I encountered an error. I will let <@${guild.ownerID}> know`)
-  const owner = await guild.fetchMember(guild.ownerID)
+  const owner = await guild.members.fetch(guild.ownerID)
   owner.send(
     `Error from ${member.displayName} when running: ${asMarkdown(content)} Error: ${asMarkdown(
       error.message

@@ -54,14 +54,19 @@ export async function bgrHandler(
     stores: { reputation },
   } = context
 
+  if (!member || !guild) {
+    await channel.send('Guild context missing')
+    return
+  }
+
   const bgr = await reputation.getUserRep(member)
   if (!to) {
-    const joined = format(member.joinedAt, 'yyyy-MM-dd')
+    const joined = member.joinedAt ? format(member.joinedAt, 'yyyy-MM-dd') : '<join date missing>'
     await channel.send(`${member.displayName} joined on ${joined} has ℞${bgr}`)
     return
   }
   // Find the user
-  const memberToReceive = guild.members.find((m) => m.displayName === to)
+  const memberToReceive = guild.members.cache.find((m) => m.displayName === to)
   if (!memberToReceive) {
     await channel.send(`Unable to find member with the username ${to}`)
     return
