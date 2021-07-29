@@ -1,4 +1,4 @@
-import { _ } from '../deps.ts'
+import { times, sum } from '../deps.ts'
 
 export default function roll(dice: string): number[] {
   const results: number[] = []
@@ -12,7 +12,7 @@ export default function roll(dice: string): number[] {
   if (dieSize === 0) throw new Error('Die Size cannot be 0')
   if (Number.isNaN(dieSize)) return []
 
-  results.push(..._.times(rollCount, (): number => Math.floor(Math.random() * dieSize + 1)))
+  results.push(...times(rollCount, (): number => Math.floor(Math.random() * dieSize + 1)))
 
   if (modifier !== 0) {
     results.push(modifier)
@@ -40,7 +40,7 @@ export function parseDice(dice: string) {
     result.dieSize = parseFloat(match[2])
   }
   if (match[3]) {
-    result.modifier = _.sum(
+    result.modifier = sum(
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       match[3].match(/([+-]\s*\d+)/g)!.map((m) => parseFloat(m.replace(/\s/g, '')))
     )
