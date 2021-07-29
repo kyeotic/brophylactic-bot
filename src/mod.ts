@@ -58,7 +58,7 @@ async function main(request: Request) {
   }
 
   const payload = camelize<Interaction>(JSON.parse(body))
-  if (payload.type === InteractionTypes.Ping) {
+  if ((payload.type as number) === (InteractionTypes.Ping as number)) {
     return json({
       type: InteractionResponseTypes.Pong,
     })

@@ -25,14 +25,14 @@ export const PermissionLevelHandlers: Record<
   (payload: Interaction, command: Command) => boolean | Promise<boolean>
 > = {
   MEMBER: () => true,
-  MODERATOR: (payload) =>
-    Boolean(payload.member?.permissions) &&
-    validatePermissions(payload.member!.permissions, ['MANAGE_GUILD']),
-  ADMIN: (payload) =>
-    Boolean(payload.member?.permissions) &&
-    validatePermissions(payload.member!.permissions, ['ADMINISTRATOR']),
-  // TODO: Add your user id here and anyone else you want to give access to.
-  BOT_OWNERS: (payload) => [''].includes(payload.member?.user.id || payload.user?.id!),
+  // MODERATOR: (payload) =>
+  //   Boolean(payload.member?.permissions) &&
+  //   validatePermissions(payload.member!.permissions, ['MANAGE_GUILD']),
+  // ADMIN: (payload) =>
+  //   Boolean(payload.member?.permissions) &&
+  //   validatePermissions(payload.member!.permissions, ['ADMINISTRATOR']),
+  // // TODO: Add your user id here and anyone else you want to give access to.
+  // BOT_OWNERS: (payload) => [''].includes(payload.member?.user.id || payload.user?.id!),
 }
 
 export enum PermissionLevels {
