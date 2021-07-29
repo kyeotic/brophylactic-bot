@@ -1,6 +1,9 @@
-import { deepmerge } from './deps.ts'
+import merge from 'deepmerge'
+import dotenv from 'dotenv'
 
-const firebase64 = Deno.env.get('FIREBASE_64')
+dotenv.config()
+
+const firebase64 = process.env.FIREBASE_64
 
 if (!firebase64) {
   throw new Error('Firebase key is required')
@@ -8,7 +11,7 @@ if (!firebase64) {
 
 const base = {
   discord: {
-    botToken: Deno.env.get('BOT_TOKEN'),
+    botToken: process.env.BOT_TOKEN,
     clientConfig: {
       intents: [
         'GUILDS',
@@ -21,13 +24,13 @@ const base = {
   },
   firebase: {
     databaseUrl: 'https://brophylactic-gaming.firebaseio.com',
-    cert: JSON.parse(btoa(firebase64)),
+    cert: JSON.parse(Buffer.from(firebase64, 'base64').toString('utf8')),
   },
 }
 
 const test = {
   discord: {
-    botToken: Deno.env.get('BOT_TOKEN_TEST'),
+    botToken: process.env.BOT_TOKEN_TEST,
     serverId: '472286758030147585',
     residentRoleId: '472436078465253379',
     newMemberRoleId: '472436224066584576',
@@ -42,4 +45,4 @@ const prod = {
   },
 }
 
-export default deepmerge(base, Deno.env.get('stage') === 'test' ? test : prod)
+export default merge(base, process.env.stage === 'test' ? test : prod)

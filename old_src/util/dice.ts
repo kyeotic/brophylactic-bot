@@ -1,4 +1,4 @@
-import { _ } from '../deps.ts'
+import _ from 'lodash'
 
 export default function roll(dice: string): number[] {
   const results: number[] = []
