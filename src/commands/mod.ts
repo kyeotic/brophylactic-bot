@@ -3,16 +3,12 @@ import {
   Interaction,
   InteractionApplicationCommandCallbackData,
   InteractionResponse,
-} from '../../deps.ts'
-import ping from './general/ping.ts'
-import avatar from './general/avatar.ts'
-import language from './general/language.ts'
-import { PermissionLevels } from '../utils/permissionLevels.ts'
+} from '../deps.ts'
+import roll from './general/roll.ts'
+import { PermissionLevels } from './permissionLevels.ts'
 
 export const commands: Record<string, Command | undefined> = {
-  ping,
-  avatar,
-  language,
+  roll,
 }
 
 export interface Command {
