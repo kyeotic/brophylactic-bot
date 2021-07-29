@@ -9,12 +9,11 @@ import {
   validateRequest,
   verifySignature,
 } from './deps.ts'
-import { commands } from './src/commands/mod.ts'
-import translate from './src/languages/translate.ts'
-import { isInteractionResponse } from './src/utils/isInteractionResponse.ts'
-import { logWebhook } from './src/utils/logWebhook.ts'
-import hasPermissionLevel from './src/utils/permissionLevels.ts'
-import redeploy from './src/utils/redeploy.ts'
+import { commands } from './commands/mod.ts'
+import hasPermissionLevel from './commands/permissionLevels.ts'
+import { isInteractionResponse } from './util/isInteractionResponse.ts'
+// import { logWebhook } from './utils/logWebhook.ts'
+import redeploy from './util/redeploy.ts'
 
 serve({
   '/': main,
@@ -22,7 +21,7 @@ serve({
 })
 
 async function main(request: Request) {
-  // Validate the incmoing request; whether or not, it includes
+  // Validate the incoming request; whether or not, it includes
   // the specified headers that are sent by Discord.
   const { error } = await validateRequest(request, {
     POST: {
@@ -89,14 +88,14 @@ async function main(request: Request) {
       return json({
         type: InteractionResponseTypes.ChannelMessageWithSource,
         data: {
-          content: translate(payload.guildId!, 'MISSING_PERM_LEVEL'),
+          content: payload.guildId!,
         },
       })
     }
 
     const result = await command.execute(payload)
     if (!isInteractionResponse(result)) {
-      await logWebhook(payload).catch(console.error)
+      // await logWebhook(payload).catch(console.error)
       return json({
         data: result,
         type: DiscordInteractionResponseTypes.ChannelMessageWithSource,
