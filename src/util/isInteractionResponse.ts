@@ -1,4 +1,4 @@
-import { InteractionApplicationCommandCallbackData, InteractionResponse } from '../../deps.ts'
+import { InteractionApplicationCommandCallbackData, InteractionResponse } from '../deps.ts'
 
 export function isInteractionResponse(
   response: InteractionResponse | InteractionApplicationCommandCallbackData
