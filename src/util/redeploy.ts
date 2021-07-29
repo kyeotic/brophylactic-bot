@@ -1,5 +1,6 @@
 import { decode, json, rest, setApplicationId, upsertSlashCommands } from '../deps.ts'
 import { commands } from '../commands/mod.ts'
+import config from '../config.ts'
 
 export default async function redeploy(request: Request) {
   const authorization = request.headers.get('authorization')
@@ -8,6 +9,9 @@ export default async function redeploy(request: Request) {
   }
 
   await updateGlobalCommands()
+  if (config.discord.serverId) {
+    await updateGuildCommands(config.discord.serverId)
+  }
   return json({ success: true })
 }
 
@@ -27,6 +31,43 @@ export async function updateGlobalCommands() {
         return {
           name,
           description: command!.description || description || 'No description available.',
+          options: command!.options?.map((option) => {
+            const optionName = option.name
+            const optionDescription = option.description
+
+            return {
+              ...option,
+              name: optionName,
+              description: optionDescription || 'No description available.',
+            }
+          }),
+        }
+      })
+  )
+}
+
+export async function updateGuildCommands(guildId: string) {
+  // GUILD RELATED COMMANDS
+  await upsertSlashCommands(
+    Object.entries(commands)
+      // ONLY GUILD COMMANDS
+      .filter(([_name, command]) => command!.guild !== false)
+      .map(([name, command]) => {
+        // USER OPTED TO USE BASIC VERSION ONLY
+        if (command!.advanced === false) {
+          return {
+            name,
+            description: command!.description || 'No description available.',
+            options: command!.options,
+          }
+        }
+
+        const translatedName = `${name.toUpperCase()}_NAME`
+        const translatedDescription = `${name.toUpperCase()}_DESCRIPTION`
+
+        return {
+          name: translatedName || name,
+          description: translatedDescription || command!.description,
           options: command!.options?.map((option) => {
             const optionName = option.name
             const optionDescription = option.description

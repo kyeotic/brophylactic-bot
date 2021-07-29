@@ -4,6 +4,7 @@ import { DiscordApplicationCommandOptionTypes } from '../../deps.ts'
 
 const command: Command = {
   global: true,
+  guild: true,
   options: [
     {
       required: false,
