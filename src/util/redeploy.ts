@@ -53,31 +53,10 @@ export async function updateGuildCommands(guildId: string) {
       // ONLY GUILD COMMANDS
       .filter(([_name, command]) => command!.guild !== false)
       .map(([name, command]) => {
-        // USER OPTED TO USE BASIC VERSION ONLY
-        if (command!.advanced === false) {
-          return {
-            name,
-            description: command!.description || 'No description available.',
-            options: command!.options,
-          }
-        }
-
-        const translatedName = `${name.toUpperCase()}_NAME`
-        const translatedDescription = `${name.toUpperCase()}_DESCRIPTION`
-
         return {
-          name: translatedName || name,
-          description: translatedDescription || command!.description,
-          options: command!.options?.map((option) => {
-            const optionName = option.name
-            const optionDescription = option.description
-
-            return {
-              ...option,
-              name: optionName,
-              description: optionDescription || 'No description available.',
-            }
-          }),
+          name,
+          description: command!.description || 'No description available.',
+          options: command!.options,
         }
       })
   )

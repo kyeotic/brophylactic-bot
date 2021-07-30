@@ -9,7 +9,6 @@ import {
 const command: Command = {
   // global: true,
   guild: true,
-  advanced: false,
   options: [
     {
       required: false,
