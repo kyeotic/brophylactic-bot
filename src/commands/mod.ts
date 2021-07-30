@@ -1,5 +1,6 @@
 import {
   ApplicationCommandOption,
+  SlashCommandInteraction,
   Interaction,
   InteractionApplicationCommandCallbackData,
   InteractionResponse,

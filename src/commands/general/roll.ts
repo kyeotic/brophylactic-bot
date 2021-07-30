@@ -3,8 +3,9 @@ import roll from '../../util/dice.ts'
 import { DiscordApplicationCommandOptionTypes } from '../../deps.ts'
 
 const command: Command = {
-  global: true,
+  // global: true,
   guild: true,
+  advanced: false,
   options: [
     {
       required: false,
@@ -20,6 +21,7 @@ const command: Command = {
     },
   ],
   execute: function (payload) {
+    // payload = payload as SlashCommandInteraction
     const roll = (payload.data?.options?.[0]?.value ?? '1d6') as string
     const verbose = (payload.data?.options?.[1]?.value || 'nothing') as string
     return { content: `got ${roll} and ${verbose}` }
