@@ -1,6 +1,10 @@
 import { Command } from '../mod.ts'
 import roll from '../../util/dice.ts'
-import { DiscordApplicationCommandOptionTypes } from '../../deps.ts'
+import {
+  DiscordApplicationCommandOptionTypes,
+  SlashCommandInteraction,
+  ApplicationCommandInteractionDataOptionWithValue,
+} from '../../deps.ts'
 
 const command: Command = {
   // global: true,
@@ -21,9 +25,12 @@ const command: Command = {
     },
   ],
   execute: function (payload) {
-    // payload = payload as SlashCommandInteraction
-    const roll = (payload.data?.options?.[0]?.value ?? '1d6') as string
-    const verbose = (payload.data?.options?.[1]?.value || 'nothing') as string
+    payload = payload as SlashCommandInteraction
+    const roll = ((payload.data?.options?.[0] as ApplicationCommandInteractionDataOptionWithValue)
+      ?.value ?? '1d6') as string
+    const verbose = ((payload.data
+      ?.options?.[1] as ApplicationCommandInteractionDataOptionWithValue)?.value ||
+      'nothing') as string
     return { content: `got ${roll} and ${verbose}` }
   },
 }
