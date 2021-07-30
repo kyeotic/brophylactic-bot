@@ -27,9 +27,9 @@ const command: Command = {
     payload = payload as SlashCommandInteraction
     const roll = ((payload.data?.options?.[0] as ApplicationCommandInteractionDataOptionWithValue)
       ?.value ?? '1d6') as string
-    const verbose = ((payload.data
-      ?.options?.[1] as ApplicationCommandInteractionDataOptionWithValue)?.value ??
-      false) as boolean
+    const verbose =
+      (((payload.data?.options?.[1] as ApplicationCommandInteractionDataOptionWithValue)?.value ??
+        '') as string).toLowerCase() === 'true'
     return { content: `got ${roll} and ${verbose}` }
   },
 }
