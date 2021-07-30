@@ -1,6 +1,7 @@
 import { Command } from '../mod.ts'
 import roll from '../../util/dice.ts'
 import {
+  sum,
   DiscordApplicationCommandOptionTypes,
   SlashCommandInteraction,
   ApplicationCommandInteractionDataOptionWithValue,
@@ -32,9 +33,10 @@ const command: Command = {
         'nothing') as string).toLowerCase() === 'true'
 
     const rollResult = roll(rollInput)
-    const sum = rollResult.reduce((a, b) => a + b, 0)
     return {
-      content: verbose ? `${sum} with ${rollResult.join(', ')}` : sum.toString(),
+      content: verbose
+        ? `${sum(rollResult)} with ${rollResult.join(', ')}`
+        : sum(rollResult).toString(),
     }
   },
 }
