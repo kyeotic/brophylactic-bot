@@ -1,4 +1,11 @@
+import { decode } from 'https://deno.land/std@0.82.0/encoding/base64.ts'
 import { deepmerge } from './deps.ts'
+
+const base64Decoder = new TextDecoder('utf-8')
+
+function base64Decode(value: string) {
+  return base64Decoder.decode(decode(value))
+}
 
 const firebase64 = Deno.env.get('FIREBASE_64')
 
@@ -21,7 +28,7 @@ const base = {
   },
   firebase: {
     databaseUrl: 'https://brophylactic-gaming.firebaseio.com',
-    cert: JSON.parse(btoa(firebase64)),
+    cert: JSON.parse(base64Decode(firebase64)),
   },
 }
 

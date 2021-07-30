@@ -102,7 +102,7 @@ async function main(request: Request) {
       })
     }
 
-    // DENO/TS BUG DOESNT LET US SEND A OBJECT WITHOUT THIS OVERRIDE
+    // DENO/TS BUG DOESN'T LET US SEND A OBJECT WITHOUT THIS OVERRIDE
     return json((result as unknown) as { [key: string]: unknown })
   }
 

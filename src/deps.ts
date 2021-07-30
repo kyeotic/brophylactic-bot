@@ -1,5 +1,3 @@
-// @deno-types="./types/deploy.d.ts"
-// @deno-types="./types/error.d.ts"
 // Sift is a routing and utility library for Deno Deploy.
 export { json, serve, validateRequest } from 'https://deno.land/x/sift@0.1.7/mod.ts'
 export * from 'https://raw.githubusercontent.com/discordeno/discordeno/12.0.1/src/interactions/mod.ts'

@@ -6,6 +6,7 @@
   "cSpell.words": [
     "Deno",
     "Firestore",
+    "camelize",
     "deepmerge"
   ]
 }
