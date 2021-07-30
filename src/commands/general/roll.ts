@@ -25,12 +25,17 @@ const command: Command = {
   ],
   execute: function (payload) {
     payload = payload as SlashCommandInteraction
-    const roll = ((payload.data?.options?.[0] as ApplicationCommandInteractionDataOptionWithValue)
-      ?.value ?? '1d6') as string
+    const rollInput = ((payload.data
+      ?.options?.[0] as ApplicationCommandInteractionDataOptionWithValue)?.value ?? '1d6') as string
     const verbose =
       (((payload.data?.options?.[1] as ApplicationCommandInteractionDataOptionWithValue)?.value ||
         'nothing') as string).toLowerCase() === 'true'
-    return { content: `got ${roll} and ${verbose}` }
+
+    const rollResult = roll(rollInput)
+    const sum = rollResult.reduce((a, b) => a + b, 0)
+    return {
+      content: verbose ? `${sum} with ${rollResult.join(', ')}` : sum.toString(),
+    }
   },
 }
 
