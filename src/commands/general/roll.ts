@@ -28,8 +28,8 @@ const command: Command = {
     const roll = ((payload.data?.options?.[0] as ApplicationCommandInteractionDataOptionWithValue)
       ?.value ?? '1d6') as string
     const verbose = ((payload.data
-      ?.options?.[1] as ApplicationCommandInteractionDataOptionWithValue)?.value ||
-      'nothing') as string
+      ?.options?.[1] as ApplicationCommandInteractionDataOptionWithValue)?.value ??
+      false) as boolean
     return { content: `got ${roll} and ${verbose}` }
   },
 }
