@@ -30,13 +30,16 @@ const command: Command = {
       ?.options?.[0] as ApplicationCommandInteractionDataOptionWithValue)?.value ?? '1d6') as string
     const verbose =
       (((payload.data?.options?.[1] as ApplicationCommandInteractionDataOptionWithValue)?.value ||
-        'nothing') as string).toLowerCase() === 'true'
+        'nothing') as string)
+        .toString()
+        .toLowerCase() === 'true'
 
     const rollResult = roll(rollInput)
+
     return {
-      content: verbose
-        ? `${sum(rollResult)} with ${rollResult.join(', ')}`
-        : sum(rollResult).toString(),
+      content: `${payload.member?.user.username} rolled ${rollInput} and got ${
+        verbose ? `${sum(rollResult)} with ${rollResult.join(', ')}` : sum(rollResult).toString()
+      }`,
     }
   },
 }

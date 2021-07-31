@@ -14,6 +14,7 @@ import hasPermissionLevel from './commands/permissionLevels.ts'
 import { isInteractionResponse } from './util/isInteractionResponse.ts'
 // import { logWebhook } from './utils/logWebhook.ts'
 import redeploy from './util/redeploy.ts'
+import config from './config.ts'
 
 serve({
   '/': main,
@@ -21,43 +22,11 @@ serve({
 })
 
 async function main(request: Request) {
-  // Validate the incoming request; whether or not, it includes
-  // the specified headers that are sent by Discord.
-  const { error } = await validateRequest(request, {
-    POST: {
-      headers: ['X-Signature-Ed25519', 'X-Signature-Timestamp'],
-    },
-  })
-  if (error) {
-    return json({ error: error.message }, { status: error.status })
+  const body = await request.text()
+  if (!config.isLocal) {
+    const response = verifyDiscordRequest(request, body)
+    if (!response) return response
   }
-
-  const publicKey = Deno.env.get('DISCORD_PUBLIC_KEY')
-  if (!publicKey) {
-    return json({
-      error: 'Missing Discord public key from environment variables.',
-    })
-  }
-
-  const signature = request.headers.get('X-Signature-Ed25519')!
-  const timestamp = request.headers.get('X-Signature-Timestamp')!
-
-  const { body, isValid } = verifySignature({
-    publicKey,
-    signature,
-    timestamp,
-    body: await request.text(),
-  })
-  if (!isValid) {
-    return json(
-      { error: 'Invalid request; could not verify the request' },
-      {
-        status: 401,
-      }
-    )
-  }
-
-  // const body = await request.text()
 
   const payload = camelize<Interaction>(JSON.parse(body))
   if ((payload.type as number) === (InteractionTypes.Ping as number)) {
@@ -109,4 +78,42 @@ async function main(request: Request) {
   }
 
   return json({ error: 'Bad request' }, { status: 400 })
+}
+
+async function verifyDiscordRequest(request: Request, body: string) {
+  // Validate the incoming request; whether or not, it includes
+  // the specified headers that are sent by Discord.
+  const { error } = await validateRequest(request, {
+    POST: {
+      headers: ['X-Signature-Ed25519', 'X-Signature-Timestamp'],
+    },
+  })
+  if (error) {
+    return json({ error: error.message }, { status: error.status })
+  }
+
+  const publicKey = config.discord.publicKey
+  if (!publicKey) {
+    return json({
+      error: 'Missing Discord public key from environment variables.',
+    })
+  }
+
+  const signature = request.headers.get('X-Signature-Ed25519')!
+  const timestamp = request.headers.get('X-Signature-Timestamp')!
+
+  const { isValid } = verifySignature({
+    publicKey,
+    signature,
+    timestamp,
+    body,
+  })
+  if (!isValid) {
+    return json(
+      { error: 'Invalid request; could not verify the request' },
+      {
+        status: 401,
+      }
+    )
+  }
 }

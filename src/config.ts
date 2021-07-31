@@ -14,8 +14,11 @@ if (!firebase64) {
 }
 
 const base = {
+  isLocal: Deno.env.get('IS_LOCAL') === 'true',
   discord: {
-    botToken: Deno.env.get('BOT_TOKEN'),
+    publicKey: Deno.env.get('DISCORD_PUBLIC_KEY'),
+    botToken: Deno.env.get('DISCORD_TOKEN'),
+    redeployAuthorization: Deno.env.get('REDEPLOY_AUTHORIZATION'),
     clientConfig: {
       intents: [
         'GUILDS',
@@ -34,7 +37,7 @@ const base = {
 
 const test = {
   discord: {
-    botToken: Deno.env.get('BOT_TOKEN_TEST'),
+    botToken: Deno.env.get('DISCORD_TOKEN_TEST'),
     serverId: '472286758030147585',
     residentRoleId: '472436078465253379',
     newMemberRoleId: '472436224066584576',

@@ -26,6 +26,10 @@
       {
         "name": "roll",
         "value": "2d6"
+      },
+      {
+        "name": "verbose",
+        "value": true
       }
     ],
     "name": "roll",
