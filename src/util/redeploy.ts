@@ -60,6 +60,8 @@ export async function updateGlobalCommands() {
         }
       })
   )
+  const appCommmands = await getSlashCommands()
+  console.log('app commands', appCommmands)
 }
 
 export async function updateGuildCommands(guildId: string) {
