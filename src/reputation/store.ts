@@ -98,6 +98,38 @@ export class ReputationStore {
     })
   }
 
+  public async transferUsersRep(
+    sender: GuildMember,
+    receivers: GuildMember[],
+    amountToSend: number
+  ) {
+    if (!isPositiveInteger(amountToSend)) {
+      return Promise.reject(
+        `must provide a valid integer amount ${
+          amountToSend === undefined ? `, got ℞${amountToSend}` : ''
+        }`
+      )
+    }
+    return this.collection.firestore.runTransaction(async (transaction) => {
+      const senderRep = await this.getFullUserRep(sender, transaction)
+      const receiversReps = await Promise.all(
+        receivers.map((r) =>
+          this.getFullUserRep(r, transaction).then((rep) => ({ rep, receiver: r }))
+        )
+      )
+      await Promise.all([
+        this.setUserRepOffset(
+          sender,
+          senderRep.reputationOffset - amountToSend * receivers.length,
+          transaction
+        ),
+        ...receiversReps.map((r) =>
+          this.setUserRepOffset(r.receiver, r.rep.reputationOffset + amountToSend, transaction)
+        ),
+      ])
+    })
+  }
+
   private async getFullUserRep(
     member: GuildMember,
     transaction?: Transaction
