@@ -87,7 +87,7 @@ bot.on('message', async (message: Message) => {
         console.log('finishing command', command)
 
         if (err) {
-          console.log('parse error')
+          console.log('parse error', err)
           return await notifyOwner(err, message)
         }
         if (output) {

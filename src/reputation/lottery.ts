@@ -161,6 +161,7 @@ async function finishNegativeLottery({
   amount: number
   reputation: ReputationStore
 }) {
+  const absAmount = Math.abs(amount)
   // Select a winner
   const names = Array.from(lottery.keys())
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -168,11 +169,11 @@ async function finishNegativeLottery({
   lottery.delete(loser.displayName)
 
   // Send winnings
-  await reputation.transferUsersRep(loser, Array.from(lottery.values()), amount)
+  await reputation.transferUsersRep(loser, Array.from(lottery.values()), absAmount)
   const newBgr = await reputation.getUserRep(loser)
-  return `The lottery has ended. ${names.join(', ')} all bet ℞${amount}. ${
+  return `The lottery has ended. ${names.join(', ')} all bet ℞${absAmount}. ${
     loser.displayName
-  } lost ℞${getPotSize(amount, lottery.size)} and now has ℞${newBgr}.`
+  } lost ℞${getPotSize(amount, names.length)} and now has ℞${newBgr}.`
 }
 
 async function finishPositiveLottery({
