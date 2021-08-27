@@ -3,11 +3,13 @@
 set -e
 
 : "${APP_ID:?Need to set APP_ID non-empty}"
+: "${DOCKER_REPO:?Need to set DOCKER_REPO non-empty}"
+: "${APP_NAME:?Need to set APP_NAME non-empty}"
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-TAG="registry.digitalocean.com/brophylactic-gaming/bro-bot"
+TAG="registry.digitalocean.com/$DOCKER_REPO/$APP_NAME"
 
 DOCKER_BUILDKIT=1 docker build -t $TAG .
 docker push $TAG
 
-doctl apps create-deployment $APP_ID --wait
+# doctl apps create-deployment $APP_ID --wait
