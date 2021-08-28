@@ -98,6 +98,43 @@ export class ReputationStore {
     })
   }
 
+  public async transferUsersRep(
+    sender: GuildMember,
+    receivers: GuildMember[],
+    amountToSend: number
+  ) {
+    if (!isPositiveInteger(amountToSend)) {
+      return Promise.reject(
+        `must provide a valid integer amount ${
+          amountToSend === undefined ? `, got ℞${amountToSend}` : ''
+        }`
+      )
+    }
+
+    if (amountToSend > Number.MAX_SAFE_INTEGER) {
+      return Promise.reject(`unable to send ${amountToSend}, it is too largess`)
+    }
+
+    return this.collection.firestore.runTransaction(async (transaction) => {
+      const senderRep = await this.getFullUserRep(sender, transaction)
+      const receiversReps = await Promise.all(
+        receivers.map((r) =>
+          this.getFullUserRep(r, transaction).then((rep) => ({ rep, receiver: r }))
+        )
+      )
+      await Promise.all([
+        this.setUserRepOffset(
+          sender,
+          senderRep.reputationOffset - amountToSend * receivers.length,
+          transaction
+        ),
+        ...receiversReps.map((r) =>
+          this.setUserRepOffset(r.receiver, r.rep.reputationOffset + amountToSend, transaction)
+        ),
+      ])
+    })
+  }
+
   private async getFullUserRep(
     member: GuildMember,
     transaction?: Transaction
@@ -109,8 +146,15 @@ export class ReputationStore {
 
   private async getUserRepOffset(member: GuildMember, transaction?: Transaction): Promise<number> {
     const doc = await get(this.getUserDoc(member), transaction)
+    if (!doc.exists) return 0
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return doc.exists ? parseFloat(doc.data()!.reputationOffset) : 0
+    const offset = parseFloat(doc.data()!.reputationOffset)
+
+    if (Number.isNaN(offset)) {
+      await this.setUserRepOffset(member, 0, transaction)
+      return 0
+    }
+    return offset
   }
 
   private async setUserRepOffset(

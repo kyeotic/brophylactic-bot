@@ -65,24 +65,30 @@ export async function bgrHandler(
     await channel.send(`${member.displayName} joined on ${joined} has ℞${bgr}`)
     return
   }
+
   // Find the user
   const memberToReceive = guild.members.cache.find((m) => m.displayName === to)
   if (!memberToReceive) {
     await channel.send(`Unable to find member with the username ${to}`)
     return
   }
+
   if (memberToReceive.id == member.id) {
     await channel.send(`Unable to send ℞ to yourself`)
     return
   }
+
   const sendMessage = (await channel.send(
     `${member.displayName} is sending ${memberToReceive.displayName} ℞${amount}`
   )) as Message
+
   await reputation.transferUserRep(member, memberToReceive, amount)
+
   const [senderRep, receiverRep] = await Promise.all([
     reputation.getUserRep(member),
     reputation.getUserRep(memberToReceive),
   ])
+
   await sendMessage.edit(
     `${member.displayName} sent ${memberToReceive.displayName} ℞${amount}. ${member.displayName}: ℞${senderRep}, ${memberToReceive.displayName}: ℞${receiverRep}`
   )
