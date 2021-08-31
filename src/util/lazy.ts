@@ -7,7 +7,7 @@ export const value = <T>(initFn: () => T) => {
   }
 }
 
-export function getter<T, C>(obj: C, property: keyof C, initFn: () => T) {
+export const getter = <T>(obj: Record<string, unknown>, property: string, initFn: () => T) => {
   Object.defineProperty(obj, property, {
     get: value(initFn),
   })

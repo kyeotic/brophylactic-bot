@@ -1,4 +1,4 @@
-import { Interaction, validatePermissions } from '../deps.ts'
+import { Interaction, validatePermissions } from '../../deps.ts'
 import { Command } from './mod.ts'
 
 export default async function hasPermissionLevel(command: Command, payload: Interaction) {

@@ -8,29 +8,32 @@ function base64Decode(value: string) {
 }
 
 const firebase64 = Deno.env.get('FIREBASE_64')
+const discordKey = Deno.env.get('DISCORD_PUBLIC_KEY')
+const botToken = Deno.env.get('BOT_TOKEN')
 
-if (!firebase64) {
-  throw new Error('Firebase key is required')
-}
+if (!firebase64) throw new Error('FIREBASE_64 is required')
+if (!discordKey) throw new Error('DISCORD_PUBLIC_KEY is required')
+if (!botToken) throw new Error('BOT_TOKEN is required')
 
 const base = {
+  port: 8006,
   isLocal: Deno.env.get('IS_LOCAL') === 'true',
   discord: {
-    publicKey: Deno.env.get('DISCORD_PUBLIC_KEY'),
-    botToken: Deno.env.get('DISCORD_TOKEN'),
+    useGateway: true,
+    apiHost: 'https://discord.com/api/v8',
+    serverId: '',
+    residentRoleId: '',
+    newMemberRoleId: '',
+    publicKey: discordKey,
+    botToken,
     redeployAuthorization: Deno.env.get('REDEPLOY_AUTHORIZATION'),
-    clientConfig: {
-      intents: [
-        'GUILDS',
-        'GUILD_MEMBERS',
-        'GUILD_MESSAGES',
-        'GUILD_MESSAGE_REACTIONS',
-        'DIRECT_MESSAGES',
-      ],
-    },
+    intents: ['GUILDS', 'GUILD_MEMBERS'],
+    botIntents: ['Guilds', 'GuildMembers'] as ['Guilds', 'GuildMembers'],
   },
   firebase: {
+    host: 'https://firestore.googleapis.com',
     databaseUrl: 'https://brophylactic-gaming.firebaseio.com',
+    projectId: 'brophylactic-gaming',
     cert: JSON.parse(base64Decode(firebase64)),
   },
 }
@@ -52,4 +55,4 @@ const prod = {
   },
 }
 
-export default deepmerge(base, Deno.env.get('stage') === 'test' ? test : prod)
+export default deepmerge(base, Deno.env.get('stage') === 'test' ? test : prod) as typeof base

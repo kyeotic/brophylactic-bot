@@ -1,5 +1,5 @@
-import { Command } from '../mod.ts'
-import roll from '../../util/dice.ts'
+import { Command } from './mod.ts'
+import roll from '../../games/dice.ts'
 import {
   sum,
   DiscordApplicationCommandOptionTypes,
@@ -26,8 +26,10 @@ const command: Command = {
   ],
   execute: function (payload) {
     payload = payload as SlashCommandInteraction
+
     const rollInput = ((payload.data
       ?.options?.[0] as ApplicationCommandInteractionDataOptionWithValue)?.value ?? '1d6') as string
+
     const verbose =
       (((payload.data?.options?.[1] as ApplicationCommandInteractionDataOptionWithValue)?.value ||
         'nothing') as string)

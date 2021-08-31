@@ -1,21 +1,15 @@
 import {
   decode,
-  json,
   rest,
   setApplicationId,
   upsertSlashCommands,
   getSlashCommands,
   deleteSlashCommand,
 } from '../deps.ts'
-import { commands } from '../commands/mod.ts'
+import { commands } from './interactions/mod.ts'
 import config from '../config.ts'
 
-export default async function redeploy(request: Request) {
-  const authorization = request.headers.get('authorization')
-  if (!authorization || authorization !== config.discord.redeployAuthorization) {
-    return json({ error: 'Invalid authorization header.' }, { status: 401 })
-  }
-
+export async function redeploy() {
   configureRest()
 
   // await cleanupCommands()
@@ -23,7 +17,7 @@ export default async function redeploy(request: Request) {
   if (config.discord.serverId) {
     await updateGuildCommands(config.discord.serverId)
   }
-  return json({ success: true })
+  return
 }
 
 function configureRest() {

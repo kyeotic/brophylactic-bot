@@ -9,4 +9,7 @@
     "camelize",
     "deepmerge"
   ],
+  "deno.suggest.imports.hosts": {
+    "https://cdn.skypack.dev": false
+  },
 }

@@ -1,15 +1,17 @@
 import {
   ApplicationCommandOption,
-  SlashCommandInteraction,
   Interaction,
   InteractionApplicationCommandCallbackData,
   InteractionResponse,
-} from '../deps.ts'
-import roll from './general/roll.ts'
+} from '../../deps.ts'
+import roll from './roll.ts'
+import bgr from './bgr.ts'
 import { PermissionLevels } from './permissionLevels.ts'
+import type { AppContext } from '../../context.ts'
 
 export const commands: Record<string, Command | undefined> = {
   roll,
+  bgr,
 }
 
 export interface Command {
@@ -31,9 +33,16 @@ export interface Command {
   options?: ApplicationCommandOption[]
   /** The function that will be called when the command is executed. */
   execute: (
-    payload: Interaction
+    payload: Interaction,
+    context: AppContext
   ) =>
     | InteractionResponse
     | InteractionApplicationCommandCallbackData
     | Promise<InteractionResponse | InteractionApplicationCommandCallbackData>
+}
+
+export function isInteractionResponse(
+  response: InteractionResponse | InteractionApplicationCommandCallbackData
+): response is InteractionResponse {
+  return Reflect.has(response, 'type')
 }
