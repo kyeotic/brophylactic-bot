@@ -7,6 +7,7 @@ import {
 import roll from './roll.ts'
 import bgr from './bgr.ts'
 import guess from './guess.ts'
+import lottery from './lottery.ts'
 import { PermissionLevels } from './permissionLevels.ts'
 import type { AppContext } from '../../context.ts'
 
@@ -14,7 +15,13 @@ export const commands: Record<string, Command | undefined> = {
   roll,
   bgr,
   guess,
+  lottery,
 }
+
+export type CommandResponse =
+  | InteractionResponse
+  | InteractionApplicationCommandCallbackData
+  | Promise<InteractionResponse | InteractionApplicationCommandCallbackData>
 
 export interface Command {
   /** The permissions levels that are allowed to use this command. */
@@ -34,13 +41,8 @@ export interface Command {
   /** The slash command options for this command. */
   options?: ApplicationCommandOption[]
   /** The function that will be called when the command is executed. */
-  execute: (
-    payload: Interaction,
-    context: AppContext
-  ) =>
-    | InteractionResponse
-    | InteractionApplicationCommandCallbackData
-    | Promise<InteractionResponse | InteractionApplicationCommandCallbackData>
+  execute: (payload: Interaction, context: AppContext) => CommandResponse
+  canHandleInteraction?: (customId: string) => Promise<boolean>
 }
 
 export function isInteractionResponse(

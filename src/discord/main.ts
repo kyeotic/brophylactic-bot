@@ -4,14 +4,20 @@ import {
   camelize,
   DiscordInteractionResponseTypes,
   Interaction,
+  ComponentInteraction,
+  SlashCommandInteraction,
   InteractionResponseTypes,
   InteractionTypes,
 } from '../deps.ts'
 import config from '../config.ts'
 import { botRespond } from './api.ts'
-import { commands, isInteractionResponse } from './interactions/mod.ts'
+import { commands, isInteractionResponse, Command } from './interactions/mod.ts'
 import { json } from '../util/requests.ts'
 import type { AppContext } from '../context.ts'
+
+const componentCommands: Command[] = Object.values(commands).filter(
+  (c): c is Command => typeof c?.canHandleInteraction === 'function'
+)
 
 export async function main(payload: Interaction, context: AppContext): Promise<[number, any]> {
   if ((payload.type as number) === (InteractionTypes.Ping as number)) {
@@ -21,8 +27,11 @@ export async function main(payload: Interaction, context: AppContext): Promise<[
         type: InteractionResponseTypes.Pong,
       },
     ]
-  } else if (payload.type === InteractionTypes.ApplicationCommand) {
-    if (!payload.data?.name) {
+  } else if (
+    payload.type === InteractionTypes.ApplicationCommand ||
+    payload.type === InteractionTypes.MessageComponent
+  ) {
+    if (payload.type === InteractionTypes.ApplicationCommand && !payload.data?.name) {
       return [
         200,
         {
@@ -35,7 +44,11 @@ export async function main(payload: Interaction, context: AppContext): Promise<[
       ]
     }
 
-    const command = commands[payload.data.name]
+    const customId = ((payload as unknown) as ComponentInteraction)?.data?.customId
+    const command = customId
+      ? await findComponentCommand(componentCommands, customId)
+      : commands[((payload as unknown) as SlashCommandInteraction).data!.name]
+
     if (!command) {
       return [
         200,
@@ -64,6 +77,17 @@ export async function main(payload: Interaction, context: AppContext): Promise<[
   }
 
   return [400, { error: 'Bad request' }]
+}
+
+async function findComponentCommand(
+  commands: Command[],
+  customId: string
+): Promise<Command | undefined> {
+  for (const command of commands) {
+    if (!command.canHandleInteraction) continue
+    const canHandle = await command.canHandleInteraction(customId)
+    if (canHandle) return command
+  }
 }
 
 export async function botMain(interaction: Interaction, context: AppContext) {

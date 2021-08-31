@@ -1,4 +1,8 @@
-import { GuildMember as DiscordGuildMember } from '../deps.ts'
+import {
+  GuildMember as DiscordGuildMember,
+  InteractionApplicationCommandCallbackData,
+  InteractionResponse,
+} from '../deps.ts'
 
 export type { DiscordGuildMember }
 
@@ -7,3 +11,8 @@ export interface GuildMember extends DiscordGuildMember {
   id: string
   guildId: string
 }
+
+export type CommandResponse =
+  | InteractionResponse
+  | InteractionApplicationCommandCallbackData
+  | Promise<InteractionResponse | InteractionApplicationCommandCallbackData>

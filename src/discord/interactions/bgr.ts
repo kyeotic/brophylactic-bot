@@ -136,8 +136,6 @@ async function sendBgr(
       const senderRep = await context.userStore.getUserRep(member)
       const receiverRep = await context.userStore.getUserRep(receiver)
 
-      console.log('sent', amount, senderName, senderRep, receiverName, receiverRep)
-
       await updateInteraction({
         applicationId: payload.applicationId,
         token: payload.token,

@@ -34,13 +34,11 @@ export async function updateGlobalCommands() {
   await upsertSlashCommands(
     Object.entries(commands)
       // ONLY GLOBAL COMMANDS
-      .filter(([_name, command]) => command?.global)
+      .filter(([, command]) => command?.global)
       .map(([name, command]) => {
-        const description = `${name.toUpperCase()}_DESCRIPTION`
-
         return {
           name,
-          description: command!.description || description || 'No description available.',
+          description: command!.description || 'No description available.',
           options: command!.options?.map((option) => {
             const optionName = option.name
             const optionDescription = option.description
@@ -63,7 +61,7 @@ export async function updateGuildCommands(guildId: string) {
   await upsertSlashCommands(
     Object.entries(commands)
       // ONLY GUILD COMMANDS
-      .filter(([_name, command]) => command!.guild !== false)
+      .filter(([, command]) => command!.guild !== false)
       .map(([name, command]) => {
         return {
           name,

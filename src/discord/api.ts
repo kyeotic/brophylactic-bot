@@ -1,5 +1,13 @@
 import config from '../config.ts'
-import { urlJoin, rest, endpoints, GuildMemberWithUser } from '../deps.ts'
+import {
+  urlJoin,
+  rest,
+  endpoints,
+  GuildMemberWithUser,
+  snakelize,
+  InteractionResponse,
+  DiscordInteractionResponseTypes,
+} from '../deps.ts'
 import type { GuildMember, DiscordGuildMember } from './types.ts'
 
 export async function botRespond(interactionId: string, token: string, body: any): Promise<void> {
@@ -8,7 +16,7 @@ export async function botRespond(interactionId: string, token: string, body: any
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(snakelize(body)),
   })
 }
 
@@ -30,11 +38,11 @@ export async function updateInteraction({
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(snakelize(body)),
     }
   )
 
-  console.log(res.status, await res.text())
+  // console.log(res.status, await res.text())
 }
 
 export async function getGuildMember(
@@ -55,4 +63,24 @@ export function asGuildMember(guildId: string, member: GuildMemberWithUser): Gui
     id: member.user.id,
     guildId: guildId,
   }
+}
+
+export function asContent(content: string) {
+  return { content }
+}
+
+export function ackButton() {
+  return {
+    type: DiscordInteractionResponseTypes.DeferredUpdateMessage,
+  }
+}
+
+export function privateMessage(content: string): InteractionResponse {
+  return {
+    type: DiscordInteractionResponseTypes.ChannelMessageWithSource,
+    data: {
+      content,
+      flags: 64, // private
+    },
+  } as InteractionResponse
 }
