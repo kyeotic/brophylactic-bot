@@ -4,3 +4,4 @@ dist
 .git
 .env
 /firebase-cert.json
+old_src/

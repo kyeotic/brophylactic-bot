@@ -10,6 +10,7 @@ import {
 const command: Command = {
   // global: true,
   guild: true,
+  description: 'Roll dice',
   options: [
     {
       required: false,

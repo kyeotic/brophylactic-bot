@@ -26,7 +26,6 @@ const base = {
     newMemberRoleId: '',
     publicKey: discordKey,
     botToken,
-    redeployAuthorization: Deno.env.get('REDEPLOY_AUTHORIZATION'),
     intents: ['GUILDS', 'GUILD_MEMBERS'],
     botIntents: ['Guilds', 'GuildMembers'] as ['Guilds', 'GuildMembers'],
   },

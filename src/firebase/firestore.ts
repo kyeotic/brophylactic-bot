@@ -1,4 +1,4 @@
-import { fromDocument, toValue } from './convert.ts'
+import { fromDocument, toValue, toDocument } from './convert.ts'
 import type {
   BeginTransaction,
   CommitTransaction,
@@ -80,7 +80,7 @@ export class Firestore {
     const doc = (await this.client.request({
       method: 'PATCH',
       url: `documents/${collection}/${id}`,
-      body: toValue(body),
+      body: toDocument(body!),
       ...props,
     })) as Document
 

@@ -6,12 +6,14 @@ import {
 } from '../../deps.ts'
 import roll from './roll.ts'
 import bgr from './bgr.ts'
+import guess from './guess.ts'
 import { PermissionLevels } from './permissionLevels.ts'
 import type { AppContext } from '../../context.ts'
 
 export const commands: Record<string, Command | undefined> = {
   roll,
   bgr,
+  guess,
 }
 
 export interface Command {

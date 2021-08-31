@@ -1,51 +1,21 @@
-FROM mhart/alpine-node:14 as base
+FROM denoland/deno:1.12.2
 
-# Create the directory
-RUN mkdir -p /root/app
-WORKDIR /root/app
+# The port that your application listens to.
+# EXPOSE 1993
 
-# Copy dependency and build manifests to create docker cache
-COPY package.json package-lock.json tsconfig.json ./
+WORKDIR /app
 
-# ---- Dependencies ----
-FROM base AS dependencies
+# Prefer not to run as root.
+USER deno
 
-# install node packages
-RUN npm set progress=false && npm config set depth 0
-RUN npm install --only=production 
+# Cache the dependencies as a layer (the following two steps are re-run only when deps.ts is modified).
+# Ideally cache deps.ts will download and compile _all_ external files used in main.ts.
+COPY src/deps.ts .
+RUN deno cache deps.ts
 
-# copy production node_modules aside
-RUN cp -R node_modules prod_node_modules
+# These steps will be re-run upon each file change in your working directory:
+ADD src .
+# Compile the main app so that it doesn't need to be compiled each startup/entry.
+RUN deno cache bot.ts
 
-# install ALL node_modules, including 'devDependencies'
-RUN npm install
-
-# now that dependencies are installed/cached copy the app sources
-COPY . .
-
-#
-# ---- Test ----
-FROM dependencies AS test
-COPY . .
-RUN  npm run check && npm run build
-
-#
-# ---- Release ----
-FROM base AS release
-RUN apk add --no-cache tini
-RUN npm install pm2 -g && apk --no-cache add procps
-
-# Digital Ocean Pm2 Hack, see: https://github.com/Unitech/pm2/issues/4360
-RUN sed -i 's/pidusage(pids, function retPidUsage(err, statistics) {/pidusage(pids, { usePs: true }, function retPidUsage(err, statistics) {/' /usr/lib/node_modules/pm2/lib/God/ActionMethods.js
-
-# copy production node_modules
-COPY --from=dependencies /root/app/prod_node_modules ./node_modules
-COPY --from=test /root/app/dist ./dist
-# copy app sources
-COPY . .
-# expose port and define CMD
-# EXPOSE 5000
-
-ENTRYPOINT ["/sbin/tini", "--"]
-CMD [ "pm2-runtime", "npm", "--", "start" ]
-# CMD [ "npm", "start" ]
+CMD ["run", "-A", "bot.ts"]

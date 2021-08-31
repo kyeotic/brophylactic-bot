@@ -12,4 +12,4 @@ TAG="registry.digitalocean.com/$DOCKER_REPO/$APP_NAME"
 DOCKER_BUILDKIT=1 docker build -t $TAG .
 docker push $TAG
 
-# doctl apps create-deployment $APP_ID --wait
+doctl apps create-deployment $APP_ID --wait

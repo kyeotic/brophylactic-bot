@@ -1,23 +1,17 @@
 import { Command } from './mod.ts'
 import {
-  sum,
   formatDate,
-  Interaction,
   DiscordApplicationCommandOptionTypes,
   SlashCommandInteraction,
-  InteractionGuildMember,
   GuildMemberWithUser,
   InteractionResponse,
   InteractionApplicationCommandCallbackData,
-  ApplicationCommandInteractionDataOptionWithValue,
   ApplicationCommandInteractionDataOptionSubCommand,
-  getMember,
 } from '../../deps.ts'
 import { updateInteraction, getGuildMember, asGuildMember } from '../api.ts'
 import type { AppContext } from '../../context.ts'
 import { getMemberName } from '../../users/store.ts'
-import type { UserStore } from '../../users/store.ts'
-import type { GuildMember, DiscordGuildMember } from '../types.ts'
+import type { GuildMember } from '../types.ts'
 
 const command: Command = {
   // global: true,
@@ -90,11 +84,7 @@ async function viewBgr(
     }
   }
 
-  const member: GuildMember = {
-    ...payload.member,
-    id: payload.member.user.id,
-    guildId: payload.guildId,
-  }
+  const member = asGuildMember(payload.guildId, payload.member as GuildMemberWithUser)
 
   const bgr = await context.userStore.getUserRep(member)
 
