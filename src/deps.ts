@@ -10,6 +10,7 @@ export {
   Application as OakApplication,
   Router as OakRouter,
   Request as OakRequest,
+  httpErrors,
 } from 'https://deno.land/x/oak@v8.0.0/mod.ts'
 export type {
   RouterMiddleware,

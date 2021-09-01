@@ -10,8 +10,6 @@ import {
 } from '../../deps.ts'
 import { updateInteraction, getGuildMember, asGuildMember } from '../api.ts'
 import type { AppContext } from '../../context.ts'
-import { getMemberName } from '../../users/store.ts'
-import type { GuildMember } from '../types.ts'
 
 const command: Command = {
   // global: true,
@@ -92,7 +90,7 @@ async function viewBgr(
     ? formatDate(new Date(member.joinedAt), 'yyyy-MM-dd')
     : '<join date missing>'
   return {
-    content: `${getMemberName(member)} joined on ${joined} has ℞${bgr}`,
+    content: `${member.username} joined on ${joined} has ℞${bgr}`,
   }
 }
 
@@ -127,8 +125,8 @@ async function sendBgr(
     BigInt(receiverId as string)
   )
 
-  const senderName = getMemberName(member)
-  const receiverName = getMemberName(receiver)
+  const senderName = member.username
+  const receiverName = receiver.username
 
   context.userStore
     .incrementUserReps({ member, offset: amount * -1 }, { member: receiver, offset: amount })
@@ -157,23 +155,6 @@ async function sendBgr(
 
   //updateInteraction
   return {
-    content: `${getMemberName(member)} is sending ${receiverName} ℞${amount}`,
+    content: `${member.username} is sending ${receiverName} ℞${amount}`,
   }
 }
-
-//memberToReceive.displayName
-
-// view [ { type: 1, name: "view" } ]
-
-/* send
-bgr payload options [
-  {
-    type: 1,
-    options: [
-      { value: "124713217032323073", type: 6, name: "to" },
-      { value: 100, type: 4, name: "amount" }
-    ],
-    name: "send"
-  }
-]
-*/

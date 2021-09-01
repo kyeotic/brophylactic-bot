@@ -10,6 +10,7 @@ export type { DiscordGuildMember }
 export interface GuildMember extends DiscordGuildMember {
   id: string
   guildId: string
+  username: string
 }
 
 export type CommandResponse =

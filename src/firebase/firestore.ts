@@ -41,7 +41,7 @@ export class Firestore {
     collection,
     id,
     ...props
-  }: GetDocument): Promise<T> {
+  }: GetDocument): Promise<T | null> {
     if (!collection) {
       throw new Error(COLLECTION_ERROR)
     }
@@ -50,6 +50,8 @@ export class Firestore {
       url: id ? `documents/${collection}/${id}` : `documents/${collection}`,
       ...props,
     })) as Document
+
+    if (!doc) return null
 
     return {
       ...fromDocument(doc.fields),

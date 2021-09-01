@@ -1,16 +1,10 @@
 import { Command } from './mod.ts'
 import {
-  formatDistanceToNow,
-  isSameDay,
-  startOfDay,
   differenceInSeconds,
   MessageComponents,
   DiscordApplicationCommandOptionTypes,
   DiscordMessageComponentTypes,
-  DiscordInteractionResponseTypes,
   DiscordButtonStyles,
-  DiscordButtonComponent,
-  InteractionResponse,
   InteractionApplicationCommandCallbackData,
   ComponentInteraction,
   SlashCommandInteraction,
@@ -18,24 +12,17 @@ import {
   ApplicationCommandInteractionDataOptionInteger,
   nanoid,
 } from '../../deps.ts'
-import {
-  updateInteraction,
-  getGuildMember,
-  asGuildMember,
-  asContent,
-  privateMessage,
-  ackButton,
-} from '../api.ts'
-import { getMemberName } from '../../users/store.ts'
-import { seededRandomRange } from '../../util/random.ts'
+import { updateInteraction, asGuildMember, asContent, privateMessage, ackButton } from '../api.ts'
 import { Lottery } from '../../games/lottery.ts'
 import type { GuildMember, CommandResponse } from '../types.ts'
 import type { AppContext } from '../../context.ts'
 
 const lotteryTimeSeconds = 30
-const updateInterval = 5000
+const lotteryTime = lotteryTimeSeconds * 1000
+const updateInterval = 2500
 
-const lotteries = new Map<string, Lottery<GuildMember>>()
+// Poor mans cache
+const lotteries = new Map<string, BrxLottery>()
 
 const command: Command = {
   // global: true,
@@ -63,12 +50,10 @@ const command: Command = {
 
     payload = payload as SlashCommandInteraction
 
+    // Validation
+    //
     if (!payload.data?.options?.length || !payload.guildId)
       return asContent('missing required sub-command')
-
-    const member = asGuildMember(payload.guildId, payload.member as GuildMemberWithUser)
-    const memberName = getMemberName(member)
-    const memberBgr = await context.userStore.getUserRep(member)
 
     const amount = (payload.data?.options[0] as ApplicationCommandInteractionDataOptionInteger)
       ?.value
@@ -77,86 +62,138 @@ const command: Command = {
 
     if (!Number.isInteger(amount)) return asContent('amount must be an integer')
 
-    let lottery: Lottery<GuildMember>
-    const lotteryId = nanoid()
+    // Init Lottery
+    //
+    const member = asGuildMember(payload.guildId, payload.member as GuildMemberWithUser)
+    const memberBgr = await context.userStore.getUserRep(member)
 
-    try {
-      lottery = new Lottery<GuildMember>({ creator: member, bet: amount, playerLimit })
-    } catch (e) {
-      return asContent(e.message)
-    }
+    const { lottery, error } = BrxLottery.init({
+      interaction: payload,
+      context,
+      creator: member,
+      bet: amount,
+      playerLimit,
+    })
+    if (!lottery || error) return asContent(error?.message ?? 'Bad request ')
 
     if (memberBgr < lottery.getBuyIn()) {
       return asContent(
-        `${memberName} only has ${memberBgr} and cannot bet in a lottery whose buyin is ℞${lottery.getBuyIn()}`
+        `${
+          member.username
+        } only has ${memberBgr} and cannot bet in a lottery whose buy-in is ℞${lottery.getBuyIn()}`
       )
     }
 
-    lotteries.set(lotteryId, lottery)
-    // schedule cleanup in case of errors
-    setTimeout(() => {
-      lotteries.delete(lotteryId)
-    }, lotteryTimeSeconds * 2 * 1000)
+    lottery.start()
 
-    const update = async () =>
-      updateInteraction({
-        applicationId: payload.applicationId,
-        token: payload.token,
-        body: lotteryMessage(lotteryId, lottery),
-      })
-
-    const finish = async (message: string) =>
-      updateInteraction({
-        applicationId: payload.applicationId,
-        token: payload.token,
-        body: {
-          content: message,
-          components: [],
-        },
-      })
-
-    const startTime = lottery.start()
-
-    const updateTime = setInterval(() => {
-      update()
-    }, updateInterval)
-
-    setTimeout(async () => {
-      clearInterval(updateTime)
-      if (!lottery.canFinish()) return finish('Lottery cancelled, not enough players')
-
-      const { winner, payouts, isNegative } = lottery.finish()
-      const names = payouts.map(([player]) => getMemberName(player))
-
-      await context.userStore.incrementUserReps(
-        ...payouts.map(([member, offset]) => ({ member, offset }))
-      )
-
-      // TODO get all new rep values and include in message
-      if (isNegative) {
-        finish(
-          `The lottery has ended. ${names.join(', ')} all bet ℞${Math.abs(amount)}. ${getMemberName(
-            winner
-          )} lost ℞${lottery.getPotSize()}`
-        )
-      } else {
-        finish(
-          `The lottery has ended. ${names.join(', ')} all bet ℞${amount}. ${getMemberName(
-            winner
-          )} won ℞${lottery.getPotSize()}`
-        )
-      }
-
-      lotteries.delete(lotteryId)
-    }, lotteryTimeSeconds * 1000)
-
-    console.log('lottery', lotteryId)
-
-    return lotteryMessage(lotteryId, lottery)
+    return lotteryMessage(lottery)
   },
+  // deno-lint-ignore require-await
   canHandleInteraction: async (customId: string) => {
     return lotteries.has(customId)
   },
+}
+
+interface BrxLotteryProps {
+  context: AppContext
+  interaction: SlashCommandInteraction
+  creator: GuildMember
+  bet: number
+  playerLimit?: number
+}
+
+class BrxLottery extends Lottery<GuildMember> {
+  static init(props: BrxLotteryProps): { lottery?: BrxLottery; error?: Error } {
+    try {
+      const lottery = new BrxLottery(props)
+      return { lottery }
+    } catch (error) {
+      return { error }
+    }
+  }
+
+  public readonly id: string
+  private finishInterval?: number
+  private updateInterval?: number
+  private interaction: SlashCommandInteraction
+  private context: AppContext
+
+  private constructor({ interaction, creator, bet, playerLimit, context }: BrxLotteryProps) {
+    super({ creator, bet, playerLimit })
+    this.id = nanoid()
+    this.interaction = interaction
+    this.context = context
+  }
+
+  start(): Date {
+    lotteries.set(this.id, this)
+
+    // schedule cleanup in case of errors
+    setTimeout(() => {
+      lotteries.delete(this.id)
+    }, lotteryTime * 2)
+
+    this.updateInterval = setInterval(() => {
+      updateInteraction({
+        applicationId: this.interaction.applicationId,
+        token: this.interaction.token,
+        body: lotteryMessage(this),
+      })
+    }, updateInterval)
+
+    this.finishInterval = setTimeout(() => this.end(), lotteryTime)
+
+    return super.start()
+  }
+
+  finalizeInteraction(message: string): void {
+    updateInteraction({
+      applicationId: this.interaction.applicationId,
+      token: this.interaction.token,
+      body: {
+        content: message,
+        components: [],
+      },
+    })
+  }
+
+  finish(): { winner: GuildMember; payouts: [GuildMember, number][]; isNegative: boolean } {
+    throw new Error('cannot use finish on BRX lottery')
+  }
+
+  // We can't over-ride super.finish, but we need something else
+  // TODO: find another way
+  async end() {
+    if (this.updateInterval) clearInterval(this.updateInterval)
+    if (this.finishInterval) clearTimeout(this.finishInterval)
+    else return
+
+    if (!this.canFinish()) return this.finalizeInteraction('Lottery cancelled, not enough players')
+
+    const { winner, payouts, isNegative } = super.finish()
+    const names = payouts.map(([player]) => player.username)
+
+    await this.context.userStore.incrementUserReps(
+      ...payouts.map(([member, offset]) => ({ member, offset }))
+    )
+
+    // TODO get all new rep values and include in message
+    if (isNegative) {
+      this.finalizeInteraction(
+        `The lottery has ended. ${names.join(', ')} all bet ℞${Math.abs(this.getBet())}. ${
+          winner.username
+        } lost ℞${this.getPotSize()}`
+      )
+    } else {
+      this.finalizeInteraction(
+        `The lottery has ended. ${names.join(', ')} all bet ℞${this.getBet()}. ${
+          winner.username
+        } won ℞${this.getPotSize()}`
+      )
+    }
+
+    lotteries.delete(this.id)
+  }
 }
 
 export default command
@@ -190,11 +227,15 @@ async function handleLotteryJoin(
 
   lottery.addPlayer(member)
 
-  updateInteraction({
-    applicationId: payload.applicationId,
-    token: payload.token,
-    body: lotteryMessage(lotteryId, lottery),
-  })
+  if (lottery.shouldFinish()) {
+    lottery.end().catch((e) => console.error('lottery end error', e))
+  } else {
+    updateInteraction({
+      applicationId: payload.applicationId,
+      token: payload.token,
+      body: lotteryMessage(lottery),
+    })
+  }
 
   return ackButton()
 }
@@ -215,15 +256,9 @@ function joinLotteryComponents(id: string): MessageComponents {
   ]
 }
 
-function lotteryMessage(
-  lotteryId: string,
-  lottery: Lottery<GuildMember>
-): InteractionApplicationCommandCallbackData {
-  const timeRemaining = differenceInSeconds(
-    lottery.start().getTime() + lotteryTimeSeconds * 1000,
-    new Date()
-  )
-  const creatorName = getMemberName(lottery.getCreator())
+function lotteryMessage(lottery: BrxLottery): InteractionApplicationCommandCallbackData {
+  const timeRemaining = differenceInSeconds(lottery.getStart().getTime() + lotteryTime, new Date())
+  const creatorName = lottery.getCreator().username
   const players = lottery.getPlayers()
 
   const banner = lottery.isNegative
@@ -233,10 +268,10 @@ function lotteryMessage(
     : `${creatorName} has started a lottery for ℞${lottery.getBet()}. Click the button below within ${timeRemaining} seconds to place an equal bet and join the lottery.`
 
   const footer =
-    players.length < 2 ? '' : `\n**Players**\n${players.map((p) => getMemberName(p)).join('\n')}`
+    players.length < 2 ? '' : `\n**Players**\n${players.map((p) => p.username).join('\n')}`
 
   return {
     content: banner + footer,
-    components: lottery.canAddPlayers() ? joinLotteryComponents(lotteryId) : [],
+    components: lottery.canAddPlayers() ? joinLotteryComponents(lottery.id) : [],
   }
 }

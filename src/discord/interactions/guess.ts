@@ -9,7 +9,6 @@ import {
   ApplicationCommandInteractionDataOptionInteger,
 } from '../../deps.ts'
 import { updateInteraction, getGuildMember, asGuildMember } from '../api.ts'
-import { getMemberName } from '../../users/store.ts'
 import { seededRandomRange } from '../../util/random.ts'
 
 const magicNumberReward = 100
@@ -36,7 +35,7 @@ const command: Command = {
     const today = new Date()
 
     const member = asGuildMember(payload.guildId, payload.member as GuildMemberWithUser)
-    const memberName = getMemberName(member)
+    const memberName = member.username
     const lastGuess = await context.userStore.getUserLastGuess(member)
 
     if (!guess || !Number.isInteger(guess) || guess < 0 || guess > 100) {

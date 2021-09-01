@@ -7,24 +7,27 @@ function base64Decode(value: string) {
   return base64Decoder.decode(decode(value))
 }
 
+const isLocal = Deno.env.get('IS_LOCAL') === 'true'
 const firebase64 = Deno.env.get('FIREBASE_64')
-const discordKey = Deno.env.get('DISCORD_PUBLIC_KEY')
-const botToken = Deno.env.get('BOT_TOKEN')
+const publicKey = isLocal
+  ? Deno.env.get('DISCORD_PUBLIC_KEY_TEST')
+  : Deno.env.get('DISCORD_PUBLIC_KEY')
+const botToken = isLocal ? Deno.env.get('BOT_TOKEN_TEST') : Deno.env.get('BOT_TOKEN')
 
 if (!firebase64) throw new Error('FIREBASE_64 is required')
-if (!discordKey) throw new Error('DISCORD_PUBLIC_KEY is required')
+if (!publicKey) throw new Error('DISCORD_PUBLIC_KEY is required')
 if (!botToken) throw new Error('BOT_TOKEN is required')
 
 const base = {
   port: 8006,
-  isLocal: Deno.env.get('IS_LOCAL') === 'true',
+  isLocal,
   discord: {
     useGateway: true,
     apiHost: 'https://discord.com/api/v8',
     serverId: '',
     residentRoleId: '',
     newMemberRoleId: '',
-    publicKey: discordKey,
+    publicKey,
     botToken,
     intents: ['GUILDS', 'GUILD_MEMBERS'],
     botIntents: ['Guilds', 'GuildMembers'] as ['Guilds', 'GuildMembers'],
@@ -39,7 +42,6 @@ const base = {
 
 const test = {
   discord: {
-    botToken: Deno.env.get('DISCORD_TOKEN_TEST'),
     serverId: '472286758030147585',
     residentRoleId: '472436078465253379',
     newMemberRoleId: '472436224066584576',
@@ -54,4 +56,4 @@ const prod = {
   },
 }
 
-export default deepmerge(base, Deno.env.get('stage') === 'test' ? test : prod) as typeof base
+export default deepmerge(base, isLocal ? test : prod) as typeof base

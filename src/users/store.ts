@@ -26,7 +26,7 @@ export class UserStore {
     })
 
     if (!user || user.name === undefined || user.reputationOffset === undefined) {
-      user = await this.initUser(member, user)
+      user = await this.initUser(member, user ?? {})
     }
 
     return user
@@ -41,7 +41,7 @@ export class UserStore {
         updateMask: { fieldPaths: ['name'] },
         update: {
           name: this.store.asDocumentName(getDocumentName(member)),
-          ...toDocument({ name: getMemberName(member) }),
+          ...toDocument({ name: member.username }),
         },
       })
     }
@@ -57,10 +57,10 @@ export class UserStore {
     }
 
     await this.store.commitTransaction({ transaction, writes })
-    return await this.store.getDocument<User>({
+    return (await this.store.getDocument<User>({
       collection: 'users',
       id: getId(member),
-    })
+    })) as User
   }
 
   public async getUserRep(member: GuildMember): Promise<number> {
@@ -114,7 +114,7 @@ export class UserStore {
             updateMask: { fieldPaths: ['name'] },
             update: {
               name: this.store.asDocumentName(getDocumentName(member)),
-              ...toDocument({ name: getMemberName(member) }),
+              ...toDocument({ name: member.username }),
             },
           },
         ]
@@ -134,7 +134,7 @@ export class UserStore {
     await this.store.updateDocument({
       collection: 'users',
       id: getId(member),
-      body: { lastGuessDate: lastGuessDate.getTime(), name: getMemberName(member) },
+      body: { lastGuessDate: lastGuessDate.getTime(), name: member.username },
       updateMask: {
         fieldPaths: ['lastGuessDate', 'name'],
       },
@@ -154,8 +154,4 @@ function getId(member: GuildMember) {
 
 function calculateRepFromJoinedDate(member: GuildMember): number {
   return Math.floor((Date.now() - new Date(member.joinedAt).getTime()) / millisecondsInADay)
-}
-
-export function getMemberName(member: GuildMember): string {
-  return member?.nick ?? member.user!.username
 }

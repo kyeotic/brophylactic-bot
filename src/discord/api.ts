@@ -62,6 +62,7 @@ export function asGuildMember(guildId: string, member: GuildMemberWithUser): Gui
     ...member,
     id: member.user.id,
     guildId: guildId,
+    username: member?.nick ?? member.user!.username,
   }
 }
 

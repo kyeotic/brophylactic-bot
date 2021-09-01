@@ -1,8 +1,9 @@
-import { startBot, Interaction, DiscordenoMember } from './deps.ts'
+import { startBot, Interaction } from './deps.ts'
 import config from './config.ts'
 import { initContext } from './context.ts'
+import { botRespond } from './discord/api.ts'
 
-import { botMain } from './discord/main.ts'
+import { main } from './discord/main.ts'
 
 startBot({
   token: config.discord.botToken,
@@ -11,8 +12,10 @@ startBot({
     ready() {
       console.log('Successfully connected to gateway')
     },
-    interactionCreate(interaction: Interaction, member?: DiscordenoMember) {
-      botMain(interaction, initContext()).catch((error) => console.error('bot error', error))
+    interactionCreate(interaction: Interaction) {
+      main(interaction, initContext())
+        .then((body) => botRespond(interaction.id, interaction.token, body))
+        .catch((error) => console.error('bot error', error))
     },
   },
 })
