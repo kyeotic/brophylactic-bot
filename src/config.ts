@@ -22,6 +22,7 @@ const base = {
   port: 8006,
   isLocal,
   discord: {
+    timezone: 'America/Los_Angeles',
     useGateway: true,
     apiHost: 'https://discord.com/api/v8',
     serverId: '',

@@ -7,11 +7,16 @@ import {
   SlashCommandInteraction,
   GuildMemberWithUser,
   ApplicationCommandInteractionDataOptionInteger,
+  utcToZonedTime,
+  formatWithTimezone,
 } from '../../deps.ts'
-import { updateInteraction, getGuildMember, asGuildMember } from '../api.ts'
+import { asGuildMember } from '../api.ts'
 import { seededRandomRange } from '../../util/random.ts'
 
 const magicNumberReward = 100
+const magicNumberRange = 3
+const magicNumberRangeReward = 15
+const magicNumberFinalDigitReward = 5
 
 const command: Command = {
   // global: true,
@@ -48,7 +53,7 @@ const command: Command = {
       }
     }
 
-    if (lastGuess && isSameDay(today, lastGuess)) {
+    if (lastGuess && hasGuessedToday(context.config.discord.timezone, lastGuess)) {
       return { content: `${memberName} already guessed today` }
     }
 
@@ -56,10 +61,24 @@ const command: Command = {
 
     const magicNumber = seededRandomRange(`${memberName}:${startOfDay(today).getTime()}`, 1, 100)
 
-    if (magicNumber === guess) {
+    const isCorrect = magicNumber === guess
+    const isWithinRange = isWithin(guess, magicNumber, magicNumberRange)
+    const matchedLastDigit = lastDigit(magicNumber) === lastDigit(guess)
+
+    if (isCorrect) {
       await context.userStore.incrementUserRep(member, magicNumber)
       return {
         content: `${memberName} correctly guessed that their number was ${magicNumber} and has been awarded ℞${magicNumberReward}`,
+      }
+    } else if (isWithinRange) {
+      await context.userStore.incrementUserRep(member, magicNumberRangeReward)
+      return {
+        content: `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However it is within ${magicNumberRange} and so they have been awarded ℞${magicNumberRangeReward}`,
+      }
+    } else if (matchedLastDigit) {
+      await context.userStore.incrementUserRep(member, magicNumberFinalDigitReward)
+      return {
+        content: `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However they matched the last digit and so they have been awarded ℞${magicNumberFinalDigitReward}`,
       }
     } else {
       return {
@@ -70,3 +89,21 @@ const command: Command = {
 }
 
 export default command
+
+// Hacky method to check guess based on configurable timezone
+function hasGuessedToday(timeZone: string, lastGuess: Date): boolean {
+  const zonedNow = utcToZonedTime(new Date(), timeZone)
+
+  const zonedDay = formatWithTimezone(zonedNow, 'yyyy-MM-dd', { timeZone })
+  const guessDay = formatWithTimezone(lastGuess, 'yyyy-MM-dd', { timeZone })
+
+  return zonedDay === guessDay
+}
+
+function isWithin(num: number, target: number, range: number): boolean {
+  return num >= target - range && num <= target + range
+}
+
+function lastDigit(num: number): number {
+  return parseFloat(num.toString().slice(-1))
+}

@@ -8,7 +8,7 @@ const delimiter = '.'
 export interface User {
   id: string
   name: string
-  lastGuessDate?: number
+  lastGuessDate?: Date
   reputationOffset: number
 }
 
@@ -36,7 +36,7 @@ export class UserStore {
     const transaction = await this.store.beginTransaction({ options: { readWrite: {} } })
     const writes: Write[] = []
 
-    if (user?.lastGuessDate === undefined) {
+    if (user?.name === undefined) {
       writes.push({
         updateMask: { fieldPaths: ['name'] },
         update: {
@@ -127,14 +127,14 @@ export class UserStore {
 
   public async getUserLastGuess(member: GuildMember): Promise<Date | null> {
     const user = await this.getUser(member)
-    return user?.lastGuessDate ? new Date(user.lastGuessDate) : null
+    return user?.lastGuessDate ? user.lastGuessDate : null
   }
 
   public async setUserLastGuess(member: GuildMember, lastGuessDate: Date): Promise<void> {
     await this.store.updateDocument({
       collection: 'users',
       id: getId(member),
-      body: { lastGuessDate: lastGuessDate.getTime(), name: member.username },
+      body: { lastGuessDate, name: member.username },
       updateMask: {
         fieldPaths: ['lastGuessDate', 'name'],
       },

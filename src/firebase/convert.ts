@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import type { Document, Value, MapValue, ArrayValue } from './types.ts'
 
 // export function toValue(value: any): Value | MapValue | undefined {
@@ -30,11 +31,12 @@ export function toDocument(obj: Record<string, any>): Pick<Document, 'fields'> {
 }
 
 export function toValue(
-  value: string | null | undefined | number | any[] | Record<string, any>
+  value: string | null | undefined | number | Date | any[] | Record<string, any>
 ): Value | undefined {
   if (value === undefined) return undefined
   if (value === null) return { nullValue: null }
   if (typeof value === 'string') return { stringValue: value }
+  if (value instanceof Date) return { timestampValue: value.toISOString() }
   if (typeof value === 'number' && Math.abs(value) < Number.MAX_SAFE_INTEGER)
     return { integerValue: value.toString() }
   if (typeof value === 'number' && Math.abs(value) > Number.MAX_SAFE_INTEGER)
@@ -54,6 +56,7 @@ export function fromValue(field: { nullValue: null }): null
 export function fromValue(field: { booleanValue: boolean }): boolean
 export function fromValue(field: { integerValue: string }): number
 export function fromValue(field: { doubleValue: number }): number
+export function fromValue(field: { timestampValue: string }): Date
 export function fromValue(field: { stringValue: string }): string
 export function fromValue(field: { arrayValue: ArrayValue }): any[]
 export function fromValue(field: { mapValue: MapValue }): Record<string, any>
@@ -67,6 +70,7 @@ export function fromValue(
   if (field.booleanValue !== undefined) return field.booleanValue ?? false
   if (field.integerValue !== undefined) return parseFloat(field.integerValue)
   if (field.doubleValue !== undefined) return Number(field.doubleValue)
+  if (field.timestampValue !== undefined) return new Date(field.timestampValue)
   if (field.stringValue !== undefined) return field.stringValue
   if (field.arrayValue) return field.arrayValue.values.map(fromValue)
   if (field.mapValue) return fromDocument(field.mapValue.fields)

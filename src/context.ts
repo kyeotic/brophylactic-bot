@@ -15,11 +15,13 @@ export interface AppContext {
   firebaseClient: FirebaseClient
   firestore: Firestore
   userStore: UserStore
+  config: typeof config
 }
 
 export function initContext(init = {}): AppContext {
   const context = { ...init } as AppContext
 
+  context.config = config
   context.firebaseClient = new FirebaseClient({
     host: config.firebase.host,
     projectId: config.firebase.projectId,
