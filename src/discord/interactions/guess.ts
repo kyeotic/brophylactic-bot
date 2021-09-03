@@ -1,7 +1,6 @@
 import { Command } from './mod.ts'
 import {
   formatDistanceToNow,
-  isSameDay,
   startOfDay,
   DiscordApplicationCommandOptionTypes,
   SlashCommandInteraction,
@@ -53,7 +52,7 @@ const command: Command = {
       }
     }
 
-    if (lastGuess && hasGuessedToday(context.config.discord.timezone, lastGuess)) {
+    if (lastGuess && isToday(context.config.discord.timezone, lastGuess)) {
       return { content: `${memberName} already guessed today` }
     }
 
@@ -91,11 +90,11 @@ const command: Command = {
 export default command
 
 // Hacky method to check guess based on configurable timezone
-function hasGuessedToday(timeZone: string, lastGuess: Date): boolean {
+function isToday(timeZone: string, date: Date): boolean {
   const zonedNow = utcToZonedTime(new Date(), timeZone)
 
   const zonedDay = formatWithTimezone(zonedNow, 'yyyy-MM-dd', { timeZone })
-  const guessDay = formatWithTimezone(lastGuess, 'yyyy-MM-dd', { timeZone })
+  const guessDay = formatWithTimezone(date, 'yyyy-MM-dd', { timeZone })
 
   return zonedDay === guessDay
 }
