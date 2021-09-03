@@ -8,7 +8,7 @@ import {
   InteractionTypes,
   httpErrors,
 } from '../deps.ts'
-import { commands, isInteractionResponse, Command } from './interactions/mod.ts'
+import { commands, isInteractionResponse, Command } from './interactions.ts'
 import type { AppContext } from '../context.ts'
 
 const componentCommands: Command[] = Object.values(commands).filter(
@@ -39,7 +39,7 @@ export async function main(
 
     const customId = ((payload as unknown) as ComponentInteraction)?.data?.customId
     const command = customId
-      ? await findComponentCommand(componentCommands, customId)
+      ? await findComponentCommand(componentCommands, customId, context)
       : commands[((payload as unknown) as SlashCommandInteraction).data!.name]
 
     if (!command) {
@@ -68,11 +68,12 @@ export async function main(
 
 async function findComponentCommand(
   commands: Command[],
-  customId: string
+  customId: string,
+  context: AppContext
 ): Promise<Command | undefined> {
   for (const command of commands) {
     if (!command.canHandleInteraction) continue
-    const canHandle = await command.canHandleInteraction(customId)
+    const canHandle = await command.canHandleInteraction(customId, context)
     if (canHandle) return command
   }
 }

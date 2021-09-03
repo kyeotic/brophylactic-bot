@@ -1,4 +1,4 @@
-import { Command } from './mod.ts'
+import { Command } from '../interactions.ts'
 import {
   differenceInSeconds,
   MessageComponents,
@@ -55,10 +55,9 @@ const command: Command = {
     if (!payload.data?.options?.length || !payload.guildId)
       return asContent('missing required sub-command')
 
-    const amount = (payload.data?.options[0] as ApplicationCommandInteractionDataOptionInteger)
-      ?.value
-    const playerLimit = (payload.data?.options[1] as ApplicationCommandInteractionDataOptionInteger)
-      ?.value
+    const options = getInitialOptions(payload)
+    if ('error' in options) return asContent(options.error)
+    const { amount, playerLimit } = options
 
     if (!Number.isInteger(amount)) return asContent('amount must be an integer')
 
@@ -274,4 +273,15 @@ function lotteryMessage(lottery: BrxLottery): InteractionApplicationCommandCallb
     content: banner + footer,
     components: lottery.canAddPlayers() ? joinLotteryComponents(lottery.id) : [],
   }
+}
+
+function getInitialOptions(
+  payload: SlashCommandInteraction
+): { amount: number; playerLimit: number } | { error: string } {
+  const amount = (payload?.data?.options?.[0] as ApplicationCommandInteractionDataOptionInteger)
+    ?.value
+  const playerLimit = (payload?.data
+    ?.options?.[1] as ApplicationCommandInteractionDataOptionInteger)?.value
+
+  return { amount, playerLimit }
 }

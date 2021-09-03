@@ -1,4 +1,4 @@
-import { Command } from './mod.ts'
+import { Command } from '../interactions.ts'
 import {
   formatDate,
   DiscordApplicationCommandOptionTypes,

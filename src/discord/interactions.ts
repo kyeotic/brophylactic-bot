@@ -3,13 +3,13 @@ import {
   Interaction,
   InteractionApplicationCommandCallbackData,
   InteractionResponse,
-} from '../../deps.ts'
-import roll from './roll.ts'
-import bgr from './bgr.ts'
-import guess from './guess.ts'
-import lottery from './lottery.ts'
-import { PermissionLevels } from './permissionLevels.ts'
-import type { AppContext } from '../../context.ts'
+} from '../deps.ts'
+import roll from './interactions/roll.ts'
+import bgr from './interactions/bgr.ts'
+import guess from './interactions/guess.ts'
+import lottery from './interactions/lottery.ts'
+import { PermissionLevels } from './interactions/permissionLevels.ts'
+import type { AppContext } from '../context.ts'
 
 export const commands: Record<string, Command | undefined> = {
   roll,
@@ -42,7 +42,7 @@ export interface Command {
   options?: ApplicationCommandOption[]
   /** The function that will be called when the command is executed. */
   execute: (payload: Interaction, context: AppContext) => CommandResponse
-  canHandleInteraction?: (customId: string) => Promise<boolean>
+  canHandleInteraction?: (customId: string, context: AppContext) => Promise<boolean>
 }
 
 export function isInteractionResponse(

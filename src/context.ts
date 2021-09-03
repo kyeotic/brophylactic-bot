@@ -4,6 +4,7 @@ import { FirebaseClient } from './firebase/client.ts'
 import { Firestore } from './firebase/firestore.ts'
 import { getToken } from './firebase/token.ts'
 import { UserStore } from './users/store.ts'
+import { BrxLotteryCache } from './discord/interactions/lottery/cache.ts'
 
 /*
   Deno doesn't currently handle dynamic imports well
@@ -12,10 +13,11 @@ import { UserStore } from './users/store.ts'
 */
 
 export interface AppContext {
+  config: typeof config
   firebaseClient: FirebaseClient
   firestore: Firestore
   userStore: UserStore
-  config: typeof config
+  lotteryCache: BrxLotteryCache
 }
 
 export function initContext(init = {}): AppContext {
@@ -30,6 +32,7 @@ export function initContext(init = {}): AppContext {
 
   context.firestore = new Firestore({ client: context.firebaseClient })
   context.userStore = new UserStore({ store: context.firestore })
+  context.lotteryCache = new BrxLotteryCache()
 
   return context
 }

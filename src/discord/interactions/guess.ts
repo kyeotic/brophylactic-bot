@@ -1,4 +1,4 @@
-import { Command } from './mod.ts'
+import { Command } from '../interactions.ts'
 import {
   formatDistanceToNow,
   startOfDay,
@@ -12,10 +12,10 @@ import {
 import { asGuildMember } from '../api.ts'
 import { seededRandomRange } from '../../util/random.ts'
 
-const magicNumberReward = 100
+const magicNumberReward = 500
 const magicNumberRange = 3
-const magicNumberRangeReward = 15
-const magicNumberFinalDigitReward = 5
+const magicNumberRangeReward = 20
+const magicNumberFinalDigitReward = 3
 
 const command: Command = {
   // global: true,
