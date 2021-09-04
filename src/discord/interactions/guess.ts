@@ -1,7 +1,6 @@
 import { Command } from '../interactions.ts'
 import {
   formatDistanceToNow,
-  startOfDay,
   DiscordApplicationCommandOptionTypes,
   SlashCommandInteraction,
   GuildMemberWithUser,
@@ -31,6 +30,7 @@ const command: Command = {
   ],
   execute: async function (payload, context) {
     payload = payload as SlashCommandInteraction
+    const timeZone = context.config.discord.timezone
 
     if (!payload.data?.options?.length || !payload.guildId) {
       return { content: 'missing required sub-command' }
@@ -52,13 +52,17 @@ const command: Command = {
       }
     }
 
-    if (lastGuess && isToday(context.config.discord.timezone, lastGuess)) {
+    if (lastGuess && isToday(timeZone, lastGuess)) {
       return { content: `${memberName} already guessed today` }
     }
 
     await context.userStore.setUserLastGuess(member, today)
 
-    const magicNumber = seededRandomRange(`${memberName}:${startOfDay(today).getTime()}`, 1, 100)
+    const magicNumber = seededRandomRange(
+      `${memberName}:${getDayString(timeZone, new Date())}`,
+      1,
+      100
+    )
 
     const isCorrect = magicNumber === guess
     const isWithinRange = isWithin(guess, magicNumber, magicNumberRange)
@@ -90,11 +94,9 @@ const command: Command = {
 export default command
 
 // Hacky method to check guess based on configurable timezone
-function isToday(timeZone: string, date: Date): boolean {
-  const zonedNow = utcToZonedTime(new Date(), timeZone)
-
-  const zonedDay = formatWithTimezone(zonedNow, 'yyyy-MM-dd', { timeZone })
-  const guessDay = formatWithTimezone(date, 'yyyy-MM-dd', { timeZone })
+export function isToday(timeZone: string, date: Date): boolean {
+  const zonedDay = getDayString(timeZone, new Date())
+  const guessDay = getDayString(timeZone, date)
 
   return zonedDay === guessDay
 }
@@ -105,4 +107,8 @@ function isWithin(num: number, target: number, range: number): boolean {
 
 function lastDigit(num: number): number {
   return parseFloat(num.toString().slice(-1))
+}
+
+function getDayString(timeZone: string, date: Date): string {
+  return formatWithTimezone(utcToZonedTime(date, timeZone), 'yyyy-MM-dd', { timeZone })
 }
