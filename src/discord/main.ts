@@ -8,7 +8,8 @@ import {
   InteractionTypes,
   httpErrors,
 } from '../deps.ts'
-import { commands, isInteractionResponse, Command } from './interactions.ts'
+import { isInteractionResponse, Command } from './types.ts'
+import { commands } from './interactions.ts'
 import type { AppContext } from '../context.ts'
 
 const componentCommands: Command[] = Object.values(commands).filter(

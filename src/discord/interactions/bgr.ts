@@ -1,4 +1,11 @@
-import { Command } from '../interactions.ts'
+import {
+  Command,
+  SlashCommand,
+  SlashSubCommand,
+  ApplicationCommandInteractionDataOptionSubCommand,
+  ApplicationCommandInteractionDataOptionUser,
+  ApplicationCommandInteractionDataOptionInteger,
+} from '../types.ts'
 import {
   formatDate,
   DiscordApplicationCommandOptionTypes,
@@ -6,10 +13,18 @@ import {
   GuildMemberWithUser,
   InteractionResponse,
   InteractionApplicationCommandCallbackData,
-  ApplicationCommandInteractionDataOptionSubCommand,
 } from '../../deps.ts'
 import { updateInteraction, getGuildMember, asGuildMember } from '../api.ts'
 import type { AppContext } from '../../context.ts'
+
+type BgrViewInteraction = SlashCommand<[ApplicationCommandInteractionDataOptionSubCommand]>
+type BgrSendInteraction = SlashCommand<
+  [
+    SlashSubCommand<
+      [ApplicationCommandInteractionDataOptionUser, ApplicationCommandInteractionDataOptionInteger]
+    >
+  ]
+>
 
 const command: Command = {
   // global: true,
@@ -46,7 +61,7 @@ const command: Command = {
   execute: function (payload, context) {
     payload = payload as SlashCommandInteraction
 
-    // console.log('bgr payload', payload)
+    // console.log('bgr payload', payload.data?.options)
     // console.log('bgr payload options', payload.data?.options)
 
     if (!payload.data?.options?.length) return { content: 'missing required sub-command' }
@@ -54,9 +69,9 @@ const command: Command = {
 
     switch (type) {
       case 'view':
-        return viewBgr(payload, context)
+        return viewBgr(payload as BgrViewInteraction, context)
       case 'send':
-        return sendBgr(payload, context)
+        return sendBgr(payload as BgrSendInteraction, context)
     }
 
     return {
@@ -68,7 +83,7 @@ const command: Command = {
 export default command
 
 async function viewBgr(
-  payload: SlashCommandInteraction,
+  payload: BgrViewInteraction,
   context: AppContext
 ): Promise<InteractionResponse | InteractionApplicationCommandCallbackData> {
   if (!payload.member?.user.id) {
@@ -95,14 +110,15 @@ async function viewBgr(
 }
 
 async function sendBgr(
-  payload: SlashCommandInteraction,
+  payload: BgrSendInteraction,
   context: AppContext
 ): Promise<InteractionResponse | InteractionApplicationCommandCallbackData> {
   // This should be impossible, since the entry verifies it
   // But that code might get moved someday
   if (!payload.data?.options?.length || !payload.guildId)
     return { content: 'sub-command check failed' }
-  const input = payload.data!.options[0] as ApplicationCommandInteractionDataOptionSubCommand
+
+  const input = payload.data!.options[0]
 
   if (input.options?.length !== 2) return { content: 'sub-command input validation failed' }
 

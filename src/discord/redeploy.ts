@@ -6,7 +6,7 @@ import {
   getSlashCommands,
   deleteSlashCommand,
 } from '../deps.ts'
-import { commands } from './interactions/mod.ts'
+import { commands } from './interactions.ts'
 import config from '../config.ts'
 
 export async function redeploy() {

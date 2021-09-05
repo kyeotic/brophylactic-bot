@@ -1,5 +1,4 @@
 import {
-  SlashCommandInteraction,
   DiscordMessageComponentTypes,
   DiscordButtonStyles,
   MessageComponents,
@@ -7,6 +6,7 @@ import {
   InteractionApplicationCommandCallbackData,
   nanoid,
 } from '../../../deps.ts'
+import { LotteryInteraction } from './command.ts'
 import { updateInteraction } from '../../api.ts'
 import { Lottery } from '../../../games/lottery.ts'
 import type { GuildMember } from '../../types.ts'
@@ -18,7 +18,7 @@ const updateInterval = 2500
 
 export interface BrxLotteryProps {
   context: AppContext
-  interaction: SlashCommandInteraction
+  interaction: LotteryInteraction
   creator: GuildMember
   bet: number
   playerLimit?: number
@@ -38,7 +38,7 @@ export class BrxLottery {
   public readonly id: string
   private finishInterval?: number
   private updateInterval?: number
-  private interaction: SlashCommandInteraction
+  private interaction: LotteryInteraction
   private context: AppContext
 
   private constructor({ interaction, creator, bet, playerLimit, context }: BrxLotteryProps) {

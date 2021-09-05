@@ -1,10 +1,7 @@
-import { Command } from '../../interactions.ts'
 import {
   DiscordApplicationCommandOptionTypes,
   ComponentInteraction,
-  SlashCommandInteraction,
   GuildMemberWithUser,
-  ApplicationCommandInteractionDataOptionInteger,
 } from '../../../deps.ts'
 import {
   updateInteraction,
@@ -13,9 +10,21 @@ import {
   privateMessage,
   ackButton,
 } from '../../api.ts'
-import type { CommandResponse } from '../../types.ts'
+import type {
+  CommandResponse,
+  Command,
+  SlashCommand,
+  ApplicationCommandInteractionDataOptionInteger,
+} from '../../types.ts'
 import type { AppContext } from '../../../context.ts'
 import { BrxLottery, lotteryMessage } from './brxLottery.ts'
+
+export type LotteryInteraction = SlashCommand<
+  [
+    ApplicationCommandInteractionDataOptionInteger,
+    ApplicationCommandInteractionDataOptionInteger | undefined
+  ]
+>
 
 const command: Command = {
   // global: true,
@@ -41,44 +50,7 @@ const command: Command = {
       return handleLotteryJoin(payload as ComponentInteraction, context)
     }
 
-    payload = payload as SlashCommandInteraction
-
-    // Validation
-    //
-    if (!payload.data?.options?.length || !payload.guildId)
-      return asContent('missing required sub-command')
-
-    const options = getInitialOptions(payload)
-    if ('error' in options) return asContent(options.error)
-    const { amount, playerLimit } = options
-
-    if (!Number.isInteger(amount)) return asContent('amount must be an integer')
-
-    // Init Lottery
-    //
-    const member = asGuildMember(payload.guildId, payload.member as GuildMemberWithUser)
-    const memberBgr = await context.userStore.getUserRep(member)
-
-    const { lottery, error } = BrxLottery.init({
-      interaction: payload,
-      context,
-      creator: member,
-      bet: amount,
-      playerLimit,
-    })
-    if (!lottery || error) return asContent(error?.message ?? 'Bad request ')
-
-    if (memberBgr < lottery.getBuyIn()) {
-      return asContent(
-        `${
-          member.username
-        } only has ${memberBgr} and cannot bet in a lottery whose buy-in is ℞${lottery.getBuyIn()}`
-      )
-    }
-
-    await lottery.start()
-
-    return lotteryMessage(lottery)
+    return await handleLottery(payload as LotteryInteraction, context)
   },
   canHandleInteraction: async (customId: string, context: AppContext): Promise<boolean> => {
     return !!(await context.lotteryCache.get(customId))
@@ -86,6 +58,48 @@ const command: Command = {
 }
 
 export default command
+
+async function handleLottery(payload: LotteryInteraction, context: AppContext) {
+  // Validation
+  //
+  if (!payload.data?.options?.length || !payload.guildId)
+    return asContent('missing required sub-command')
+
+  // const options = getInitialOptions(payload)
+  // if ('error' in options) return asContent(options.error)
+  // const { amount, playerLimit } = options
+
+  const amount = payload.data.options[0].value
+  const playerLimit = payload.data.options[0]?.value
+
+  if (!Number.isInteger(amount)) return asContent('amount must be an integer')
+
+  // Init Lottery
+  //
+  const member = asGuildMember(payload.guildId, payload.member as GuildMemberWithUser)
+  const memberBgr = await context.userStore.getUserRep(member)
+
+  const { lottery, error } = BrxLottery.init({
+    interaction: payload,
+    context,
+    creator: member,
+    bet: amount,
+    playerLimit,
+  })
+  if (!lottery || error) return asContent(error?.message ?? 'Bad request ')
+
+  if (memberBgr < lottery.getBuyIn()) {
+    return asContent(
+      `${
+        member.username
+      } only has ${memberBgr} and cannot bet in a lottery whose buy-in is ℞${lottery.getBuyIn()}`
+    )
+  }
+
+  await lottery.start()
+
+  return lotteryMessage(lottery)
+}
 
 async function handleLotteryJoin(
   payload: ComponentInteraction,
@@ -127,15 +141,4 @@ async function handleLotteryJoin(
   }
 
   return ackButton()
-}
-
-function getInitialOptions(
-  payload: SlashCommandInteraction
-): { amount: number; playerLimit: number } | { error: string } {
-  const amount = (payload?.data?.options?.[0] as ApplicationCommandInteractionDataOptionInteger)
-    ?.value
-  const playerLimit = (payload?.data
-    ?.options?.[1] as ApplicationCommandInteractionDataOptionInteger)?.value
-
-  return { amount, playerLimit }
 }

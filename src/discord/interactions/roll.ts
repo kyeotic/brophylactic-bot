@@ -1,11 +1,19 @@
-import { Command } from '../interactions.ts'
-import roll from '../../games/dice.ts'
 import {
-  sum,
-  DiscordApplicationCommandOptionTypes,
-  SlashCommandInteraction,
-  ApplicationCommandInteractionDataOptionWithValue,
-} from '../../deps.ts'
+  Command,
+  SlashCommand,
+  ApplicationCommandInteractionDataOptionString,
+  ApplicationCommandInteractionDataOptionBoolean,
+} from '../types.ts'
+import roll from '../../games/dice.ts'
+import { sum, DiscordApplicationCommandOptionTypes } from '../../deps.ts'
+import { asContent } from '../api.ts'
+
+type RollInteraction = SlashCommand<
+  [
+    ApplicationCommandInteractionDataOptionString | undefined,
+    ApplicationCommandInteractionDataOptionBoolean | undefined
+  ]
+>
 
 const command: Command = {
   // global: true,
@@ -14,7 +22,7 @@ const command: Command = {
   options: [
     {
       required: false,
-      name: 'roll',
+      name: 'dice',
       description: 'dice to roll e.g. 1d6, d20, 3d6',
       type: DiscordApplicationCommandOptionTypes.String,
     },
@@ -26,25 +34,20 @@ const command: Command = {
     },
   ],
   execute: function (payload) {
-    payload = payload as SlashCommandInteraction
-
-    const rollInput = ((payload.data
-      ?.options?.[0] as ApplicationCommandInteractionDataOptionWithValue)?.value ?? '1d6') as string
-
-    const verbose =
-      (((payload.data?.options?.[1] as ApplicationCommandInteractionDataOptionWithValue)?.value ||
-        'nothing') as string)
-        .toString()
-        .toLowerCase() === 'true'
-
-    const rollResult = roll(rollInput)
-
-    return {
-      content: `${payload.member?.user.username} rolled ${rollInput} and got ${
-        verbose ? `${sum(rollResult)} with ${rollResult.join(', ')}` : sum(rollResult).toString()
-      }`,
-    }
+    return handleRoll(payload as RollInteraction)
   },
 }
 
 export default command
+
+function handleRoll(payload: RollInteraction) {
+  const rollInput = payload.data.options?.[0]?.value ?? '1d6'
+  const verbose = payload.data?.options?.[1]?.value?.toString() === 'true'
+  const rollResult = roll(rollInput)
+
+  return {
+    content: `${payload.member?.user.username} rolled ${rollInput} and got ${
+      verbose ? `${sum(rollResult)} with ${rollResult.join(', ')}` : sum(rollResult).toString()
+    }`,
+  }
+}
