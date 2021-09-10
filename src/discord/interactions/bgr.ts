@@ -36,6 +36,15 @@ const command: Command = {
       required: false,
       type: DiscordApplicationCommandOptionTypes.SubCommand,
       description: 'view ℞',
+      options: [
+        {
+          name: 'public',
+          required: false,
+          type: DiscordApplicationCommandOptionTypes.Boolean,
+          description:
+            'If true response is visible to everyone; otherwise response is private (default: false)',
+        },
+      ],
     },
     {
       name: 'send',
@@ -97,6 +106,8 @@ async function viewBgr(
     }
   }
 
+  const isPublic = (payload.data?.options?.[0]?.options?.[0]?.value as boolean) ?? false
+
   const member = asGuildMember(payload.guildId, payload.member as GuildMemberWithUser)
 
   const bgr = await context.userStore.getUserRep(member)
@@ -106,6 +117,7 @@ async function viewBgr(
     : '<join date missing>'
   return {
     content: `${member.username} joined on ${joined} has ℞${bgr}`,
+    flags: isPublic ? undefined : 64,
   }
 }
 

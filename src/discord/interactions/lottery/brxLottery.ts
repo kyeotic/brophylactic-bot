@@ -6,8 +6,8 @@ import {
   InteractionApplicationCommandCallbackData,
   nanoid,
 } from '../../../deps.ts'
-import { LotteryInteraction } from './command.ts'
-import { updateInteraction } from '../../api.ts'
+import { LotteryInteraction, ID_TYPE } from './command.ts'
+import { updateInteraction, encodeCustomId } from '../../api.ts'
 import { Lottery } from '../../../games/lottery.ts'
 import type { GuildMember } from '../../types.ts'
 import type { AppContext } from '../../../context.ts'
@@ -187,7 +187,7 @@ function joinLotteryComponents(id: string): MessageComponents {
           type: DiscordMessageComponentTypes.Button,
           label: 'Join Lottery',
           style: DiscordButtonStyles.Primary,
-          customId: id,
+          customId: encodeCustomId(ID_TYPE, id),
         },
       ],
     },

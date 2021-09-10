@@ -49,7 +49,7 @@ export interface Command {
   options?: ApplicationCommandOption[]
   /** The function that will be called when the command is executed. */
   execute: (payload: Interaction, context: AppContext) => CommandResponse
-  canHandleInteraction?: (customId: string, context: AppContext) => Promise<boolean>
+  messageInteractionType?: string
 }
 
 export function isInteractionResponse(

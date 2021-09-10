@@ -26,6 +26,8 @@ export type LotteryInteraction = SlashCommand<
   ]
 >
 
+export const ID_TYPE = 'LOTTERY'
+
 const command: Command = {
   // global: true,
   guild: true,
@@ -52,9 +54,7 @@ const command: Command = {
 
     return await handleLottery(payload as LotteryInteraction, context)
   },
-  canHandleInteraction: async (customId: string, context: AppContext): Promise<boolean> => {
-    return !!(await context.lotteryCache.get(customId))
-  },
+  messageInteractionType: ID_TYPE,
 }
 
 export default command
@@ -70,7 +70,7 @@ async function handleLottery(payload: LotteryInteraction, context: AppContext) {
   // const { amount, playerLimit } = options
 
   const amount = payload.data.options[0].value
-  const playerLimit = payload.data.options[0]?.value
+  const playerLimit = payload.data.options[1]?.value
 
   if (!Number.isInteger(amount)) return asContent('amount must be an integer')
 
@@ -105,8 +105,6 @@ async function handleLotteryJoin(
   payload: ComponentInteraction,
   context: AppContext
 ): Promise<CommandResponse> {
-  // console.log('payload', payload)
-
   const lotteryId = payload.data?.customId
   if (!lotteryId) return ackButton()
 
@@ -114,6 +112,10 @@ async function handleLotteryJoin(
   if (!lottery) return ackButton()
 
   const member = asGuildMember(payload.guildId!, payload.member!)
+  if (lottery.getPlayers().find((p) => p.id === member.id)) {
+    return privateMessage('Cannot join a lottery you are already in')
+  }
+
   const memberRep = await context.userStore.getUserRep(member)
 
   if (memberRep < lottery.getBuyIn()) {
@@ -122,10 +124,6 @@ async function handleLotteryJoin(
 
   if (!lottery.canAddPlayers) {
     return privateMessage('lottery is full')
-  }
-
-  if (lottery.getPlayers().find((p) => p.id === member.id)) {
-    return privateMessage('Cannot join a lottery you are already in')
   }
 
   lottery.addPlayer(member)

@@ -86,3 +86,18 @@ export function privateMessage(content: string): InteractionResponse {
     },
   } as InteractionResponse
 }
+
+/** encode the type and id into customId for use in message components*/
+export function encodeCustomId(type: string, id: string): string {
+  return `${type}:${id}`
+}
+
+/**
+ * extract the type and id from an encoded customId
+ * @param {string} customId encoded customId
+ * @return {*} {[string, string]} returns [type: string, id: string]
+ */
+export function parseCustomId(customId: string): [string, string] {
+  const [type, id] = customId.split(':')
+  return [type, id]
+}

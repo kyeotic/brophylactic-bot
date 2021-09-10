@@ -1,11 +1,13 @@
 // deno-lint-ignore-file require-await
 import type { BrxLottery } from './brxLottery.ts'
 
+// poor man's cache
+const lotteries = new Map<string, BrxLottery>()
 export class BrxLotteryCache {
-  // Poor mans cache
   private readonly lotteries: Map<string, BrxLottery>
+
   constructor() {
-    this.lotteries = new Map<string, BrxLottery>()
+    this.lotteries = lotteries
   }
 
   // everything is async so that when we switch to a real cache the API doesn't change
