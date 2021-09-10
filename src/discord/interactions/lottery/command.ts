@@ -2,14 +2,9 @@ import {
   DiscordApplicationCommandOptionTypes,
   ComponentInteraction,
   GuildMemberWithUser,
+  DiscordInteractionResponseTypes,
 } from '../../../deps.ts'
-import {
-  updateInteraction,
-  asGuildMember,
-  asContent,
-  privateMessage,
-  ackButton,
-} from '../../api.ts'
+import { updateInteraction, asGuildMember, message } from '../../api.ts'
 import type {
   CommandResponse,
   Command,
@@ -63,16 +58,16 @@ async function handleLottery(payload: LotteryInteraction, context: AppContext) {
   // Validation
   //
   if (!payload.data?.options?.length || !payload.guildId)
-    return asContent('missing required sub-command')
+    return message('missing required sub-command')
 
   // const options = getInitialOptions(payload)
-  // if ('error' in options) return asContent(options.error)
+  // if ('error' in options) return message(options.error)
   // const { amount, playerLimit } = options
 
   const amount = payload.data.options[0].value
   const playerLimit = payload.data.options[1]?.value
 
-  if (!Number.isInteger(amount)) return asContent('amount must be an integer')
+  if (!Number.isInteger(amount)) return message('amount must be an integer')
 
   // Init Lottery
   //
@@ -86,10 +81,10 @@ async function handleLottery(payload: LotteryInteraction, context: AppContext) {
     bet: amount,
     playerLimit,
   })
-  if (!lottery || error) return asContent(error?.message ?? 'Bad request ')
+  if (!lottery || error) return message(error?.message ?? 'Bad request ')
 
   if (memberBgr < lottery.getBuyIn()) {
-    return asContent(
+    return message(
       `${
         member.username
       } only has ${memberBgr} and cannot bet in a lottery whose buy-in is ℞${lottery.getBuyIn()}`
@@ -106,24 +101,26 @@ async function handleLotteryJoin(
   context: AppContext
 ): Promise<CommandResponse> {
   const lotteryId = payload.data?.customId
-  if (!lotteryId) return ackButton()
+  if (!lotteryId)
+    return message(undefined, { type: DiscordInteractionResponseTypes.DeferredUpdateMessage })
 
   const lottery = await context.lotteryCache.get(lotteryId)
-  if (!lottery) return ackButton()
+  if (!lottery)
+    return message(undefined, { type: DiscordInteractionResponseTypes.DeferredUpdateMessage })
 
   const member = asGuildMember(payload.guildId!, payload.member!)
   if (lottery.getPlayers().find((p) => p.id === member.id)) {
-    return privateMessage('Cannot join a lottery you are already in')
+    return message('Cannot join a lottery you are already in', { isPrivate: true })
   }
 
   const memberRep = await context.userStore.getUserRep(member)
 
   if (memberRep < lottery.getBuyIn()) {
-    return privateMessage('You do not have enough rep')
+    return message('You do not have enough rep', { isPrivate: true })
   }
 
   if (!lottery.canAddPlayers) {
-    return privateMessage('lottery is full')
+    return message('lottery is full', { isPrivate: true })
   }
 
   lottery.addPlayer(member)
@@ -138,5 +135,5 @@ async function handleLotteryJoin(
     })
   }
 
-  return ackButton()
+  return message(undefined, { type: DiscordInteractionResponseTypes.DeferredUpdateMessage })
 }

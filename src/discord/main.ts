@@ -9,7 +9,7 @@ import {
   InteractionApplicationCommandCallbackData,
   httpErrors,
 } from '../deps.ts'
-import { parseCustomId } from './api.ts'
+import { parseCustomId, message } from './api.ts'
 import { isInteractionResponse } from './types.ts'
 import { commands } from './interactions.ts'
 import type { AppContext } from '../context.ts'
@@ -92,20 +92,11 @@ function interactionCallback(data: InteractionApplicationCommandCallbackData): I
 }
 
 function missingCommand(): InteractionResponse {
-  return {
-    type: InteractionResponseTypes.ChannelMessageWithSource,
-    data: {
-      content: 'Something went wrong. I was not able to find this command.',
-    },
-  }
+  return message('Something went wrong. I was not able to find this command.')
 }
 
 function missingType(): InteractionResponse {
-  return {
-    type: InteractionResponseTypes.ChannelMessageWithSource,
-    data: {
-      content:
-        'Something went wrong. I was not able to find the command name in the payload sent by Discord.',
-    },
-  }
+  return message(
+    'Something went wrong. I was not able to find the command name in the payload sent by Discord.'
+  )
 }

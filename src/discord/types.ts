@@ -58,14 +58,15 @@ export function isInteractionResponse(
   return Reflect.has(response, 'type')
 }
 
-export interface SlashSubCommand<T extends (ApplicationCommandInteractionDataOption | undefined)[]>
-  extends Omit<ApplicationCommandInteractionDataOptionSubCommand, 'options'> {
-  options: T
-}
-
 export interface SlashCommand<T extends (ApplicationCommandInteractionDataOption | undefined)[]>
   extends Omit<SlashCommandInteraction, 'data'> {
   data: Omit<ApplicationCommandInteractionData, 'options'> & {
     options: T
   }
+}
+
+export type SlashSubCommand<
+  T extends (ApplicationCommandInteractionDataOption | undefined)[]
+> = Omit<ApplicationCommandInteractionDataOptionSubCommand, 'options'> & {
+  options?: T
 }

@@ -6,7 +6,7 @@ import {
   utcToZonedTime,
   formatWithTimezone,
 } from '../../deps.ts'
-import { asGuildMember } from '../api.ts'
+import { message, asGuildMember } from '../api.ts'
 import { seededRandomRange } from '../../util/random.ts'
 import type { AppContext } from '../../context.ts'
 
@@ -41,7 +41,7 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
   const timeZone = context.config.discord.timezone
 
   if (!payload.data?.options?.length || !payload.guildId) {
-    return { content: 'missing required sub-command' }
+    return message('missing required sub-command')
   }
   const guess = payload.data?.options[0].value
   const today = new Date()
@@ -51,17 +51,17 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
   const lastGuess = await context.userStore.getUserLastGuess(member)
 
   if (!guess || !Number.isInteger(guess) || guess < 0 || guess > 100) {
-    return {
-      content: `Guess a number between 1-100 to win ℞${magicNumberReward}. Only guess allowed per day.\n${memberName} made their last Guess ${
+    return message(
+      `Guess a number between 1-100 to win ℞${magicNumberReward}. Only guess allowed per day.\n${memberName} made their last Guess ${
         lastGuess
           ? `${formatDistanceToNow(lastGuess, { addSuffix: true, includeSeconds: false })}`
           : 'never'
-      }`,
-    }
+      }`
+    )
   }
 
   if (lastGuess && isToday(timeZone, lastGuess)) {
-    return { content: `${memberName} already guessed today` }
+    return message('You already guessed today', { isPrivate: true })
   }
 
   await context.userStore.setUserLastGuess(member, today)
@@ -78,23 +78,23 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
 
   if (isCorrect) {
     await context.userStore.incrementUserRep(member, magicNumber)
-    return {
-      content: `${memberName} correctly guessed that their number was ${magicNumber} and has been awarded ℞${magicNumberReward}`,
-    }
+    return message(
+      `${memberName} correctly guessed that their number was ${magicNumber} and has been awarded ℞${magicNumberReward}`
+    )
   } else if (isWithinRange) {
     await context.userStore.incrementUserRep(member, magicNumberRangeReward)
-    return {
-      content: `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However it is within ${magicNumberRange} and so they have been awarded ℞${magicNumberRangeReward}`,
-    }
+    return message(
+      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However it is within ${magicNumberRange} and so they have been awarded ℞${magicNumberRangeReward}`
+    )
   } else if (matchedLastDigit) {
     await context.userStore.incrementUserRep(member, magicNumberFinalDigitReward)
-    return {
-      content: `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However they matched the last digit and so they have been awarded ℞${magicNumberFinalDigitReward}`,
-    }
+    return message(
+      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However they matched the last digit and so they have been awarded ℞${magicNumberFinalDigitReward}`
+    )
   } else {
-    return {
-      content: `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}`,
-    }
+    return message(
+      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}`
+    )
   }
 }
 

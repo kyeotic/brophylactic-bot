@@ -67,14 +67,26 @@ export function asGuildMember(guildId: string, member: GuildMemberWithUser): Gui
   }
 }
 
-export function asContent(content: string) {
-  return { content }
-}
-
 export function ackButton() {
   return {
     type: DiscordInteractionResponseTypes.DeferredUpdateMessage,
   }
+}
+
+export function message(
+  content?: string,
+  {
+    isPrivate = false,
+    type = DiscordInteractionResponseTypes.ChannelMessageWithSource,
+  }: { isPrivate?: boolean; type?: DiscordInteractionResponseTypes } = {}
+) {
+  return {
+    type,
+    data: {
+      content,
+      flags: isPrivate ? 64 : undefined,
+    },
+  } as InteractionResponse
 }
 
 export function privateMessage(content: string): InteractionResponse {

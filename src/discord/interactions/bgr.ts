@@ -2,7 +2,7 @@ import {
   Command,
   SlashCommand,
   SlashSubCommand,
-  ApplicationCommandInteractionDataOptionSubCommand,
+  ApplicationCommandInteractionDataOptionBoolean,
   ApplicationCommandInteractionDataOptionUser,
   ApplicationCommandInteractionDataOptionInteger,
 } from '../types.ts'
@@ -14,10 +14,12 @@ import {
   InteractionResponse,
   InteractionApplicationCommandCallbackData,
 } from '../../deps.ts'
-import { updateInteraction, getGuildMember, asGuildMember } from '../api.ts'
+import { updateInteraction, getGuildMember, asGuildMember, message } from '../api.ts'
 import type { AppContext } from '../../context.ts'
 
-type BgrViewInteraction = SlashCommand<[ApplicationCommandInteractionDataOptionSubCommand]>
+type BgrViewInteraction = SlashCommand<
+  [SlashSubCommand<[ApplicationCommandInteractionDataOptionBoolean]>]
+>
 type BgrSendInteraction = SlashCommand<
   [
     SlashSubCommand<
@@ -73,7 +75,7 @@ const command: Command = {
     // console.log('bgr payload', payload.data?.options)
     // console.log('bgr payload options', payload.data?.options)
 
-    if (!payload.data?.options?.length) return { content: 'missing required sub-command' }
+    if (!payload.data?.options?.length) return message('missing required sub-command')
     const type = payload.data?.options[0].name
 
     switch (type) {
@@ -83,9 +85,7 @@ const command: Command = {
         return sendBgr(payload as BgrSendInteraction, context)
     }
 
-    return {
-      content: `BGR subcommand not found: ${type}`,
-    }
+    return message(`BGR subcommand not found: ${type}`)
   },
 }
 
@@ -96,17 +96,13 @@ async function viewBgr(
   context: AppContext
 ): Promise<InteractionResponse | InteractionApplicationCommandCallbackData> {
   if (!payload.member?.user.id) {
-    return {
-      content: 'missing member user id',
-    }
+    return message('missing member user id')
   }
   if (!payload.guildId) {
-    return {
-      content: 'missing payload guild id',
-    }
+    return message('missing payload guild id')
   }
 
-  const isPublic = (payload.data?.options?.[0]?.options?.[0]?.value as boolean) ?? false
+  const isPublic = payload.data?.options?.[0]?.options?.[0]?.value ?? false
 
   const member = asGuildMember(payload.guildId, payload.member as GuildMemberWithUser)
 
@@ -115,10 +111,8 @@ async function viewBgr(
   const joined = member.joinedAt
     ? formatDate(new Date(member.joinedAt), 'yyyy-MM-dd')
     : '<join date missing>'
-  return {
-    content: `${member.username} joined on ${joined} has ℞${bgr}`,
-    flags: isPublic ? undefined : 64,
-  }
+
+  return message(`${member.username} joined on ${joined} has ℞${bgr}`, { isPrivate: !isPublic })
 }
 
 async function sendBgr(
@@ -127,24 +121,21 @@ async function sendBgr(
 ): Promise<InteractionResponse | InteractionApplicationCommandCallbackData> {
   // This should be impossible, since the entry verifies it
   // But that code might get moved someday
-  if (!payload.data?.options?.length || !payload.guildId)
-    return { content: 'sub-command check failed' }
+  if (!payload.data?.options?.length || !payload.guildId) return message('sub-command check failed')
 
   const input = payload.data!.options[0]
 
-  if (input.options?.length !== 2) return { content: 'sub-command input validation failed' }
+  if (input.options?.length !== 2) return message('sub-command input validation failed')
 
   const receiverId = input.options[0].value
   const amount = input.options[1].value as number
 
   if (receiverId.toString() === payload.member?.user.id.toString()) {
-    return { content: `Unable to send ℞ to yourself` }
+    return message(`Unable to send ℞ to yourself`)
   }
 
   if (!Number.isInteger(amount) || amount < 1) {
-    return {
-      content: 'Can only send ℞ in positive integer amounts',
-    }
+    return message('Can only send ℞ in positive integer amounts')
   }
 
   const member = asGuildMember(payload.guildId, payload.member as GuildMemberWithUser)
@@ -165,9 +156,9 @@ async function sendBgr(
       await updateInteraction({
         applicationId: payload.applicationId,
         token: payload.token,
-        body: {
-          content: `${senderName} sent ${receiverName} ℞${amount}.\n${senderName}: ℞${senderRep}\t${receiverName}: ℞${receiverRep}`,
-        },
+        body: message(
+          `${senderName} sent ${receiverName} ℞${amount}.\n${senderName}: ℞${senderRep}\t${receiverName}: ℞${receiverRep}`
+        ),
       })
     })
     .catch(async (e) => {
@@ -175,14 +166,10 @@ async function sendBgr(
       await updateInteraction({
         applicationId: payload.applicationId,
         token: payload.token,
-        body: {
-          content: `Error: ${e.message}`,
-        },
+        body: message(`Error: ${e.message}`),
       })
     })
 
   //updateInteraction
-  return {
-    content: `${member.username} is sending ${receiverName} ℞${amount}`,
-  }
+  return message(`${member.username} is sending ${receiverName} ℞${amount}`)
 }
