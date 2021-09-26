@@ -10,10 +10,10 @@ import { message, asGuildMember } from '../api.ts'
 import { seededRandomRange } from '../../util/random.ts'
 import type { AppContext } from '../../context.ts'
 
-const magicNumberReward = 500
+const magicNumberReward = 1000
 const magicNumberRange = 3
-const magicNumberRangeReward = 20
-const magicNumberFinalDigitReward = 3
+const magicNumberRangeReward = 30
+const magicNumberFinalDigitReward = 10
 
 type GuessInteraction = SlashCommand<[ApplicationCommandInteractionDataOptionInteger]>
 
@@ -77,7 +77,7 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
   const matchedLastDigit = lastDigit(magicNumber) === lastDigit(guess)
 
   if (isCorrect) {
-    await context.userStore.incrementUserRep(member, magicNumber)
+    await context.userStore.incrementUserRep(member, magicNumberReward)
     return message(
       `${memberName} correctly guessed that their number was ${magicNumber} and has been awarded ℞${magicNumberReward}`
     )
