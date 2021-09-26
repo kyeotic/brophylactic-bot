@@ -12,8 +12,9 @@ import type { AppContext } from '../../context.ts'
 
 const magicNumberReward = 1000
 const magicNumberRange = 3
-const magicNumberRangeReward = 30
-const magicNumberFinalDigitReward = 10
+const rangeReward = 30
+const lastDigitReward = 10
+const pairwiseReward = 250
 
 type GuessInteraction = SlashCommand<[ApplicationCommandInteractionDataOptionInteger]>
 
@@ -81,15 +82,20 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
     return message(
       `${memberName} correctly guessed that their number was ${magicNumber} and has been awarded ℞${magicNumberReward}`
     )
-  } else if (isWithinRange) {
-    await context.userStore.incrementUserRep(member, magicNumberRangeReward)
+  } else if (isMagicPair(magicNumber, guess)) {
+    await context.userStore.incrementUserRep(member, pairwiseReward)
     return message(
-      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However it is within ${magicNumberRange} and so they have been awarded ℞${magicNumberRangeReward}`
+      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However they are magic number pairs and so they have been awarded ℞${pairwiseReward}`
+    )
+  } else if (isWithinRange) {
+    await context.userStore.incrementUserRep(member, rangeReward)
+    return message(
+      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However it is within ${magicNumberRange} and so they have been awarded ℞${rangeReward}`
     )
   } else if (matchedLastDigit) {
-    await context.userStore.incrementUserRep(member, magicNumberFinalDigitReward)
+    await context.userStore.incrementUserRep(member, lastDigitReward)
     return message(
-      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However they matched the last digit and so they have been awarded ℞${magicNumberFinalDigitReward}`
+      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However they matched the last digit and so they have been awarded ℞${lastDigitReward}`
     )
   } else {
     return message(
@@ -116,4 +122,23 @@ function lastDigit(num: number): number {
 
 function getDayString(timeZone: string, date: Date): string {
   return formatWithTimezone(utcToZonedTime(date, timeZone), 'yyyy-MM-dd', { timeZone })
+}
+
+/**
+ * A Magic Pair occurs when the numbers are reverses of each other.
+ * Since 100 and 99 cannot have a reversed pair they are a special case of magic pairs.
+ * (Despite all NN pairs, e.g. 88 and 77, lacking a magic pair, only 99 is a special case)
+ */
+function isMagicPair(a: number, b: number) {
+  if ((a === 100 && b === 99) || (a === 99 && b === 100)) return true
+  if (reverse(paddedNum(a)) === paddedNum(b)) return true
+  return false
+}
+
+function paddedNum(num: number): string {
+  return String(num).padStart(2, '0')
+}
+
+function reverse(str: string): string {
+  return str.split('').reverse().join('')
 }
