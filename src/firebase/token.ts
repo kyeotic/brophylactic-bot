@@ -1,4 +1,5 @@
-import { encodeUrl, createJWT, getNumericDateJWT } from '../deps.ts'
+import { createJWT, getNumericDateJWT } from '../deps.ts'
+import { encodeUrl } from '../deps.ts'
 import type { ServiceAccountKey, GoogleAuthToken } from './types.ts'
 
 export async function createSignedJwt(key: ServiceAccountKey): Promise<string> {

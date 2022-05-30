@@ -1,6 +1,6 @@
 import { startBot, Interaction } from './deps.ts'
 import config from './config.ts'
-import { initContext } from './context.ts'
+import { initContext } from './di.ts'
 import { botRespond } from './discord/api.ts'
 
 import { main } from './discord/main.ts'

@@ -7,12 +7,11 @@ import {
   InteractionResponse,
   InteractionTypes,
   InteractionApplicationCommandCallbackData,
-  httpErrors,
 } from '../deps.ts'
 import { parseCustomId, message } from './api.ts'
 import { isInteractionResponse } from './types.ts'
 import { commands } from './interactions.ts'
-import type { AppContext } from '../context.ts'
+import type { AppContext } from '../di.ts'
 import { assertNever } from '../util/assert.ts'
 
 const interactions = [InteractionTypes.ApplicationCommand, InteractionTypes.MessageComponent]
@@ -27,11 +26,16 @@ export async function main(
   if ((payload.type as number) === (InteractionTypes.Ping as number)) {
     return { type: InteractionResponseTypes.Pong }
   } else if (!interactions.includes(payload.type)) {
-    throw new httpErrors.BadRequest('Bad request')
+    throw new Error('Bad request')
   }
 
   // Routing
   //
+  // await ackDeferred({
+  //   interactionId: payload.id,
+  //   token: payload.token,
+  // })
+
   switch (payload.type) {
     case InteractionTypes.ApplicationCommand:
       return handleAppCommand(payload, context)

@@ -18,6 +18,8 @@ import type { FirebaseClient } from './client.ts'
 const COLLECTION_ERROR = 'Collection Required'
 const ID_ERROR = 'ID Required'
 
+// Docs: https://firebase.google.com/docs/firestore/reference/rest
+
 export class Firestore {
   private client: FirebaseClient
 
@@ -59,18 +61,26 @@ export class Firestore {
     } as T
   }
 
-  async createDocument({ collection, id, body, ...props }: CreateDocument): Promise<Document> {
+  async createDocument<T>({ collection, id, body, ...props }: CreateDocument): Promise<T | null> {
     if (!collection) {
       throw new Error(COLLECTION_ERROR)
     }
-    return (await this.client.request({
+    const doc = (await this.client.request({
       method: 'POST',
       url: `documents/${collection}${id ? `?documentId=${id}` : ''}`,
-      body: toValue(body),
+      // deno-lint-ignore no-explicit-any
+      body: toDocument(body as Record<string, any>),
       ...props,
     })) as Document
+
+    if (!doc) return null
+
+    return {
+      ...fromDocument(doc.fields),
+    } as T
   }
 
+  // https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/patch
   async updateDocument<T extends ConvertedDocument>({
     collection,
     id,

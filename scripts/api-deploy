@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+
+WORKSPACE=${1:-dev}
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r '.Account')
+
+# import base properties, e.g. APP_NAME
+_scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+set -o allexport; source "${_scripts}/../.env.base"; set +o allexport
+
+if [ -z ${WORKSPACE+x} ]; then
+  echo "Must supply environment name";
+  exit 1
+fi
+
+
+APP_NAME="brobot"
+
+api_name="arn:aws:lambda:us-west-2:${AWS_ACCOUNT_ID}:function:${APP_NAME}_${WORKSPACE}_api"
+workflow_name="arn:aws:lambda:us-west-2:${AWS_ACCOUNT_ID}:function:${APP_NAME}_${WORKSPACE}_workflow"
+
+${_scripts}/bundle_lambda
+
+aws lambda update-function-code \
+    --function-name $api_name \
+    --zip-file fileb://$(pwd)/build/lambda.zip | jq '.'
+
+aws lambda update-function-code \
+    --function-name $workflow_name \
+    --zip-file fileb://$(pwd)/build/lambda.zip | jq '.'

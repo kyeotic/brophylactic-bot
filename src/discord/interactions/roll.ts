@@ -5,7 +5,7 @@ import {
   ApplicationCommandInteractionDataOptionBoolean,
 } from '../types.ts'
 import roll from '../../games/dice.ts'
-import { sum, DiscordApplicationCommandOptionTypes } from '../../deps.ts'
+import { DiscordApplicationCommandOptionTypes, sum } from '../../deps.ts'
 import { message } from '../api.ts'
 
 type RollInteraction = SlashCommand<

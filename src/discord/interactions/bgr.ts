@@ -7,15 +7,15 @@ import {
   ApplicationCommandInteractionDataOptionInteger,
 } from '../types.ts'
 import {
-  formatDate,
   DiscordApplicationCommandOptionTypes,
   SlashCommandInteraction,
   GuildMemberWithUser,
   InteractionResponse,
   InteractionApplicationCommandCallbackData,
 } from '../../deps.ts'
+import { formatDate } from '../../deps.ts'
 import { updateInteraction, getGuildMember, asGuildMember, message } from '../api.ts'
-import type { AppContext } from '../../context.ts'
+import type { AppContext } from '../../di.ts'
 
 type BgrViewInteraction = SlashCommand<
   [SlashSubCommand<[ApplicationCommandInteractionDataOptionBoolean]>]
@@ -109,7 +109,8 @@ async function viewBgr(
   const bgr = await context.userStore.getUserRep(member)
 
   const joined = member.joinedAt
-    ? formatDate(new Date(member.joinedAt), 'yyyy-MM-dd')
+    ? // @ts-ignore: bad compilation on argument arity
+      formatDate(new Date(member.joinedAt), 'yyyy-MM-dd')
     : '<join date missing>'
 
   return message(`${member.username} joined on ${joined} has ℞${bgr}`, { isPrivate: !isPublic })

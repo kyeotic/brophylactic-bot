@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+# import base properties, e.g. APP_NAME
+_scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+set -o allexport; source "${_scripts}/../.env.base"; set +o allexport
+set -o allexport; source "${_scripts}/../.env.dev"; set +o allexport
+
+IS_LOCAL="true" \
+  AWS_ACCESS_KEY_ID=$(aws configure get default.aws_access_key_id) \
+  AWS_SECRET_ACCESS_KEY=$(aws configure get default.aws_secret_access_key) \
+  deno run -A --import-map=import_map.json --unstable src/bot.ts

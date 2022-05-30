@@ -1,11 +1,11 @@
 import {
-  decode,
   rest,
   setApplicationId,
   upsertSlashCommands,
   getSlashCommands,
   deleteSlashCommand,
 } from '../deps.ts'
+import { decode } from '../deps.ts'
 import { commands } from './interactions.ts'
 import config from '../config.ts'
 

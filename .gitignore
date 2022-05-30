@@ -1,5 +1,8 @@
 env.json
 .env
+.env.dev
+.env.base
+.env.prod
 *.sublime-workspace
 node_modules/
 .fusebox/
@@ -9,3 +12,4 @@ node_modules/
 .openode
 /firebase-cert.json
 appspec.yaml
+.deno_dir/

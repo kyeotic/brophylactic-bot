@@ -9,7 +9,8 @@ import {
   ApplicationCommandInteractionDataOptionSubCommand,
   ApplicationCommandInteractionDataOption,
 } from '../deps.ts'
-import type { AppContext } from '../context.ts'
+import type { AppContext } from '../di.ts'
+
 export type {
   ApplicationCommandInteractionDataOptionSubCommand,
   ApplicationCommandInteractionDataOption,
@@ -25,10 +26,12 @@ export type {
 export type { DiscordGuildMember }
 
 /** App-extended type for Guild Members with non-optional ids*/
-export interface GuildMember extends DiscordGuildMember {
+export interface GuildMember {
   id: string
   guildId: string
   username: string
+  /** When the user joined the guild */
+  joinedAt: string
 }
 
 export type CommandResponse =
@@ -65,8 +68,7 @@ export interface SlashCommand<T extends (ApplicationCommandInteractionDataOption
   }
 }
 
-export type SlashSubCommand<
-  T extends (ApplicationCommandInteractionDataOption | undefined)[]
-> = Omit<ApplicationCommandInteractionDataOptionSubCommand, 'options'> & {
-  options?: T
-}
+export type SlashSubCommand<T extends (ApplicationCommandInteractionDataOption | undefined)[]> =
+  Omit<ApplicationCommandInteractionDataOptionSubCommand, 'options'> & {
+    options?: T
+  }

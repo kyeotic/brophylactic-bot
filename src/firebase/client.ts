@@ -111,7 +111,9 @@ function extractQuery({
     updateMask.fieldPaths.forEach((p) => query.append('updateMask.fieldPaths', p))
   }
 
-  return '?' + query.toString()
+  const querystring = query.toString()
+
+  return querystring ? '?' + querystring : ''
 }
 
 function removeEmpty(obj: Record<string, unknown>): Record<string, unknown> {

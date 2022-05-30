@@ -1,14 +1,10 @@
 import { Command, SlashCommand, ApplicationCommandInteractionDataOptionInteger } from '../types.ts'
-import {
-  formatDistanceToNow,
-  DiscordApplicationCommandOptionTypes,
-  GuildMemberWithUser,
-  utcToZonedTime,
-  formatWithTimezone,
-} from '../../deps.ts'
+import { DiscordApplicationCommandOptionTypes, GuildMemberWithUser } from '../../deps.ts'
+import { formatDistanceToNow } from '../../deps.ts'
+import { utcToZonedTime, formatWithTimezone } from '../../deps.ts'
 import { message, asGuildMember } from '../api.ts'
 import { seededRandomRange } from '../../util/random.ts'
-import type { AppContext } from '../../context.ts'
+import type { AppContext } from '../../di.ts'
 
 const magicNumberReward = 1000
 const magicNumberRange = 3

@@ -12,6 +12,12 @@ export interface User {
   reputationOffset: number
 }
 
+// export interface GuildUser {
+//   id: string
+//   guildId: string
+//   username: string
+// }
+
 export class UserStore {
   private store: Firestore
   constructor({ store }: { store: Firestore }) {

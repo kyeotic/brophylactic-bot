@@ -1,6 +1,6 @@
 import config from '../config.ts'
+import { urlJoin } from '../deps.ts'
 import {
-  urlJoin,
   rest,
   endpoints,
   GuildMemberWithUser,
@@ -8,15 +8,35 @@ import {
   InteractionResponse,
   DiscordInteractionResponseTypes,
 } from '../deps.ts'
-import type { GuildMember, DiscordGuildMember } from './types.ts'
+import type { GuildMember } from './types.ts'
+export type { GuildMember }
 
+const defaultHeaders = {
+  'Content-Type': 'application/json',
+}
+
+// deno-lint-ignore no-explicit-any
 export async function botRespond(interactionId: string, token: string, body: any): Promise<void> {
   await fetch(urlJoin(config.discord.apiHost, 'interactions', interactionId, token, 'callback'), {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: defaultHeaders,
     body: JSON.stringify(snakelize(body)),
+  })
+}
+
+export async function ackDeferred({
+  token,
+  interactionId,
+}: {
+  token: string
+  interactionId: string
+}): Promise<void> {
+  await fetch(urlJoin(config.discord.apiHost, 'interactions', interactionId, token, 'callback'), {
+    method: 'POST',
+    headers: defaultHeaders,
+    body: JSON.stringify({
+      type: DiscordInteractionResponseTypes.DeferredChannelMessageWithSource,
+    }),
   })
 }
 
@@ -43,7 +63,7 @@ export async function updateInteraction({
     }
   )
 
-  // console.log(res.status, await res.text())
+  // console.log('discord', res.status, await res.text())
 }
 
 export async function getGuildMember(
@@ -60,10 +80,10 @@ export async function getGuildMember(
 
 export function asGuildMember(guildId: string, member: GuildMemberWithUser): GuildMember {
   return {
-    ...member,
     id: member.user.id,
     guildId: guildId,
     username: member?.nick ?? member.user!.username,
+    joinedAt: member.joinedAt,
   }
 }
 

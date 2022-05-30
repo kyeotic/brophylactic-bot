@@ -1,4 +1,4 @@
-import { seedRandom, murmurHash } from '../deps.ts'
+import { murmurHash, seedRandom } from '../deps.ts'
 import config from '../config.ts'
 
 const baseSeedKey = config.discord.botToken as string

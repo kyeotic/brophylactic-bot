@@ -1,27 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 import type { Document, Value, MapValue, ArrayValue } from './types.ts'
 
-// export function toValue(value: any): Value | MapValue | undefined {
-//   if (!isNaN(value)) {
-//     if (value.toString().indexOf('.') != -1) return { doubleValue: value }
-//     else return { integerValue: value }
-//   } else if (value === 'true' || value === 'false' || typeof value == 'boolean') {
-//     return { booleanValue: value }
-//   } else if (Date.parse(value)) {
-//     return { timestampValue: value }
-//   } else if (typeof value == 'string') {
-//     return { stringValue: value }
-//   } else if (value && value.constructor === Array) {
-//     return { arrayValue: { values: value.map((v) => toValue(v)) } }
-//   } else if (typeof value === 'object') {
-//     let obj = {}
-//     for (let o in value) {
-//       obj[o] = toValue(value[o])
-//     }
-//     return { mapValue: { fields: obj } }
-//   }
-// }
-
 export function toDocument(obj: Record<string, any>): Pick<Document, 'fields'> {
   return {
     fields: Object.fromEntries(
@@ -46,7 +25,11 @@ export function toValue(
   if (value && typeof value === 'object')
     return {
       mapValue: {
-        fields: Object.fromEntries(Object.entries(value).map((k, v) => [k, toValue(v)])),
+        fields: Object.fromEntries(
+          Object.entries(value)
+            .map(([k, v]) => [k, toValue(v)])
+            .filter(([, v]) => v !== undefined)
+        ),
       },
     }
   throw new Error(`unable to parse type: ${typeof value}`)
