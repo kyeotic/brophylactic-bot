@@ -1,12 +1,6 @@
-import { decode } from './deps.ts'
+import base64 from 'base64url'
 
-const base64Decoder = new TextDecoder('utf-8')
-
-function base64Decode(value: string) {
-  return base64Decoder.decode(decode(value))
-}
-
-const region = Deno.env.get('AWS_REGION') || 'us-west-2'
+const region = process.env['AWS_REGION'] || 'us-west-2'
 
 const requiredEnvs = {
   firebase64: 'FIREBASE_64',
@@ -22,7 +16,7 @@ const requiredEnvs = {
 
 const envs = Object.fromEntries(
   Object.entries(requiredEnvs).map(([key, e]) => {
-    const val = Deno.env.get(e)
+    const val = process.env[e]
     if (!val) throw new Error(`ENV VAR ${e} is required`)
     return [key, val] as [keyof typeof requiredEnvs, string]
   })
@@ -47,7 +41,7 @@ const config = {
     host: 'https://firestore.googleapis.com',
     databaseUrl: 'https://brophylactic-gaming.firebaseio.com',
     projectId: 'brophylactic-gaming',
-    cert: JSON.parse(base64Decode(envs.firebase64)),
+    cert: JSON.parse(base64.decode(envs.firebase64)),
   },
   workflow: {
     region,
