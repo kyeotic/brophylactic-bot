@@ -1,21 +1,20 @@
-import {
+import { ApplicationCommandOptionTypes } from '../types'
+import { formatDate } from '../../util/dates'
+import { updateInteraction, getGuildMember, asGuildMember, message } from '../api'
+
+import type { AppContext } from '../../di'
+import type {
   Command,
   SlashCommand,
   SlashSubCommand,
   ApplicationCommandInteractionDataOptionBoolean,
   ApplicationCommandInteractionDataOptionUser,
   ApplicationCommandInteractionDataOptionInteger,
-} from '../types.ts'
-import {
-  DiscordApplicationCommandOptionTypes,
   SlashCommandInteraction,
   GuildMemberWithUser,
   InteractionResponse,
   InteractionApplicationCommandCallbackData,
-} from '../../deps.ts'
-import { formatDate } from '../../deps.ts'
-import { updateInteraction, getGuildMember, asGuildMember, message } from '../api.ts'
-import type { AppContext } from '../../di.ts'
+} from '../types'
 
 type BgrViewInteraction = SlashCommand<
   [SlashSubCommand<[ApplicationCommandInteractionDataOptionBoolean]>]
@@ -36,13 +35,13 @@ const command: Command = {
     {
       name: 'view',
       required: false,
-      type: DiscordApplicationCommandOptionTypes.SubCommand,
+      type: ApplicationCommandOptionTypes.SubCommand,
       description: 'view ℞',
       options: [
         {
           name: 'public',
           required: false,
-          type: DiscordApplicationCommandOptionTypes.Boolean,
+          type: ApplicationCommandOptionTypes.Boolean,
           description:
             'If true response is visible to everyone; otherwise response is private (default: false)',
         },
@@ -51,19 +50,19 @@ const command: Command = {
     {
       name: 'send',
       required: false,
-      type: DiscordApplicationCommandOptionTypes.SubCommand,
+      type: ApplicationCommandOptionTypes.SubCommand,
       description: 'Send ℞ to a user',
       options: [
         {
           name: 'to',
           required: true,
-          type: DiscordApplicationCommandOptionTypes.User,
+          type: ApplicationCommandOptionTypes.User,
           description: 'User to send to',
         },
         {
           name: 'amount',
           required: true,
-          type: DiscordApplicationCommandOptionTypes.Integer,
+          type: ApplicationCommandOptionTypes.Integer,
           description: 'amount to send (must be positive integer)',
         },
       ],
@@ -109,8 +108,7 @@ async function viewBgr(
   const bgr = await context.userStore.getUserRep(member)
 
   const joined = member.joinedAt
-    ? // @ts-ignore: bad compilation on argument arity
-      formatDate(new Date(member.joinedAt), 'yyyy-MM-dd')
+    ? formatDate(new Date(member.joinedAt), 'yyyy-MM-dd')
     : '<join date missing>'
 
   return message(`${member.username} joined on ${joined} has ℞${bgr}`, { isPrivate: !isPublic })
@@ -124,6 +122,7 @@ async function sendBgr(
   // But that code might get moved someday
   if (!payload.data?.options?.length || !payload.guildId) return message('sub-command check failed')
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const input = payload.data!.options[0]
 
   if (input.options?.length !== 2) return message('sub-command input validation failed')
@@ -163,6 +162,7 @@ async function sendBgr(
       })
     })
     .catch(async (e) => {
+      // eslint-disable-next-line no-console
       console.error('error updating rep', e)
       await updateInteraction({
         applicationId: payload.applicationId,

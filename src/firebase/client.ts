@@ -1,5 +1,7 @@
-import { urlJoin } from '../deps.ts'
-import type { FetchRequest } from './types.ts'
+/* eslint-disable no-console */
+import urlJoin from 'url-join'
+import request from 'request-micro'
+import type { FetchRequest, HeadersInit } from './types'
 
 export class FirebaseClient {
   private host: string
@@ -47,13 +49,13 @@ export class FirebaseClient {
   }
 
   async request<T>(params: FetchRequest): Promise<T | null> {
-    const requestHeaders: HeadersInit = new Headers()
+    const requestHeaders: HeadersInit = {}
 
-    requestHeaders.set('Content-Type', 'application/json')
+    requestHeaders['Content-Type'] = 'application/json'
 
     const token = params?.authorization ?? (await this.getToken())
     if (token) {
-      requestHeaders.set('Authorization', `Bearer ${token}`)
+      requestHeaders['Authorization'] = `Bearer ${token}`
     }
 
     const url =
@@ -67,23 +69,25 @@ export class FirebaseClient {
         params.url
       ) + extractQuery(params)
 
-    const req = await fetch(url, {
+    const req = await request({
+      url,
       method: params.method ?? 'POST',
       body: params?.body && JSON.stringify(params.body),
       headers: requestHeaders,
+      json: true,
     })
 
-    if (req.status === 404) {
-      console.log('404', await req.json())
+    if (req.statusCode === 404) {
+      console.log('404', req.data)
       return null
     }
 
-    if (req.status > 399) {
-      const { error } = (await req.json()) as { error: { message: string } }
-      throw new Error(`Firebase Error ${req.status}: ${error.message}`)
+    if (req.statusCode ?? 0 > 399) {
+      const { error } = req.data as { error: { message: string } }
+      throw new Error(`Firebase Error ${req.statusCode}: ${error.message}`)
     }
 
-    return (await req.json()) as T
+    return req.data as T
   }
 }
 

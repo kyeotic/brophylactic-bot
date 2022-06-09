@@ -1,4 +1,4 @@
-import { fromDocument, toValue, toDocument } from './convert.ts'
+import { fromDocument, toValue, toDocument } from './convert'
 import type {
   BeginTransaction,
   CommitTransaction,
@@ -12,8 +12,8 @@ import type {
   Document,
   CommitResult,
   ConvertedDocument,
-} from './types.ts'
-import type { FirebaseClient } from './client.ts'
+} from './types'
+import type { FirebaseClient } from './client'
 
 const COLLECTION_ERROR = 'Collection Required'
 const ID_ERROR = 'ID Required'

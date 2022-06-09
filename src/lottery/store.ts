@@ -1,8 +1,8 @@
-import type { Firestore } from '../firebase/firestore.ts'
+import type { Firestore } from '../firebase/firestore'
 
-import type { GuildMember } from '../discord/types.ts'
-import type { DbLottery } from './types.ts'
-import { Lottery } from './lottery.ts'
+import type { GuildMember } from '../discord/types'
+import type { DbLottery } from './types'
+import { Lottery } from './lottery'
 
 // Docs: https://firebase.google.com/docs/firestore/reference/rest
 

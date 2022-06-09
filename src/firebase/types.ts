@@ -1,4 +1,6 @@
 // deno-lint-ignore-file camelcase
+import type { RequestOptions } from 'request-micro'
+export type { OutgoingHttpHeaders as HeadersInit } from 'node:http'
 
 export type ServiceAccountKey = {
   type: string
@@ -112,7 +114,7 @@ export interface FireRequest {
   id?: string
 }
 
-export interface FetchRequest extends Omit<Partial<Request>, 'body'> {
+export interface FetchRequest extends Omit<Partial<RequestOptions>, 'body'> {
   url: string
   databaseId?: string
   authorization?: string | boolean

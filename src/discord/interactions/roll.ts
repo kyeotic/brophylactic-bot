@@ -1,12 +1,13 @@
-import {
+import roll from '../../games/dice'
+import { sum } from '../../util/math'
+import { ApplicationCommandOptionTypes } from '../types'
+import { message } from '../api'
+import type {
   Command,
   SlashCommand,
   ApplicationCommandInteractionDataOptionString,
   ApplicationCommandInteractionDataOptionBoolean,
-} from '../types.ts'
-import roll from '../../games/dice.ts'
-import { DiscordApplicationCommandOptionTypes, sum } from '../../deps.ts'
-import { message } from '../api.ts'
+} from '../types'
 
 type RollInteraction = SlashCommand<
   [
@@ -25,19 +26,19 @@ const command: Command = {
       required: false,
       name: 'dice',
       description: 'dice to roll e.g. 1d6, d20, 3d6',
-      type: DiscordApplicationCommandOptionTypes.String,
+      type: ApplicationCommandOptionTypes.String,
     },
     {
       required: false,
       name: 'verbose',
       description: 'See all dice rolls individually',
-      type: DiscordApplicationCommandOptionTypes.Boolean,
+      type: ApplicationCommandOptionTypes.Boolean,
     },
     {
       required: false,
       name: 'private',
       description: 'See response as a private message (default: false)',
-      type: DiscordApplicationCommandOptionTypes.Boolean,
+      type: ApplicationCommandOptionTypes.Boolean,
     },
   ],
   execute: function (payload) {

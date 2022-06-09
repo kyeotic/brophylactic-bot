@@ -1,4 +1,4 @@
-import {
+import type {
   GuildMember as DiscordGuildMember,
   InteractionApplicationCommandCallbackData,
   ApplicationCommandOption,
@@ -8,8 +8,8 @@ import {
   ApplicationCommandInteractionData,
   ApplicationCommandInteractionDataOptionSubCommand,
   ApplicationCommandInteractionDataOption,
-} from '../deps.ts'
-import type { AppContext } from '../di.ts'
+} from 'discordeno'
+import type { AppContext } from '../di'
 
 export type {
   ApplicationCommandInteractionDataOptionSubCommand,
@@ -21,7 +21,14 @@ export type {
   ApplicationCommandInteractionDataOptionChannel,
   ApplicationCommandInteractionDataOptionRole,
   ApplicationCommandInteractionDataOptionMentionable,
-} from '../deps.ts'
+  GuildMemberWithUser,
+  InteractionResponse,
+  Interaction,
+  ComponentInteraction,
+  InteractionApplicationCommandCallbackData,
+  MessageComponents,
+  SlashCommandInteraction,
+} from 'discordeno'
 
 export type { DiscordGuildMember }
 
@@ -73,31 +80,45 @@ export type SlashSubCommand<T extends (ApplicationCommandInteractionDataOption |
     options?: T
   }
 
-// from Discord-Deno
+// From discordeno
 
-export interface ApplicationCommandOption {
-  /** Value of Application Command Option Type */
-  type: ApplicationCommandOptionTypes
-  /** 1-32 character name matching lowercase `^[\w-]{1,32}$` */
-  name: string
-  /** Localization object for the `name` field. Values follow the same restrictions as `name` */
-  nameLocalizations?: Localization
-  /** 1-100 character description */
-  description: string
-  /** Localization object for the `description` field. Values follow the same restrictions as `description` */
-  descriptionLocalizations?: Localization
-  /** If the parameter is required or optional--default `false` */
-  required?: boolean
-  /** Choices for `string` and `int` types for the user to pick from */
-  choices?: ApplicationCommandOptionChoice[]
-  /** If the option is a subcommand or subcommand group type, this nested options will be the parameters */
-  options?: ApplicationCommandOption[]
-  /** if autocomplete interactions are enabled for this `String`, `Integer`, or `Number` type option */
-  autocomplete?: boolean
-  /** If the option is a channel type, the channels shown will be restricted to these types */
-  channelTypes?: ChannelTypes[]
-  /** Minimum number desired. */
-  minValue?: number
-  /** Maximum number desired. */
-  maxValue?: number
+export enum DiscordInteractionTypes {
+  Ping = 1,
+  ApplicationCommand = 2,
+  MessageComponent = 3,
+}
+
+export enum DiscordInteractionResponseTypes {
+  Pong = 1,
+  ChannelMessageWithSource = 4,
+  DeferredChannelMessageWithSource = 5,
+  DeferredUpdateMessage = 6,
+  UpdateMessage = 7,
+}
+
+export enum ApplicationCommandOptionTypes {
+  SubCommand = 1,
+  SubCommandGroup = 2,
+  String = 3,
+  Integer = 4,
+  Boolean = 5,
+  User = 6,
+  Channel = 7,
+  Role = 8,
+  Mentionable = 9,
+  Number = 10,
+}
+
+export enum ButtonStyles {
+  Primary = 1,
+  Secondary = 2,
+  Success = 3,
+  Danger = 4,
+  Link = 5,
+}
+
+export enum MessageComponentTypes {
+  ActionRow = 1,
+  Button = 2,
+  SelectMenu = 3,
 }

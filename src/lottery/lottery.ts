@@ -1,5 +1,5 @@
-import { nanoid } from '../deps.ts'
-import { randomInclusive } from '../util/random.ts'
+import { nanoid } from 'nanoid'
+import { randomInclusive } from '../util/random'
 
 export interface LotteryProps<Player> {
   id?: string

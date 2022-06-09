@@ -1,3 +1,6 @@
-import { redeploy } from './discord/redeploy.ts'
+/* eslint-disable no-console */
+import { redeploy } from './discord/redeploy'
 
-await redeploy()
+redeploy().catch((e) => {
+  console.error('redeploy error', e)
+})

@@ -1,20 +1,25 @@
+import { parseCustomId, message } from './api'
 import {
+  isInteractionResponse,
   DiscordInteractionResponseTypes,
+  DiscordInteractionTypes,
+} from './types'
+import { commands } from './interactions'
+import type { AppContext } from '../di'
+import { assertNever } from '../util/assert'
+
+import type {
   Interaction,
   ComponentInteraction,
   SlashCommandInteraction,
-  InteractionResponseTypes,
   InteractionResponse,
-  InteractionTypes,
   InteractionApplicationCommandCallbackData,
-} from '../deps.ts'
-import { parseCustomId, message } from './api.ts'
-import { isInteractionResponse } from './types.ts'
-import { commands } from './interactions.ts'
-import type { AppContext } from '../di.ts'
-import { assertNever } from '../util/assert.ts'
+} from './types'
 
-const interactions = [InteractionTypes.ApplicationCommand, InteractionTypes.MessageComponent]
+const interactions = [
+  DiscordInteractionTypes.ApplicationCommand,
+  DiscordInteractionTypes.MessageComponent,
+]
 
 // deno-lint-ignore require-await
 export async function main(
@@ -23,8 +28,8 @@ export async function main(
 ): Promise<InteractionResponse> {
   // Basic Validation
   //
-  if ((payload.type as number) === (InteractionTypes.Ping as number)) {
-    return { type: InteractionResponseTypes.Pong }
+  if (payload.type === DiscordInteractionTypes.Ping) {
+    return { type: DiscordInteractionResponseTypes.Pong }
   } else if (!interactions.includes(payload.type)) {
     throw new Error('Bad request')
   }
@@ -37,12 +42,14 @@ export async function main(
   // })
 
   switch (payload.type) {
-    case InteractionTypes.ApplicationCommand:
+    case DiscordInteractionTypes.ApplicationCommand:
       return handleAppCommand(payload, context)
-    case InteractionTypes.MessageComponent:
+    case DiscordInteractionTypes.MessageComponent:
       return handleMessageInteraction(payload, context)
     default:
-      return assertNever(payload)
+      throw new Error('Bad request')
+    // This is throwing a typescript error, likely because the types are from different source
+    // return assertNever(payload)
   }
 }
 

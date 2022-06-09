@@ -1,26 +1,23 @@
-import config from '../config.ts'
-import { urlJoin } from '../deps.ts'
-import {
-  rest,
-  endpoints,
-  GuildMemberWithUser,
-  snakelize,
-  InteractionResponse,
-  DiscordInteractionResponseTypes,
-} from '../deps.ts'
-import type { GuildMember } from './types.ts'
-export type { GuildMember }
+import config from '../config'
+import urlJoin from 'url-join'
+import camelCase from 'camelcase-keys'
+import snakeCase from 'snakecase-keys'
+import request from 'request-micro'
+import { DiscordInteractionResponseTypes } from './types'
+import type { GuildMember, GuildMemberWithUser, InteractionResponse } from './types'
 
 const defaultHeaders = {
   'Content-Type': 'application/json',
+  'User-Agent': config.discord.userAgent,
 }
 
 // deno-lint-ignore no-explicit-any
 export async function botRespond(interactionId: string, token: string, body: any): Promise<void> {
-  await fetch(urlJoin(config.discord.apiHost, 'interactions', interactionId, token, 'callback'), {
+  await request({
+    url: urlJoin(config.discord.apiHost, 'interactions', interactionId, token, 'callback'),
     method: 'POST',
     headers: defaultHeaders,
-    body: JSON.stringify(snakelize(body)),
+    body: JSON.stringify(snakeCase(body)),
   })
 }
 
@@ -31,7 +28,8 @@ export async function ackDeferred({
   token: string
   interactionId: string
 }): Promise<void> {
-  await fetch(urlJoin(config.discord.apiHost, 'interactions', interactionId, token, 'callback'), {
+  await request({
+    url: urlJoin(config.discord.apiHost, 'interactions', interactionId, token, 'callback'),
     method: 'POST',
     headers: defaultHeaders,
     body: JSON.stringify({
@@ -52,16 +50,14 @@ export async function updateInteraction({
   body: any
   messageId?: string
 }) {
-  const res = await fetch(
-    urlJoin(config.discord.apiHost, 'webhooks', applicationId, token, 'messages', messageId),
-    {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(snakelize(body)),
-    }
-  )
+  await request({
+    url: urlJoin(config.discord.apiHost, 'webhooks', applicationId, token, 'messages', messageId),
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(snakeCase(body)),
+  })
 
   // console.log('discord', res.status, await res.text())
 }
@@ -70,19 +66,26 @@ export async function getGuildMember(
   guildId: string | bigint,
   userId: string | bigint
 ): Promise<GuildMember> {
-  const member = await rest.runMethod<GuildMemberWithUser>(
-    'get',
-    endpoints.GUILD_MEMBER(BigInt(guildId), BigInt(userId))
-  )
+  const res = await request({
+    url: urlJoin(
+      config.discord.apiHost,
+      'guilds',
+      guildId.toString(),
+      'members',
+      userId.toString()
+    ),
+    headers: defaultHeaders,
+    json: true,
+  })
 
-  return asGuildMember(guildId.toString(), member)
+  return asGuildMember(guildId.toString(), camelCase(res.data) as GuildMemberWithUser)
 }
 
 export function asGuildMember(guildId: string, member: GuildMemberWithUser): GuildMember {
   return {
     id: member.user.id,
     guildId: guildId,
-    username: member?.nick ?? member.user!.username,
+    username: member?.nick ?? member.user?.username,
     joinedAt: member.joinedAt,
   }
 }

@@ -1,6 +1,7 @@
 import base64 from 'base64url'
 
 const region = process.env['AWS_REGION'] || 'us-west-2'
+const stage = process.env.stage || 'dev'
 
 const requiredEnvs = {
   firebase64: 'FIREBASE_64',
@@ -25,10 +26,12 @@ const envs = Object.fromEntries(
 const config = {
   port: 8006,
   region,
+  stage,
   discord: {
     timezone: 'America/Los_Angeles',
     useGateway: true,
     apiHost: 'https://discord.com/api/v8',
+    userAgrent: 'DiscordBot (https://github.com/kyeotic/brophylactic-bot, v1)',
     serverId: envs.serverId,
     residentRoleId: envs.residentRoleId,
     newMemberRoleId: envs.newMemberRoleId,

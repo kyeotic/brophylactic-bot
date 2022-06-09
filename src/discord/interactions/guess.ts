@@ -1,10 +1,15 @@
-import { Command, SlashCommand, ApplicationCommandInteractionDataOptionInteger } from '../types.ts'
-import { DiscordApplicationCommandOptionTypes, GuildMemberWithUser } from '../../deps.ts'
-import { formatDistanceToNow } from '../../deps.ts'
-import { utcToZonedTime, formatWithTimezone } from '../../deps.ts'
-import { message, asGuildMember } from '../api.ts'
-import { seededRandomRange } from '../../util/random.ts'
-import type { AppContext } from '../../di.ts'
+import { formatDistanceToNow, utcToZonedTime, formatWithTimezone } from '../../util/dates'
+import { message, asGuildMember } from '../api'
+import { randomInclusive } from '../../util/random'
+import { ApplicationCommandOptionTypes } from '../types'
+
+import type { AppContext } from '../../di'
+import type {
+  Command,
+  SlashCommand,
+  ApplicationCommandInteractionDataOptionInteger,
+  GuildMemberWithUser,
+} from '../types'
 
 const magicNumberReward = 1000
 const magicNumberRange = 3
@@ -22,7 +27,7 @@ const command: Command = {
     {
       name: 'number',
       required: true,
-      type: DiscordApplicationCommandOptionTypes.Integer,
+      type: ApplicationCommandOptionTypes.Integer,
       description: 'number to guess',
     },
   ],
@@ -63,11 +68,7 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
 
   await context.userStore.setUserLastGuess(member, today)
 
-  const magicNumber = seededRandomRange(
-    `${memberName}:${getDayString(timeZone, new Date())}`,
-    1,
-    100
-  )
+  const magicNumber = randomInclusive(1, 100, `${memberName}:${getDayString(timeZone, new Date())}`)
 
   const isCorrect = magicNumber === guess
   const isWithinRange = isWithin(guess, magicNumber, magicNumberRange)

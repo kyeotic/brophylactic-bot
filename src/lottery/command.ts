@@ -1,27 +1,28 @@
+import { updateInteraction, asGuildMember, message, encodeCustomId } from '../discord/api'
+import { differenceInSeconds } from '../util/dates'
+import { lotteryTimeMs } from './brxLottery'
+
 import {
+  ButtonStyles,
+  MessageComponentTypes,
+  ApplicationCommandOptionTypes,
+  DiscordInteractionResponseTypes,
+} from '../discord/types'
+
+import type {
   Interaction,
   ComponentInteraction,
-  DiscordApplicationCommandOptionTypes,
-  DiscordButtonStyles,
-  DiscordInteractionResponseTypes,
-  DiscordMessageComponentTypes,
   GuildMemberWithUser,
   InteractionApplicationCommandCallbackData,
   MessageComponents,
-} from '../deps.ts'
-import { differenceInSeconds } from '../deps.ts'
-
-import { updateInteraction, asGuildMember, message, encodeCustomId } from '../discord/api.ts'
-import { lotteryTimeMs } from './brxLottery.ts'
-
-import type {
   CommandResponse,
   Command,
   SlashCommand,
   ApplicationCommandInteractionDataOptionInteger,
-} from '../discord/types.ts'
-import type { AppContext } from '../di.ts'
-import type { BrxLottery } from './brxLottery.ts'
+} from '../discord/types'
+
+import type { AppContext } from '../di'
+import type { BrxLottery } from './brxLottery'
 
 export type LotteryInteraction = SlashCommand<
   [
@@ -40,14 +41,14 @@ const command: Command = {
     {
       name: 'bet',
       required: true,
-      type: DiscordApplicationCommandOptionTypes.Integer,
+      type: ApplicationCommandOptionTypes.Integer,
       description:
         'amount of rep to bet. Cannot exceed your total rep or (playerLimit * bet) if negative',
     },
     {
       name: 'playerLimit',
       required: false,
-      type: DiscordApplicationCommandOptionTypes.Integer,
+      type: ApplicationCommandOptionTypes.Integer,
       description: 'maximum number of players allowed to join negative lottery (bet * playerLimit)',
     },
   ],
@@ -136,6 +137,7 @@ async function handleLotteryJoin(
   await lottery.addPlayer(member)
 
   if (lottery.shouldFinish()) {
+    // eslint-disable-next-line no-console
     lottery.finish().catch((e) => console.error('lottery end error', e))
   } else {
     updateInteraction({
@@ -192,12 +194,12 @@ export function lotteryMessage(lottery: BrxLottery): InteractionApplicationComma
 function joinLotteryComponents(id: string): MessageComponents {
   return [
     {
-      type: DiscordMessageComponentTypes.ActionRow,
+      type: MessageComponentTypes.ActionRow,
       components: [
         {
-          type: DiscordMessageComponentTypes.Button,
+          type: MessageComponentTypes.Button,
           label: 'Join Lottery',
-          style: DiscordButtonStyles.Primary,
+          style: ButtonStyles.Primary,
           customId: encodeCustomId(ID_TYPE, id),
         },
       ],
