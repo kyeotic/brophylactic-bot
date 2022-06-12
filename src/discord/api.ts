@@ -3,18 +3,33 @@ import urlJoin from 'url-join'
 import camelCase from 'camelcase-keys'
 import snakeCase from 'snakecase-keys'
 import request from 'request-micro'
-import { DiscordInteractionResponseTypes } from './types'
-import type { GuildMember, GuildMemberWithUser, InteractionResponse } from './types'
+import { InteractionResponseType } from './types'
+import type {
+  GuildMember,
+  DiscordGuildMemberWithUser,
+  InteractionResponse,
+  CommandResponse,
+  MessageResponse,
+} from './types'
 
 const defaultHeaders = {
   'Content-Type': 'application/json',
   'User-Agent': config.discord.userAgent,
 }
 
-// deno-lint-ignore no-explicit-any
-export async function botRespond(interactionId: string, token: string, body: any): Promise<void> {
+export async function botRespond(
+  interactionId: string | bigint,
+  token: string,
+  body: any
+): Promise<void> {
   await request({
-    url: urlJoin(config.discord.apiHost, 'interactions', interactionId, token, 'callback'),
+    url: urlJoin(
+      config.discord.apiHost,
+      'interactions',
+      interactionId.toString(),
+      token,
+      'callback'
+    ),
     method: 'POST',
     headers: defaultHeaders,
     body: JSON.stringify(snakeCase(body)),
@@ -33,7 +48,7 @@ export async function ackDeferred({
     method: 'POST',
     headers: defaultHeaders,
     body: JSON.stringify({
-      type: DiscordInteractionResponseTypes.DeferredChannelMessageWithSource,
+      type: InteractionResponseType.DeferredChannelMessageWithSource,
     }),
   })
 }
@@ -46,7 +61,6 @@ export async function updateInteraction({
 }: {
   applicationId: string
   token: string
-  // deno-lint-ignore no-explicit-any
   body: any
   messageId?: string
 }) {
@@ -60,6 +74,65 @@ export async function updateInteraction({
   })
 
   // console.log('discord', res.status, await res.text())
+}
+
+export async function deployCommand({
+  applicationId,
+  guildId,
+  command,
+  botToken,
+}: {
+  applicationId: string
+  guildId?: string
+  command: any
+  botToken: string
+}): Promise<void> {
+  await request({
+    url: guildId
+      ? urlJoin(
+          config.discord.apiHost,
+          'applications',
+          applicationId,
+          'guilds',
+          guildId,
+          'commands'
+        )
+      : urlJoin(config.discord.apiHost, 'applications', applicationId, 'commands'),
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bot ${botToken}`,
+    },
+    body: JSON.stringify(command),
+  })
+}
+
+export async function getCommands({
+  applicationId,
+  guildId,
+  botToken,
+}: {
+  applicationId: string
+  guildId?: string
+  botToken: string
+}): Promise<any> {
+  await request({
+    url: guildId
+      ? urlJoin(
+          config.discord.apiHost,
+          'applications',
+          applicationId,
+          'guilds',
+          guildId,
+          'commands'
+        )
+      : urlJoin(config.discord.apiHost, 'applications', applicationId, 'commands'),
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bot ${botToken}`,
+    },
+  })
 }
 
 export async function getGuildMember(
@@ -78,48 +151,61 @@ export async function getGuildMember(
     json: true,
   })
 
-  return asGuildMember(guildId.toString(), camelCase(res.data) as GuildMemberWithUser)
+  return asGuildMember(
+    guildId.toString(),
+    camelCase(res.data, { deep: true }) as DiscordGuildMemberWithUser
+  )
 }
 
-export function asGuildMember(guildId: string, member: GuildMemberWithUser): GuildMember {
+export function asGuildMember(guildId: string, member: DiscordGuildMemberWithUser): GuildMember {
   return {
     id: member.user.id,
     guildId: guildId,
     username: member?.nick ?? member.user?.username,
-    joinedAt: member.joinedAt,
+    joinedAt: member.joined_at,
   }
 }
 
 export function ackButton() {
   return {
-    type: DiscordInteractionResponseTypes.DeferredUpdateMessage,
+    type: InteractionResponseType.DeferredMessageUpdate,
   }
 }
 
+const nonMessageTypes: readonly InteractionResponseType[] = [
+  InteractionResponseType.Pong,
+  InteractionResponseType.ApplicationCommandAutocompleteResult,
+  InteractionResponseType.Modal,
+] as const
 export function message(
   content?: string,
   {
     isPrivate = false,
-    type = DiscordInteractionResponseTypes.ChannelMessageWithSource,
-  }: { isPrivate?: boolean; type?: DiscordInteractionResponseTypes } = {}
-) {
+    type = InteractionResponseType.ChannelMessageWithSource,
+  }: { isPrivate?: boolean; type?: InteractionResponseType } = {}
+): MessageResponse {
+  if (nonMessageTypes.includes(type)) {
+    throw new Error('Invalid interactiont type for message response')
+  }
   return {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     type,
     data: {
       content,
       flags: isPrivate ? 64 : undefined,
     },
-  } as InteractionResponse
+  }
 }
 
-export function privateMessage(content: string): InteractionResponse {
+export function privateMessage(content: string): MessageResponse {
   return {
-    type: DiscordInteractionResponseTypes.ChannelMessageWithSource,
+    type: InteractionResponseType.ChannelMessageWithSource,
     data: {
       content,
       flags: 64, // private
     },
-  } as InteractionResponse
+  }
 }
 
 /** encode the type and id into customId for use in message components*/

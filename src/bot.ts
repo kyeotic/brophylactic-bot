@@ -1,54 +1,40 @@
-import { startBot, BigInteraction, Interaction } from 'discordeno'
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import {
+  createBot,
+  startBot,
+  Bot,
+  Interaction as DenoInteraction,
+  GatewayIntents,
+} from 'discordeno'
 
 import { main } from './discord/main'
 import { initContext } from './di'
 import { botRespond } from './discord/api'
+import type { Interaction } from './discord/types'
 import config from './config'
 
-startBot({
+const bot = createBot({
   token: config.discord.botToken,
-  intents: config.discord.botIntents,
-  eventHandlers: {
+  intents: config.discord.botIntents.reduce((flags, i) => flags | GatewayIntents[i], 0),
+  events: {
     ready() {
       console.log('Successfully connected to gateway')
     },
-    interactionCreate(input: BigInteraction) {
-      const interaction = bigToSmall(input)
+    interactionCreate(bot: Bot, input: DenoInteraction) {
+      const interaction = input as unknown as Interaction
+      console.log('received interaction', JSON.stringify(interaction, null, 2))
       main(interaction, initContext())
         .then((body) => botRespond(interaction.id, interaction.token, body))
         .catch((error) => console.error('bot error', error))
     },
   },
+  transformers: {
+    interaction: (bot, payload) => payload as unknown as DenoInteraction,
+  },
 })
 
-function bigToSmall(interaction: BigInteraction): Interaction {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  return {
-    ...interaction,
-    type: interaction.type,
-    id: toSm(interaction.id),
-    applicationId: toSm(interaction.applicationId),
-    guildId: toSmOpt(interaction.guildId),
-    channelId: toSmOpt(interaction.channelId),
-    member: interaction.member
-      ? {
-          ...interaction.member,
-          roles: interaction.member?.roles.map(toSm) ?? [],
-          user: {
-            ...interaction.member.user,
-            id: toSm(interaction.member?.user.id),
-          },
-        }
-      : undefined,
-    message: interaction.message ? interaction.message.toJSON() : undefined,
-  }
+async function app() {
+  await startBot(bot)
 }
 
-function toSmOpt(num: bigint | undefined): string | undefined {
-  return num?.toString()
-}
-
-function toSm(num: bigint): string {
-  return num.toString()
-}
+app().then((e) => console.error(e))

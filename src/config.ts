@@ -30,8 +30,8 @@ const config = {
   discord: {
     timezone: 'America/Los_Angeles',
     useGateway: true,
-    apiHost: 'https://discord.com/api/v8',
-    userAgrent: 'DiscordBot (https://github.com/kyeotic/brophylactic-bot, v1)',
+    apiHost: 'https://discord.com/api/v10',
+    userAgent: 'DiscordBot (https://github.com/kyeotic/brophylactic-bot, v1)',
     serverId: envs.serverId,
     residentRoleId: envs.residentRoleId,
     newMemberRoleId: envs.newMemberRoleId,

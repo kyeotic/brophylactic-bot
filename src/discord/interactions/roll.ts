@@ -1,23 +1,23 @@
 import roll from '../../games/dice'
 import { sum } from '../../util/math'
-import { ApplicationCommandOptionTypes } from '../types'
+import { ApplicationCommandOptionType } from '../types'
 import { message } from '../api'
 import type {
   Command,
   SlashCommand,
-  ApplicationCommandInteractionDataOptionString,
-  ApplicationCommandInteractionDataOptionBoolean,
+  CommandInteractionString,
+  CommandInteractionBoolean,
 } from '../types'
 
 type RollInteraction = SlashCommand<
   [
-    ApplicationCommandInteractionDataOptionString | undefined,
-    ApplicationCommandInteractionDataOptionBoolean | undefined,
-    ApplicationCommandInteractionDataOptionBoolean | undefined
+    CommandInteractionString | undefined,
+    CommandInteractionBoolean | undefined,
+    CommandInteractionBoolean | undefined
   ]
 >
 
-const command: Command = {
+const command: Command<RollInteraction> = {
   // global: true,
   guild: true,
   description: 'Roll dice',
@@ -26,19 +26,19 @@ const command: Command = {
       required: false,
       name: 'dice',
       description: 'dice to roll e.g. 1d6, d20, 3d6',
-      type: ApplicationCommandOptionTypes.String,
+      type: ApplicationCommandOptionType.String,
     },
     {
       required: false,
       name: 'verbose',
       description: 'See all dice rolls individually',
-      type: ApplicationCommandOptionTypes.Boolean,
+      type: ApplicationCommandOptionType.Boolean,
     },
     {
       required: false,
       name: 'private',
       description: 'See response as a private message (default: false)',
-      type: ApplicationCommandOptionTypes.Boolean,
+      type: ApplicationCommandOptionType.Boolean,
     },
   ],
   execute: function (payload) {

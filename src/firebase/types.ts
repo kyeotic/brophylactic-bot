@@ -1,4 +1,3 @@
-// deno-lint-ignore-file camelcase
 import type { RequestOptions } from 'request-micro'
 export type { OutgoingHttpHeaders as HeadersInit } from 'node:http'
 

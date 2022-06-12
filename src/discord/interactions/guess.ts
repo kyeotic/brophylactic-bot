@@ -1,14 +1,14 @@
 import { formatDistanceToNow, utcToZonedTime, formatWithTimezone } from '../../util/dates'
 import { message, asGuildMember } from '../api'
 import { randomInclusive } from '../../util/random'
-import { ApplicationCommandOptionTypes } from '../types'
+import { ApplicationCommandOptionType } from '../types'
 
 import type { AppContext } from '../../di'
 import type {
   Command,
   SlashCommand,
-  ApplicationCommandInteractionDataOptionInteger,
-  GuildMemberWithUser,
+  CommandInteractionInteger,
+  DiscordGuildMemberWithUser,
 } from '../types'
 
 const magicNumberReward = 1000
@@ -17,9 +17,9 @@ const rangeReward = 30
 const lastDigitReward = 10
 const pairwiseReward = 250
 
-type GuessInteraction = SlashCommand<[ApplicationCommandInteractionDataOptionInteger]>
+type GuessInteraction = SlashCommand<[CommandInteractionInteger]>
 
-const command: Command = {
+const command: Command<GuessInteraction> = {
   // global: true,
   guild: true,
   description: 'Guess your daily 1-100 magic number',
@@ -27,12 +27,12 @@ const command: Command = {
     {
       name: 'number',
       required: true,
-      type: ApplicationCommandOptionTypes.Integer,
+      type: ApplicationCommandOptionType.Integer,
       description: 'number to guess',
     },
   ],
-  execute: async function (payload, context) {
-    return await handleGuess(payload as GuessInteraction, context)
+  execute: async function (payload: GuessInteraction, context: AppContext) {
+    return await handleGuess(payload, context)
   },
 }
 
@@ -42,13 +42,13 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
   payload = payload as GuessInteraction
   const timeZone = context.config.discord.timezone
 
-  if (!payload.data?.options?.length || !payload.guildId) {
+  if (!payload.data?.options?.length || !payload.guild_id) {
     return message('missing required sub-command')
   }
   const guess = payload.data?.options[0].value
   const today = new Date()
 
-  const member = asGuildMember(payload.guildId, payload.member as GuildMemberWithUser)
+  const member = asGuildMember(payload.guild_id, payload.member as DiscordGuildMemberWithUser)
   const memberName = member.username
   const lastGuess = await context.userStore.getUserLastGuess(member)
 

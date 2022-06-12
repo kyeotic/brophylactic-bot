@@ -3,7 +3,7 @@
   "deno.lint": false, // inline deno lint diagnostics, requires `deno.unstable`
   "deno.unstable": true, // also provides unstable type declarations in VS Code
   "deno.config": "./tsconfig.json",
-  "cSpell.words": ["Deno", "Firestore", "camelize", "deepmerge"],
+  "cSpell.words": ["Brophylactic", "camelize", "deepmerge", "Deno", "Firestore"],
   "deno.suggest.imports.hosts": {
     "https://cdn.skypack.dev": false
   },

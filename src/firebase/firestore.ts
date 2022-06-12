@@ -68,7 +68,6 @@ export class Firestore {
     const doc = (await this.client.request({
       method: 'POST',
       url: `documents/${collection}${id ? `?documentId=${id}` : ''}`,
-      // deno-lint-ignore no-explicit-any
       body: toDocument(body as Record<string, any>),
       ...props,
     })) as Document

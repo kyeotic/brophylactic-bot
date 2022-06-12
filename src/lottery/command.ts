@@ -3,32 +3,29 @@ import { differenceInSeconds } from '../util/dates'
 import { lotteryTimeMs } from './brxLottery'
 
 import {
-  ButtonStyles,
-  MessageComponentTypes,
-  ApplicationCommandOptionTypes,
+  ButtonStyle,
+  MessageComponentType,
+  ApplicationCommandOptionType,
   DiscordInteractionResponseTypes,
 } from '../discord/types'
 
 import type {
   Interaction,
   ComponentInteraction,
-  GuildMemberWithUser,
-  InteractionApplicationCommandCallbackData,
+  DiscordGuildMemberWithUser,
+  InteractionResponseCallback,
   MessageComponents,
   CommandResponse,
   Command,
   SlashCommand,
-  ApplicationCommandInteractionDataOptionInteger,
+  ApplicationCommandOptionInteger,
 } from '../discord/types'
 
 import type { AppContext } from '../di'
 import type { BrxLottery } from './brxLottery'
 
 export type LotteryInteraction = SlashCommand<
-  [
-    ApplicationCommandInteractionDataOptionInteger,
-    ApplicationCommandInteractionDataOptionInteger | undefined
-  ]
+  [ApplicationCommandOptionInteger, ApplicationCommandOptionInteger | undefined]
 >
 
 export const ID_TYPE = 'LOTTERY'
@@ -41,14 +38,14 @@ const command: Command = {
     {
       name: 'bet',
       required: true,
-      type: ApplicationCommandOptionTypes.Integer,
+      type: ApplicationCommandOptionType.Integer,
       description:
         'amount of rep to bet. Cannot exceed your total rep or (playerLimit * bet) if negative',
     },
     {
       name: 'playerLimit',
       required: false,
-      type: ApplicationCommandOptionTypes.Integer,
+      type: ApplicationCommandOptionType.Integer,
       description: 'maximum number of players allowed to join negative lottery (bet * playerLimit)',
     },
   ],
@@ -81,7 +78,7 @@ async function handleLottery(payload: LotteryInteraction, context: AppContext) {
 
   // Init Lottery
   //
-  const member = asGuildMember(payload.guildId, payload.member as GuildMemberWithUser)
+  const member = asGuildMember(payload.guildId, payload.member as DiscordGuildMemberWithUser)
   // console.log('creator member', JSON.stringify(member, null, 2))
   // if (parseFloat(member.id) > 0) {
   //   throw new Error('exit')
@@ -165,7 +162,7 @@ export async function finishLottery(
   await lottery?.finish()
 }
 
-export function lotteryMessage(lottery: BrxLottery): InteractionApplicationCommandCallbackData {
+export function lotteryMessage(lottery: BrxLottery): InteractionResponseCallback {
   const startTime = lottery.getStart()
   if (!startTime) {
     throw new Error('no start time for lottery')
@@ -194,12 +191,12 @@ export function lotteryMessage(lottery: BrxLottery): InteractionApplicationComma
 function joinLotteryComponents(id: string): MessageComponents {
   return [
     {
-      type: MessageComponentTypes.ActionRow,
+      type: MessageComponentType.ActionRow,
       components: [
         {
-          type: MessageComponentTypes.Button,
+          type: MessageComponentType.Button,
           label: 'Join Lottery',
-          style: ButtonStyles.Primary,
+          style: ButtonStyle.Primary,
           customId: encodeCustomId(ID_TYPE, id),
         },
       ],
