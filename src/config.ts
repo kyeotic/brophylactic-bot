@@ -51,6 +51,7 @@ const config = {
     stepFunctionArn: envs.stepFunctionArn,
     accessKeyId: envs.accessKeyId,
     secretAccessKey: envs.secretAccessKey,
+    sessionToken: process.env.AWS_SESSION_TOKEN ?? undefined,
   },
 } as const
 
