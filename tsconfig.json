@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    // ESM config
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    // Target
+    "lib": ["ES2020"],
+    "target": "es2020",
+    // END
+    "declaration": false,
+    "removeComments": true,
+    "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": false,
+    "outDir": "./dist",
+    "baseUrl": "./src",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "inlineSourceMap": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": false,
+    "importHelpers": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "*": ["src/*", "types/*"]
+    }
+  },
+  "include": ["src/**/*", "types/*"],
+  "ts-node": {
+    // Tell ts-node CLI to install the --loader automatically, explained below
+    "esm": true
+  }
+}

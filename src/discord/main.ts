@@ -1,64 +1,52 @@
-import {
-  DiscordInteractionResponseTypes,
+import { parseCustomId, message } from './api'
+import { isInteractionResponse, InteractionResponseType, InteractionType } from './types'
+import { commands } from './interactions'
+import type { AppContext } from '../di'
+import { assertNever } from '../util/assert'
+
+import type {
   Interaction,
-  ComponentInteraction,
-  SlashCommandInteraction,
-  InteractionResponseTypes,
+  ApplicationCommandInteraction,
+  MessageComponentInteraction,
+  CommandInteraction,
+  // ComponentInteraction,
+  // SlashCommandInteraction,
   InteractionResponse,
-  InteractionTypes,
-  InteractionApplicationCommandCallbackData,
-} from '../deps.ts'
-import { parseCustomId, message } from './api.ts'
-import { isInteractionResponse } from './types.ts'
-import { commands } from './interactions.ts'
-import type { AppContext } from '../di.ts'
-import { assertNever } from '../util/assert.ts'
+  InteractionResponseCallback,
+} from './types'
 
-const interactions = [InteractionTypes.ApplicationCommand, InteractionTypes.MessageComponent]
-
-// deno-lint-ignore require-await
 export async function main(
   payload: Interaction,
   context: AppContext
 ): Promise<InteractionResponse> {
-  // Basic Validation
-  //
-  if ((payload.type as number) === (InteractionTypes.Ping as number)) {
-    return { type: InteractionResponseTypes.Pong }
-  } else if (!interactions.includes(payload.type)) {
-    throw new Error('Bad request')
-  }
-
-  // Routing
-  //
-  // await ackDeferred({
-  //   interactionId: payload.id,
-  //   token: payload.token,
-  // })
-
   switch (payload.type) {
-    case InteractionTypes.ApplicationCommand:
+    case InteractionType.Ping:
+      return { type: InteractionResponseType.Pong }
+    case InteractionType.ApplicationCommand:
       return handleAppCommand(payload, context)
-    case InteractionTypes.MessageComponent:
+    case InteractionType.MessageComponent:
       return handleMessageInteraction(payload, context)
+    case InteractionType.ApplicationCommandAutocomplete:
+    case InteractionType.ModalSubmit:
+      throw new Error('Unsupported Interaction Type')
     default:
       return assertNever(payload)
   }
 }
 
 async function handleAppCommand(
-  payload: SlashCommandInteraction,
+  payload: ApplicationCommandInteraction,
   context: AppContext
 ): Promise<InteractionResponse> {
   if (!payload.data?.name) {
     return missingType()
   }
 
-  const command = commands[payload.data!.name]
+  const command = commands[payload.data.name]
 
   if (!command) return missingCommand()
 
-  const result = await command.execute(payload, context)
+  const result = await command.execute(payload as unknown as CommandInteraction, context)
 
   if (!isInteractionResponse(result)) return interactionCallback(result)
 
@@ -66,32 +54,33 @@ async function handleAppCommand(
 }
 
 async function handleMessageInteraction(
-  payload: ComponentInteraction,
+  payload: MessageComponentInteraction,
   context: AppContext
 ): Promise<InteractionResponse> {
-  if (!payload?.data?.customId) {
+  const messageId = payload?.data?.custom_id
+  if (!messageId) {
     return missingType()
   }
 
-  const [idType, customId] = parseCustomId(payload?.data?.customId)
+  const [idType, customId] = parseCustomId(messageId)
 
   const command = Object.values(commands).find((c) => c?.messageInteractionType === idType)
 
   if (!command) return missingCommand()
 
   // Replace encoded customId
-  payload.data.customId = customId
-  const result = await command.execute(payload, context)
+  payload.data.custom_id = customId
+  const result = await command.execute(payload as unknown as CommandInteraction, context)
 
   if (!isInteractionResponse(result)) return interactionCallback(result)
 
   return result
 }
 
-function interactionCallback(data: InteractionApplicationCommandCallbackData): InteractionResponse {
+function interactionCallback(data: InteractionResponseCallback): InteractionResponse {
   return {
     data,
-    type: DiscordInteractionResponseTypes.ChannelMessageWithSource,
+    type: InteractionResponseType.ChannelMessageWithSource,
   }
 }
 

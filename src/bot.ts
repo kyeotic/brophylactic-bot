@@ -1,21 +1,40 @@
-import { startBot, Interaction } from './deps.ts'
-import config from './config.ts'
-import { initContext } from './di.ts'
-import { botRespond } from './discord/api.ts'
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import {
+  createBot,
+  startBot,
+  Bot,
+  Interaction as DenoInteraction,
+  GatewayIntents,
+} from 'discordeno'
 
-import { main } from './discord/main.ts'
+import { main } from './discord/main'
+import { initContext } from './di'
+import { botRespond } from './discord/api'
+import type { Interaction } from './discord/types'
+import config from './config'
 
-startBot({
+const bot = createBot({
   token: config.discord.botToken,
-  intents: config.discord.botIntents,
-  eventHandlers: {
+  intents: config.discord.botIntents.reduce((flags, i) => flags | GatewayIntents[i], 0),
+  events: {
     ready() {
       console.log('Successfully connected to gateway')
     },
-    interactionCreate(interaction: Interaction) {
+    interactionCreate(bot: Bot, input: DenoInteraction) {
+      const interaction = input as unknown as Interaction
+      // console.log('received interaction', JSON.stringify(interaction, null, 2))
       main(interaction, initContext())
         .then((body) => botRespond(interaction.id, interaction.token, body))
         .catch((error) => console.error('bot error', error))
     },
   },
+  transformers: {
+    interaction: (bot, payload) => payload as unknown as DenoInteraction,
+  },
 })
+
+async function app() {
+  await startBot(bot)
+}
+
+app().then((e) => console.error(e))

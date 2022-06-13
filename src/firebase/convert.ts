@@ -1,5 +1,4 @@
-// deno-lint-ignore-file no-explicit-any
-import type { Document, Value, MapValue, ArrayValue } from './types.ts'
+import type { Document, Value, MapValue, ArrayValue } from './types'
 
 export function toDocument(obj: Record<string, any>): Pick<Document, 'fields'> {
   return {

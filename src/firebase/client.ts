@@ -1,24 +1,31 @@
-import { urlJoin } from '../deps.ts'
-import type { FetchRequest } from './types.ts'
+/* eslint-disable no-console */
+import urlJoin from 'url-join'
+import request from 'request-micro'
+import type { FetchRequest, HeadersInit } from './types'
+import type { AppLogger } from '../di.js'
 
 export class FirebaseClient {
-  private host: string
-  private projectId: string
+  private readonly host: string
+  private readonly projectId: string
   private token?: string
-  private tokenFn: () => Promise<string>
+  private readonly tokenFn: () => Promise<string>
+  private readonly logger: AppLogger
 
   constructor({
     host,
     tokenFn,
     projectId,
+    logger,
   }: {
     host: string
     projectId: string
     tokenFn: () => Promise<string>
+    logger: AppLogger
   }) {
     this.host = host
     this.projectId = projectId
     this.tokenFn = tokenFn
+    this.logger = logger
   }
 
   asDocumentName({
@@ -47,13 +54,13 @@ export class FirebaseClient {
   }
 
   async request<T>(params: FetchRequest): Promise<T | null> {
-    const requestHeaders: HeadersInit = new Headers()
+    const requestHeaders: HeadersInit = {}
 
-    requestHeaders.set('Content-Type', 'application/json')
+    requestHeaders['Content-Type'] = 'application/json'
 
     const token = params?.authorization ?? (await this.getToken())
     if (token) {
-      requestHeaders.set('Authorization', `Bearer ${token}`)
+      requestHeaders['Authorization'] = `Bearer ${token}`
     }
 
     const url =
@@ -67,23 +74,26 @@ export class FirebaseClient {
         params.url
       ) + extractQuery(params)
 
-    const req = await fetch(url, {
+    const req = await request({
+      url,
       method: params.method ?? 'POST',
-      body: params?.body && JSON.stringify(params.body),
+      body: params.body,
       headers: requestHeaders,
+      json: true,
     })
 
-    if (req.status === 404) {
-      console.log('404', await req.json())
+    if (req.statusCode === 404) {
+      console.log('404', req.data)
       return null
     }
 
-    if (req.status > 399) {
-      const { error } = (await req.json()) as { error: { message: string } }
-      throw new Error(`Firebase Error ${req.status}: ${error.message}`)
+    if ((req.statusCode ?? 0) > 399) {
+      const { error } = req.data as { error: { message: string } }
+      this.logger.error('Firebase Error', req.statusCode, typeof req.statusCode, req.data)
+      throw new Error(`Firebase Error ${req.statusCode}: ${error.message}`)
     }
 
-    return (await req.json()) as T
+    return req.data as T
   }
 }
 

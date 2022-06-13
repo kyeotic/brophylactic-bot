@@ -1,4 +1,4 @@
-import type { GuildMember } from '../discord/types.ts'
+import type { GuildMember } from '../discord/types'
 
 export interface DbLottery {
   id: string

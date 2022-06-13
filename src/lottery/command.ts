@@ -1,38 +1,36 @@
-import {
-  Interaction,
-  ComponentInteraction,
-  DiscordApplicationCommandOptionTypes,
-  DiscordButtonStyles,
-  DiscordInteractionResponseTypes,
-  DiscordMessageComponentTypes,
-  GuildMemberWithUser,
-  InteractionApplicationCommandCallbackData,
-  MessageComponents,
-} from '../deps.ts'
-import { differenceInSeconds } from '../deps.ts'
+import { updateInteraction, asGuildMember, message, encodeCustomId } from '../discord/api'
+import { differenceInSeconds } from '../util/dates'
+import { lotteryTimeMs } from './brxLottery'
 
-import { updateInteraction, asGuildMember, message, encodeCustomId } from '../discord/api.ts'
-import { lotteryTimeMs } from './brxLottery.ts'
+import {
+  ButtonStyle,
+  ComponentType,
+  ApplicationCommandOptionType,
+  InteractionResponseType,
+} from '../discord/types'
 
 import type {
+  Interaction,
+  MessageComponentInteraction,
+  DiscordGuildMemberWithUser,
+  MessageComponents,
   CommandResponse,
+  MessageResponse,
   Command,
   SlashCommand,
-  ApplicationCommandInteractionDataOptionInteger,
-} from '../discord/types.ts'
-import type { AppContext } from '../di.ts'
-import type { BrxLottery } from './brxLottery.ts'
+  CommandInteractionInteger,
+} from '../discord/types'
+
+import type { AppContext } from '../di'
+import type { BrxLottery } from './brxLottery'
 
 export type LotteryInteraction = SlashCommand<
-  [
-    ApplicationCommandInteractionDataOptionInteger,
-    ApplicationCommandInteractionDataOptionInteger | undefined
-  ]
+  [CommandInteractionInteger, CommandInteractionInteger | undefined]
 >
 
 export const ID_TYPE = 'LOTTERY'
 
-const command: Command = {
+const command: Command<LotteryInteraction> = {
   // global: true,
   guild: true,
   description: 'Starts a lottery with the server',
@@ -40,20 +38,23 @@ const command: Command = {
     {
       name: 'bet',
       required: true,
-      type: DiscordApplicationCommandOptionTypes.Integer,
+      type: ApplicationCommandOptionType.Integer,
       description:
         'amount of rep to bet. Cannot exceed your total rep or (playerLimit * bet) if negative',
     },
     {
       name: 'playerLimit',
       required: false,
-      type: DiscordApplicationCommandOptionTypes.Integer,
+      type: ApplicationCommandOptionType.Integer,
       description: 'maximum number of players allowed to join negative lottery (bet * playerLimit)',
     },
   ],
-  execute: async function (payload, context) {
-    if ((payload as unknown as ComponentInteraction)?.data?.customId) {
-      return handleLotteryJoin(payload as ComponentInteraction, context)
+  execute: async function (
+    payload: LotteryInteraction,
+    context: AppContext
+  ): Promise<CommandResponse> {
+    if ((payload as unknown as MessageComponentInteraction)?.data?.custom_id) {
+      return handleLotteryJoin(payload as unknown as MessageComponentInteraction, context)
     }
 
     return await handleLottery(payload as LotteryInteraction, context)
@@ -63,10 +64,13 @@ const command: Command = {
 
 export default command
 
-async function handleLottery(payload: LotteryInteraction, context: AppContext) {
+async function handleLottery(
+  payload: LotteryInteraction,
+  context: AppContext
+): Promise<CommandResponse> {
   // Validation
   //
-  if (!payload.data?.options?.length || !payload.guildId)
+  if (!payload.data?.options?.length || !payload.guild_id)
     return message('missing required sub-command')
 
   // const options = getInitialOptions(payload)
@@ -80,7 +84,7 @@ async function handleLottery(payload: LotteryInteraction, context: AppContext) {
 
   // Init Lottery
   //
-  const member = asGuildMember(payload.guildId, payload.member as GuildMemberWithUser)
+  const member = asGuildMember(payload.guild_id, payload.member as DiscordGuildMemberWithUser)
   // console.log('creator member', JSON.stringify(member, null, 2))
   // if (parseFloat(member.id) > 0) {
   //   throw new Error('exit')
@@ -88,7 +92,7 @@ async function handleLottery(payload: LotteryInteraction, context: AppContext) {
   const memberBgr = await context.userStore.getUserRep(member)
 
   const { lottery, error } = context.lottery.init({
-    interaction: payload as unknown as ComponentInteraction,
+    interaction: payload as unknown as Interaction,
     creator: member,
     bet: amount,
     playerLimit,
@@ -107,18 +111,17 @@ async function handleLottery(payload: LotteryInteraction, context: AppContext) {
 }
 
 async function handleLotteryJoin(
-  payload: ComponentInteraction,
+  payload: MessageComponentInteraction,
   context: AppContext
 ): Promise<CommandResponse> {
-  const lotteryId = payload.data?.customId
-  if (!lotteryId)
-    return message(undefined, { type: DiscordInteractionResponseTypes.DeferredUpdateMessage })
+  const lotteryId = payload.data?.custom_id
+  if (!lotteryId) return message(undefined, { type: InteractionResponseType.DeferredMessageUpdate })
 
   const { lottery, error } = await context.lottery.load(lotteryId, { interaction: payload! })
   if (!lottery || error)
-    return message(error?.message, { type: DiscordInteractionResponseTypes.DeferredUpdateMessage })
+    return message(error?.message, { type: InteractionResponseType.DeferredMessageUpdate })
 
-  const member = asGuildMember(payload.guildId!, payload.member!)
+  const member = asGuildMember(payload.guild_id!, payload.member!)
   if (lottery.getPlayers().find((p) => p.id === member.id)) {
     return message('Cannot join a lottery you are already in', { isPrivate: true })
   }
@@ -136,16 +139,17 @@ async function handleLotteryJoin(
   await lottery.addPlayer(member)
 
   if (lottery.shouldFinish()) {
+    // eslint-disable-next-line no-console
     lottery.finish().catch((e) => console.error('lottery end error', e))
   } else {
     updateInteraction({
-      applicationId: payload.applicationId,
+      applicationId: payload.application_id,
       token: payload.token,
       body: lotteryMessage(lottery),
     })
   }
 
-  return message(undefined, { type: DiscordInteractionResponseTypes.DeferredUpdateMessage })
+  return message(undefined, { type: InteractionResponseType.DeferredMessageUpdate })
 }
 
 export async function finishLottery(
@@ -163,7 +167,7 @@ export async function finishLottery(
   await lottery?.finish()
 }
 
-export function lotteryMessage(lottery: BrxLottery): InteractionApplicationCommandCallbackData {
+export function lotteryMessage(lottery: BrxLottery): MessageResponse {
   const startTime = lottery.getStart()
   if (!startTime) {
     throw new Error('no start time for lottery')
@@ -184,21 +188,24 @@ export function lotteryMessage(lottery: BrxLottery): InteractionApplicationComma
     players.length < 2 ? '' : `\n**Players**\n${players.map((p) => p.username).join('\n')}`
 
   return {
-    content: banner + footer,
-    components: lottery.canAddPlayers() ? joinLotteryComponents(lottery.id) : [],
+    type: InteractionResponseType.ChannelMessageWithSource,
+    data: {
+      content: banner + footer,
+      components: lottery.canAddPlayers() ? joinLotteryComponents(lottery.id) : [],
+    },
   }
 }
 
 function joinLotteryComponents(id: string): MessageComponents {
   return [
     {
-      type: DiscordMessageComponentTypes.ActionRow,
+      type: ComponentType.ActionRow,
       components: [
         {
-          type: DiscordMessageComponentTypes.Button,
+          type: ComponentType.Button,
           label: 'Join Lottery',
-          style: DiscordButtonStyles.Primary,
-          customId: encodeCustomId(ID_TYPE, id),
+          style: ButtonStyle.Primary,
+          custom_id: encodeCustomId(ID_TYPE, id),
         },
       ],
     },

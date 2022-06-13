@@ -1,4 +1,4 @@
-import { fromDocument, toValue, toDocument } from './convert.ts'
+import { fromDocument, toValue, toDocument } from './convert'
 import type {
   BeginTransaction,
   CommitTransaction,
@@ -12,8 +12,8 @@ import type {
   Document,
   CommitResult,
   ConvertedDocument,
-} from './types.ts'
-import type { FirebaseClient } from './client.ts'
+} from './types'
+import type { FirebaseClient } from './client'
 
 const COLLECTION_ERROR = 'Collection Required'
 const ID_ERROR = 'ID Required'
@@ -68,7 +68,6 @@ export class Firestore {
     const doc = (await this.client.request({
       method: 'POST',
       url: `documents/${collection}${id ? `?documentId=${id}` : ''}`,
-      // deno-lint-ignore no-explicit-any
       body: toDocument(body as Record<string, any>),
       ...props,
     })) as Document

@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "type": 2,
+  "token": "aW50ZXJhY3Rpb246OTg1MDIxNzA0NjQyMzgzOTMyOldvUHBMOWUydjlJbG1rdjlHcjlMdlkxbDdpQVFBTFVPYXIxZWE4M0xxd2JrSjZhcU9CRnQwREVrQldyVlo4WGkyV29qMjZJbGNOY1p6T3JjVVB2UW13a2lWTHowRGQ2dDJFMHJzOW1HRGNNakRwc1ZSNkwxT2Q1YzRIa2NxbGNm",
+  "member": {
+    "user": {
+      "username": "Kyeotic",
+      "public_flags": 0,
+      "id": "107303174691409920",
+      "discriminator": "0001",
+      "avatar_decoration": null,
+      "avatar": "c6fe7d137937fc1c5f0ab763faab598c"
+    },
+    "roles": ["472436078465253379", "472417174468952071"],
+    "premium_since": null,
+    "permissions": "4398046511103",
+    "pending": false,
+    "nick": "Kyeotic/null",
+    "mute": false,
+    "joined_at": "2018-07-27T06:18:57.866000+00:00",
+    "is_pending": false,
+    "flags": 0,
+    "deaf": false,
+    "communication_disabled_until": null,
+    "avatar": null
+  },
+  "locale": "en-US",
+  "id": "985021704642383932",
+  "guild_locale": "en-US",
+  "guild_id": "472286758030147585",
+  "data": {
+    "type": 1,
+    "options": [
+      {
+        "value": "2s8",
+        "type": 3,
+        "name": "dice"
+      },
+      {
+        "value": true,
+        "type": 5,
+        "name": "verbose"
+      }
+    ],
+    "name": "roll",
+    "id": "882455427403632642",
+    "guild_id": "472286758030147585"
+  },
+  "channel_id": "472286758030147588",
+  "application_id": "472640856176984065"
+}

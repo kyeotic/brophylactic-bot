@@ -1,3 +1,5 @@
-import { initContext } from '../src/di.ts'
+import { initContext } from '../src/di.js'
 
-console.log(await initContext().firebaseClient.getToken())
+initContext()
+  .firebaseClient.getToken()
+  .then((t) => console.log(t))

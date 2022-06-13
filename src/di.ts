@@ -1,14 +1,18 @@
-import config from './config.ts'
+import config from './config'
 
-import { FirebaseClient } from './firebase/client.ts'
-import { Firestore } from './firebase/firestore.ts'
-import { getToken } from './firebase/token.ts'
-import { UserStore } from './users/store.ts'
-import { LotteryStore } from './lottery/store.ts'
-import { BrxLottery, BrxLotteryProps, NewLotteryProps } from './lottery/brxLottery.ts'
-import { WorkflowClient } from './workflow/client.ts'
+import { FirebaseClient } from './firebase/client'
+import { Firestore } from './firebase/firestore'
+import { getToken } from './firebase/token'
+import { UserStore } from './users/store'
+import { LotteryStore } from './lottery/store'
+import { BrxLottery, BrxLotteryProps, NewLotteryProps } from './lottery/brxLottery'
+import { WorkflowClient } from './workflow/client'
+import logger from './util/logger'
+
+import type { LoggerWithSub as Logger } from 'lambda-logger-node'
 
 type BrxLotteryNoContext = Omit<BrxLotteryProps, 'context'>
+export type AppLogger = Logger
 
 export interface AppContext {
   config: typeof config
@@ -21,13 +25,17 @@ export interface AppContext {
     init: (props: BrxLotteryNoContext & NewLotteryProps) => ReturnType<typeof BrxLottery['init']>
     load: (id: string, props: BrxLotteryNoContext) => ReturnType<typeof BrxLottery['load']>
   }
+  logger: AppLogger
 }
 
 export function initContext(init = {}): AppContext {
   const context = { ...init } as AppContext
 
   context.config = config
+  context.logger = logger
+
   context.firebaseClient = new FirebaseClient({
+    logger,
     host: config.firebase.host,
     projectId: config.firebase.projectId,
     tokenFn: () => getToken(config.firebase.cert),
@@ -42,7 +50,7 @@ export function initContext(init = {}): AppContext {
     load: (id: string, props: BrxLotteryNoContext) => BrxLottery.load(id, { ...props, context }),
   }
 
-  context.workflow = new WorkflowClient({ config: config.workflow })
+  context.workflow = new WorkflowClient({ config: config.workflow, logger })
 
   return context
 }

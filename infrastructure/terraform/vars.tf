@@ -31,9 +31,6 @@ variable "lambda_file" {
   default = "../../build/lambda.zip"
 }
 
-variable "lambda_layer_file" {
-  default = "../../build/layer.zip"
-}
 
 #-------------------------------------------
 # Interpolated Values

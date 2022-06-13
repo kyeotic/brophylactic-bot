@@ -1,9 +1,9 @@
-import { Interaction } from '../deps.ts'
-import { GuildMember, updateInteraction } from '../discord/api.ts'
-import { Lottery } from './lottery.ts'
+import { updateInteraction } from '../discord/api'
+import { Lottery } from './lottery'
 
-import type { AppContext } from '../di.ts'
-import type { GuildLottery } from './store.ts'
+import type { AppContext } from '../di'
+import type { GuildLottery } from './store'
+import type { GuildMember, Interaction } from '../discord/types'
 
 export const lotteryTimeSeconds = 30
 // export const lotteryTimeSeconds = 5 // debug
@@ -121,7 +121,7 @@ export class BrxLottery {
 
   async finalizeInteraction(message: string): Promise<void> {
     await updateInteraction({
-      applicationId: this.interaction.applicationId,
+      applicationId: this.interaction.application_id,
       token: this.interaction.token,
       body: {
         content: message,

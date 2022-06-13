@@ -1,7 +1,7 @@
-import { toValue, toDocument } from '../firebase/convert.ts'
-import type { Firestore } from '../firebase/firestore.ts'
-import type { Write } from '../firebase/types.ts'
-import type { GuildMember } from '../discord/types.ts'
+import { toValue, toDocument } from '../firebase/convert'
+import type { Firestore } from '../firebase/firestore'
+import type { Write } from '../firebase/types'
+import type { GuildMember } from '../discord/types'
 
 const delimiter = '.'
 

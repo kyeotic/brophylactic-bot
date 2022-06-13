@@ -1,20 +1,19 @@
-import { nanoid, AWSSignerV4 } from '../deps.ts'
+import { nanoid } from 'nanoid'
+import aws4 from 'aws4'
+import request from 'request-micro'
 
-import type config from '../config.ts'
+import type config from '../config'
+import type { AppLogger } from '../di'
 
 export type WorkflowConfig = typeof config['workflow']
 
 export class WorkflowClient {
-  private signer: AWSSignerV4
+  private logger: AppLogger
   private config: WorkflowConfig
 
-  constructor({ config }: { config: WorkflowConfig }) {
+  constructor({ config, logger }: { config: WorkflowConfig; logger: AppLogger }) {
     this.config = config
-
-    this.signer = new AWSSignerV4(config.region, {
-      awsAccessKeyId: config.accessKeyId,
-      awsSecretKey: config.secretAccessKey,
-    })
+    this.logger = logger
   }
 
   async startLottery(input: unknown): Promise<void> {
@@ -22,27 +21,27 @@ export class WorkflowClient {
   }
 
   async send(action: 'StartExecution' | 'DescribeExecution', body: unknown): Promise<void> {
-    const encoded = new TextEncoder().encode(
-      JSON.stringify({
-        name: nanoid(),
-        stateMachineArn: this.config.stepFunctionArn,
-        input: JSON.stringify(body),
-      })
-    )
-
-    await fetch(
-      await this.signer.sign(
-        'states',
-        new Request(`https://states.${this.config.region}.amazonaws.com`, {
+    const response = await request(
+      aws4.sign(
+        {
+          service: 'states',
+          region: this.config.region,
+          path: '/',
           method: 'POST',
           headers: {
-            'content-length': encoded.length.toString(),
             'Content-Type': 'application/x-amz-json-1.0',
             'X-Amz-Target': 'AWSStepFunctions.' + action,
           },
-          body: encoded,
-        })
+          body: JSON.stringify({
+            name: nanoid(),
+            stateMachineArn: this.config.stepFunctionArn,
+            input: JSON.stringify(body),
+          }),
+        },
+        { accessKeyId: this.config.accessKeyId, secretAccessKey: this.config.secretAccessKey }
       )
     )
+
+    this.logger.info('workflow response', response.statusCode, response.data.toString())
   }
 }

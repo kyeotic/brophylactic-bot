@@ -1,6 +1,5 @@
-// import times from 'lodash.times'
-// import sum from 'lodash.sum'
-import { times, sum } from '../deps.ts'
+import { sum } from '../util/math'
+import { times } from '../util/func'
 
 export default function roll(dice: string): number[] {
   const results: number[] = []

@@ -1,12 +1,9 @@
-import {
-  APIGatewayProxyEventV2,
-  APIGatewayProxyResultV2,
-  LambdaContext as Context,
-} from './deps.ts'
-import { verifySignature } from './deps.ts'
-import { camelize, Interaction } from './deps.ts'
-import { initContext } from './di.ts'
-import { main } from './discord/main.ts'
+import { verifyKey } from './discord/signature'
+import { initContext } from './di'
+import { main } from './discord/main'
+
+import type { Interaction } from './discord/types'
+import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2, Context } from 'aws-lambda'
 
 export async function handler(
   event: APIGatewayProxyEventV2,
@@ -25,7 +22,7 @@ export async function handler(
     return response(401, { error: 'Invalid request; could not verify the request' })
   }
 
-  const payload = camelize<Interaction>(JSON.parse(event.body))
+  const payload = JSON.parse(event.body) as Interaction
 
   try {
     // return await response(200, { message: 'test' })
@@ -69,11 +66,7 @@ function verifyDiscordRequest(
     return false
   }
 
-  const { isValid } = verifySignature({
-    publicKey,
-    signature,
-    timestamp,
-    body,
-  })
+  const isValid = verifyKey(body, signature, timestamp, publicKey)
+
   return isValid
 }
