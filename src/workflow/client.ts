@@ -24,6 +24,8 @@ export class WorkflowClient {
     const response = await request(
       aws4.sign(
         {
+          protocol: 'https:',
+          host: `states.us-west-2.amazonaws.com`,
           service: 'states',
           region: this.config.region,
           path: '/',
@@ -42,6 +44,6 @@ export class WorkflowClient {
       )
     )
 
-    this.logger.info('workflow response', response.statusCode, response.data.toString())
+    this.logger.debug('workflow response', response.statusCode, response.data.toString())
   }
 }
