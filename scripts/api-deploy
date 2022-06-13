@@ -19,7 +19,7 @@ APP_NAME="brobot"
 api_name="arn:aws:lambda:us-west-2:${AWS_ACCOUNT_ID}:function:${APP_NAME}_${WORKSPACE}_api"
 workflow_name="arn:aws:lambda:us-west-2:${AWS_ACCOUNT_ID}:function:${APP_NAME}_${WORKSPACE}_workflow"
 
-${_scripts}/bundle_lambda
+npm run build
 
 aws lambda update-function-code \
     --function-name $api_name \

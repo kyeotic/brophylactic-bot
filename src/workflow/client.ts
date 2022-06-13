@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid'
 import aws4 from 'aws4'
-import request from 'request-micro'
+import request, { isErrorStatus } from 'request-micro'
 
 import type config from '../config'
 import type { AppLogger } from '../di'
@@ -40,9 +40,18 @@ export class WorkflowClient {
             input: JSON.stringify(body),
           }),
         },
-        { accessKeyId: this.config.accessKeyId, secretAccessKey: this.config.secretAccessKey }
+        {
+          accessKeyId: this.config.accessKeyId,
+          secretAccessKey: this.config.secretAccessKey,
+          sessionToken: this.config.sessionToken,
+        }
       )
     )
+
+    if (isErrorStatus(response)) {
+      this.logger.error('Workflow error', response.data)
+      throw new Error('Unable to start workflow')
+    }
 
     this.logger.debug('workflow response', response.statusCode, response.data.toString())
   }
