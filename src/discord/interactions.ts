@@ -1,9 +1,9 @@
-import type { Command, CommandInteraction } from './types'
+import type { Command, CommandInteraction } from './types.js'
 
-import roll from './interactions/roll'
-import bgr from './interactions/bgr'
-import guess from './interactions/guess'
-import lottery from '../lottery/command'
+import roll from './interactions/roll.js'
+import bgr from './interactions/bgr.js'
+import guess from './interactions/guess.js'
+import lottery from '../lottery/command.js'
 
 export const commands: Record<string, Command<CommandInteraction> | undefined> = {
   roll,

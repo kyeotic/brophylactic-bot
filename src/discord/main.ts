@@ -1,8 +1,8 @@
-import { parseCustomId, message } from './api'
-import { isInteractionResponse, InteractionResponseType, InteractionType } from './types'
-import { commands } from './interactions'
-import type { AppContext } from '../di'
-import { assertNever } from '../util/assert'
+import { parseCustomId, message } from './api.js'
+import { isInteractionResponse, InteractionResponseType, InteractionType } from './types.js'
+import { commands } from './interactions.js'
+import type { AppContext } from '../di.js'
+import { assertNever } from '../util/assert.js'
 
 import type {
   Interaction,

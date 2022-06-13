@@ -1,4 +1,4 @@
-import type { AppContext } from '../di'
+import type { AppContext } from '../di.js'
 // enums
 import {
   InteractionType,
@@ -6,7 +6,8 @@ import {
   ApplicationCommandType,
   ApplicationCommandOptionType,
   ButtonStyle,
-  APIMessageComponent as MessageComponentType,
+  APIMessageComponent as MessageComponent,
+  ComponentType,
 } from 'discord-api-types/v10'
 
 import type {
@@ -55,12 +56,15 @@ import type {
   // debug
   APIChatInputApplicationCommandInteractionData,
   APIContextMenuInteraction,
+  APIActionRowComponent,
+  APIMessageActionRowComponent,
 } from 'discord-api-types/v10'
 
 export type {
   Interaction,
   InteractionResponse,
   InteractionResponseCallback,
+  MessageComponent,
   //command definitions
   CommandOption,
   CommandSubcommandOption,
@@ -101,7 +105,7 @@ export {
   ApplicationCommandType,
   ApplicationCommandOptionType,
   ButtonStyle,
-  MessageComponentType,
+  ComponentType,
 }
 
 export type DiscordGuildMemberWithUser = Omit<DiscordGuildMember, 'user'> & {
@@ -131,7 +135,7 @@ export interface Command<
   /** The slash command options for this command. */
   options?: CommandOption[]
   /** The function that will be called when the command is executed. */
-  execute: (payload: CommandInteractionType, context: AppContext) => CommandResponse
+  execute: (payload: CommandInteractionType, context: AppContext) => Promise<CommandResponse>
   messageInteractionType?: string
 }
 export type CommandInteraction = SlashCommand<(CommandInteractionOption | undefined)[]>
@@ -142,6 +146,7 @@ export type MessageResponse =
   | APIInteractionResponseDeferredChannelMessageWithSource
   | APIInteractionResponseDeferredMessageUpdate
   | APIInteractionResponseUpdateMessage
+export type MessageComponents = APIActionRowComponent<APIMessageActionRowComponent>[]
 
 export function isInteractionResponse(
   response: InteractionResponse | InteractionResponseCallback

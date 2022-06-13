@@ -1,12 +1,23 @@
 {
   "name": "brophylactic-bot",
   "version": "1.0.0",
-  "main": "index.js",
   "repository": "git@github.com:kyeotic/brophylactic-bot.git",
   "author": "Tim Kye <tim@kye.dev>",
   "license": "MIT",
+  "type": "module",
+  "main": "./dist/src/main.js",
+  "exports": {
+    ".": "./dist/src/main.js"
+  },
+  "typesVersions": {
+    "*": {
+      "main.d.ts": [
+        "dist/src/main.d.ts"
+      ]
+    }
+  },
   "scripts": {
-    "start": "ts-node src/bot.ts",
+    "start": "ts-node src/bot",
     "build": "run-s build:tsc build:package",
     "build:package": "del build/ && lambda-zipper build -f dist/ \"!src/**/__tests__/**\" -o ./build/lambda.zip",
     "build:tsc": "del dist/ && tsc --project tsconfig.build.json",
@@ -32,7 +43,7 @@
     "snakecase-keys": "^5.4.2",
     "tslib": "^2.4.0",
     "tweetnacl": "^1.0.3",
-    "url-join": "4.x"
+    "url-join": "^5.0.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.97",
@@ -40,7 +51,6 @@
     "@types/encodeurl": "^1.0.0",
     "@types/node": "^17.0.36",
     "@types/seed-random": "^2.2.1",
-    "@types/url-join": "^4.0.1",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
     "copyfiles": "^2.4.1",

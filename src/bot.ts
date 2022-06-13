@@ -7,11 +7,11 @@ import {
   GatewayIntents,
 } from 'discordeno'
 
-import { main } from './discord/main'
-import { initContext } from './di'
-import { botRespond } from './discord/api'
-import type { Interaction } from './discord/types'
-import config from './config'
+import { main } from './discord/main.js'
+import { initContext } from './di.js'
+import { botRespond } from './discord/api.js'
+import type { Interaction } from './discord/types.js'
+import config from './config.js'
 
 const bot = createBot({
   token: config.discord.botToken,

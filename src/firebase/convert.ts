@@ -1,4 +1,4 @@
-import type { Document, Value, MapValue, ArrayValue } from './types'
+import type { Document, Value, MapValue, ArrayValue } from './types.js'
 
 export function toDocument(obj: Record<string, any>): Pick<Document, 'fields'> {
   return {

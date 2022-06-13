@@ -1,9 +1,9 @@
-import config from '../config'
+import config from '../config.js'
 import urlJoin from 'url-join'
 import camelCase from 'camelcase-keys'
 import snakeCase from 'snakecase-keys'
 import request from 'request-micro'
-import { InteractionResponseType } from './types'
+import { InteractionResponseType } from './types.js'
 import type {
   GuildMember,
   DiscordGuildMemberWithUser,

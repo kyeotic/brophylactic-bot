@@ -1,13 +1,13 @@
-import config from './config'
+import config from './config.js'
 
-import { FirebaseClient } from './firebase/client'
-import { Firestore } from './firebase/firestore'
-import { getToken } from './firebase/token'
-import { UserStore } from './users/store'
-import { LotteryStore } from './lottery/store'
-import { BrxLottery, BrxLotteryProps, NewLotteryProps } from './lottery/brxLottery'
-import { WorkflowClient } from './workflow/client'
-import logger from './util/logger'
+import { FirebaseClient } from './firebase/client.js'
+import { Firestore } from './firebase/firestore.js'
+import { getToken } from './firebase/token.js'
+import { UserStore } from './users/store.js'
+import { LotteryStore } from './lottery/store.js'
+import { BrxLottery, BrxLotteryProps, NewLotteryProps } from './lottery/brxLottery.js'
+import { WorkflowClient } from './workflow/client.js'
+import logger from './util/logger.js'
 
 import type { LoggerWithSub as Logger } from 'lambda-logger-node'
 
@@ -49,7 +49,7 @@ export function initContext(init = {}): AppContext {
     load: (id: string, props: BrxLotteryNoContext) => BrxLottery.load(id, { ...props, context }),
   }
 
-  context.workflow = new WorkflowClient({ config: config.workflow })
+  context.workflow = new WorkflowClient({ config: config.workflow, logger })
 
   return context
 }

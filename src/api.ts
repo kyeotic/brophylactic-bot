@@ -1,9 +1,9 @@
-import { verifyKey } from './discord/signature'
-import { initContext } from './di'
-import { main } from './discord/main'
+import { verifyKey } from './discord/signature.js'
+import { initContext } from './di.js'
+import { main } from './discord/main.js'
 import camelize from 'camelcase-keys'
 
-import type { Interaction } from './discord/types'
+import type { Interaction } from './discord/types.js'
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2, Context } from 'aws-lambda'
 
 export async function handler(

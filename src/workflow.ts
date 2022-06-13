@@ -1,6 +1,6 @@
-import { LambdaContext as Context } from './deps'
-import { initContext } from './di'
-import { finishLottery } from './lottery/command'
+import { LambdaContext as Context } from './deps.js'
+import { initContext } from './di.js'
+import { finishLottery } from './lottery/command.js'
 
 import type { Interaction } from 'discord.js'
 

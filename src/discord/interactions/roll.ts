@@ -1,10 +1,11 @@
-import roll from '../../games/dice'
-import { sum } from '../../util/math'
-import { ApplicationCommandOptionType } from '../types'
-import { message } from '../api'
+import roll from '../../games/dice.js'
+import { sum } from '../../util/math.js'
+import { ApplicationCommandOptionType } from '../types.js'
+import { message } from '../api.js'
 import type {
   Command,
   SlashCommand,
+  CommandResponse,
   CommandInteractionString,
   CommandInteractionBoolean,
 } from '../types'
@@ -41,14 +42,14 @@ const command: Command<RollInteraction> = {
       type: ApplicationCommandOptionType.Boolean,
     },
   ],
-  execute: function (payload) {
+  execute: async function (payload): Promise<CommandResponse> {
     return handleRoll(payload as RollInteraction)
   },
 }
 
 export default command
 
-function handleRoll(payload: RollInteraction) {
+function handleRoll(payload: RollInteraction): CommandResponse {
   const rollInput = payload.data.options?.[0]?.value ?? '1d6'
   const verbose = payload.data?.options?.[1]?.value?.toString() === 'true'
   const isPrivate = payload.data?.options?.[2]?.value ?? false

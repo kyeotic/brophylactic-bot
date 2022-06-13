@@ -1,7 +1,9 @@
-import { encode as createJWT } from 'jwt-simple'
+import jwtSimple from 'jwt-simple'
 import encodeUrl from 'encodeurl'
 import request from 'request-micro'
-import type { ServiceAccountKey, GoogleAuthToken } from './types'
+import type { ServiceAccountKey, GoogleAuthToken } from './types.js'
+
+const { encode: createJWT } = jwtSimple
 
 export async function createSignedJwt(key: ServiceAccountKey): Promise<string> {
   const iat = getNumericDate(new Date())

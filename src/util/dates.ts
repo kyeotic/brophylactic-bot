@@ -5,7 +5,11 @@ export {
   formatDistanceToNow,
   differenceInSeconds,
 } from 'date-fns'
-export { zonedTimeToUtc, utcToZonedTime, format as formatWithTimezone } from 'date-fns-tz'
+import dateFnTz from 'date-fns-tz'
+
+const { zonedTimeToUtc, utcToZonedTime, format: formatWithTimezone } = dateFnTz
+
+export { zonedTimeToUtc, utcToZonedTime, formatWithTimezone }
 
 export function humanizeMilliseconds(milliseconds: number) {
   if (milliseconds < 1000) return `${milliseconds}ms`
