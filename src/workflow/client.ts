@@ -2,8 +2,8 @@ import { nanoid } from 'nanoid'
 import aws4 from 'aws4'
 import request from 'request-micro'
 
-import type config from '../config.js'
-import type { AppLogger } from '../di.js'
+import type config from '../config'
+import type { AppLogger } from '../di'
 
 export type WorkflowConfig = typeof config['workflow']
 

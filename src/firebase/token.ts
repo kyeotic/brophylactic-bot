@@ -1,7 +1,7 @@
 import jwtSimple from 'jwt-simple'
 import encodeUrl from 'encodeurl'
 import request from 'request-micro'
-import type { ServiceAccountKey, GoogleAuthToken } from './types.js'
+import type { ServiceAccountKey, GoogleAuthToken } from './types'
 
 const { encode: createJWT } = jwtSimple
 

@@ -1,4 +1,4 @@
-import config from '../config.js'
+import config from '../config'
 import { Logger, LineFormatter, JsonFormatter } from 'lambda-logger-node'
 
 const logger = Logger({

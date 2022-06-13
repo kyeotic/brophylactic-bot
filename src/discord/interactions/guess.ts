@@ -1,9 +1,9 @@
-import { formatDistanceToNow, utcToZonedTime, formatWithTimezone } from '../../util/dates.js'
-import { message, asGuildMember } from '../api.js'
-import { randomInclusive } from '../../util/random.js'
-import { ApplicationCommandOptionType } from '../types.js'
+import { formatDistanceToNow, utcToZonedTime, formatWithTimezone } from '../../util/dates'
+import { message, asGuildMember } from '../api'
+import { randomInclusive } from '../../util/random'
+import { ApplicationCommandOptionType } from '../types'
 
-import type { AppContext } from '../../di.js'
+import type { AppContext } from '../../di'
 import type {
   Command,
   SlashCommand,

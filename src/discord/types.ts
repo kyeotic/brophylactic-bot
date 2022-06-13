@@ -1,4 +1,4 @@
-import type { AppContext } from '../di.js'
+import type { AppContext } from '../di'
 // enums
 import {
   InteractionType,

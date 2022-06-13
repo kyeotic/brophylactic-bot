@@ -1,13 +1,13 @@
-import config from './config.js'
+import config from './config'
 
-import { FirebaseClient } from './firebase/client.js'
-import { Firestore } from './firebase/firestore.js'
-import { getToken } from './firebase/token.js'
-import { UserStore } from './users/store.js'
-import { LotteryStore } from './lottery/store.js'
-import { BrxLottery, BrxLotteryProps, NewLotteryProps } from './lottery/brxLottery.js'
-import { WorkflowClient } from './workflow/client.js'
-import logger from './util/logger.js'
+import { FirebaseClient } from './firebase/client'
+import { Firestore } from './firebase/firestore'
+import { getToken } from './firebase/token'
+import { UserStore } from './users/store'
+import { LotteryStore } from './lottery/store'
+import { BrxLottery, BrxLotteryProps, NewLotteryProps } from './lottery/brxLottery'
+import { WorkflowClient } from './workflow/client'
+import logger from './util/logger'
 
 import type { LoggerWithSub as Logger } from 'lambda-logger-node'
 

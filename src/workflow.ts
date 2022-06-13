@@ -1,8 +1,8 @@
-import { LambdaContext as Context } from './deps.js'
-import { initContext } from './di.js'
-import { finishLottery } from './lottery/command.js'
+import { initContext } from './di'
+import { finishLottery } from './lottery/command'
 
-import type { Interaction } from 'discord.js'
+import type { Context } from 'aws-lambda'
+import type { Interaction } from './discord/types'
 
 export async function handler(event: unknown, lambdaContext: Context): Promise<void> {
   const context = initContext(lambdaContext)

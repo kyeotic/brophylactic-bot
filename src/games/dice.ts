@@ -1,5 +1,5 @@
-import { sum } from '../util/math.js'
-import { times } from '../util/func.js'
+import { sum } from '../util/math'
+import { times } from '../util/func'
 
 export default function roll(dice: string): number[] {
   const results: number[] = []

@@ -1,7 +1,7 @@
-import roll from '../../games/dice.js'
-import { sum } from '../../util/math.js'
-import { ApplicationCommandOptionType } from '../types.js'
-import { message } from '../api.js'
+import roll from '../../games/dice'
+import { sum } from '../../util/math'
+import { ApplicationCommandOptionType } from '../types'
+import { message } from '../api'
 import type {
   Command,
   SlashCommand,

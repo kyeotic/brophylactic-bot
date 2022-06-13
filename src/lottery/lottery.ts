@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import { randomInclusive } from '../util/random.js'
+import { randomInclusive } from '../util/random'
 
 export interface LotteryProps<Player> {
   id?: string

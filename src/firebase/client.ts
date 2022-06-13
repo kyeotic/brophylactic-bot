@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import urlJoin from 'url-join'
 import request from 'request-micro'
-import type { FetchRequest, HeadersInit } from './types.js'
+import type { FetchRequest, HeadersInit } from './types'
 
 export class FirebaseClient {
   private host: string

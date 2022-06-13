@@ -1,9 +1,7 @@
-import config from '../config.js'
+import config from '../config'
 import urlJoin from 'url-join'
-import camelCase from 'camelcase-keys'
-import snakeCase from 'snakecase-keys'
 import request from 'request-micro'
-import { InteractionResponseType } from './types.js'
+import { InteractionResponseType } from './types'
 import type {
   GuildMember,
   DiscordGuildMemberWithUser,
@@ -32,7 +30,7 @@ export async function botRespond(
     ),
     method: 'POST',
     headers: defaultHeaders,
-    body: JSON.stringify(snakeCase(body)),
+    body: JSON.stringify(body),
   })
 }
 
@@ -70,7 +68,7 @@ export async function updateInteraction({
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(snakeCase(body)),
+    body: JSON.stringify(body),
   })
 
   // console.log('discord', res.status, await res.text())
@@ -151,10 +149,7 @@ export async function getGuildMember(
     json: true,
   })
 
-  return asGuildMember(
-    guildId.toString(),
-    camelCase(res.data, { deep: true }) as DiscordGuildMemberWithUser
-  )
+  return asGuildMember(guildId.toString(), res.data as DiscordGuildMemberWithUser)
 }
 
 export function asGuildMember(guildId: string, member: DiscordGuildMemberWithUser): GuildMember {

@@ -1,5 +1,5 @@
 import seedRandom from 'seed-random'
-import config from '../config.js'
+import config from '../config'
 
 const baseSeedKey = config.discord.botToken as string
 

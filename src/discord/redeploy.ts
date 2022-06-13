@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import base64Url from 'base64url'
-import { commands } from './interactions.js'
-import config from '../config.js'
-import { deployCommand, getCommands } from './api.js'
+import { commands } from './interactions'
+import config from '../config'
+import { deployCommand, getCommands } from './api'
 
 const { decode } = base64Url
 

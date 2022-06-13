@@ -1,13 +1,13 @@
-import { updateInteraction, asGuildMember, message, encodeCustomId } from '../discord/api.js'
-import { differenceInSeconds } from '../util/dates.js'
-import { lotteryTimeMs } from './brxLottery.js'
+import { updateInteraction, asGuildMember, message, encodeCustomId } from '../discord/api'
+import { differenceInSeconds } from '../util/dates'
+import { lotteryTimeMs } from './brxLottery'
 
 import {
   ButtonStyle,
   ComponentType,
   ApplicationCommandOptionType,
   InteractionResponseType,
-} from '../discord/types.js'
+} from '../discord/types'
 
 import type {
   Interaction,
@@ -19,10 +19,10 @@ import type {
   Command,
   SlashCommand,
   CommandInteractionInteger,
-} from '../discord/types.js'
+} from '../discord/types'
 
-import type { AppContext } from '../di.js'
-import type { BrxLottery } from './brxLottery.js'
+import type { AppContext } from '../di'
+import type { BrxLottery } from './brxLottery'
 
 export type LotteryInteraction = SlashCommand<
   [CommandInteractionInteger, CommandInteractionInteger | undefined]

@@ -1,8 +1,8 @@
-import { ApplicationCommandOptionType, InteractionType } from '../types.js'
-import { formatDate } from '../../util/dates.js'
-import { updateInteraction, getGuildMember, asGuildMember, message } from '../api.js'
+import { ApplicationCommandOptionType, InteractionType } from '../types'
+import { formatDate } from '../../util/dates'
+import { updateInteraction, getGuildMember, asGuildMember, message } from '../api'
 
-import type { AppContext } from '../../di.js'
+import type { AppContext } from '../../di'
 import type {
   Command,
   CommandResponse,

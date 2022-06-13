@@ -1,9 +1,9 @@
-import { updateInteraction } from '../discord/api.js'
-import { Lottery } from './lottery.js'
+import { updateInteraction } from '../discord/api'
+import { Lottery } from './lottery'
 
-import type { AppContext } from '../di.js'
-import type { GuildLottery } from './store.js'
-import type { GuildMember, Interaction } from '../discord/types.js'
+import type { AppContext } from '../di'
+import type { GuildLottery } from './store'
+import type { GuildMember, Interaction } from '../discord/types'
 
 export const lotteryTimeSeconds = 30
 // export const lotteryTimeSeconds = 5 // debug
