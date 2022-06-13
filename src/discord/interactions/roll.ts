@@ -53,12 +53,17 @@ function handleRoll(payload: RollInteraction): CommandResponse {
   const rollInput = payload.data.options?.[0]?.value ?? '1d6'
   const verbose = payload.data?.options?.[1]?.value?.toString() === 'true'
   const isPrivate = payload.data?.options?.[2]?.value ?? false
-  const rollResult = roll(rollInput)
 
-  return message(
-    `${payload.member?.user.username} rolled ${rollInput} and got ${
-      verbose ? `${sum(rollResult)} with ${rollResult.join(', ')}` : sum(rollResult).toString()
-    }`,
-    { isPrivate }
-  )
+  try {
+    const rollResult = roll(rollInput)
+    return message(
+      `${payload.member?.user.username} rolled ${rollInput} and got ${
+        verbose ? `${sum(rollResult)} with ${rollResult.join(', ')}` : sum(rollResult).toString()
+      }`,
+      { isPrivate }
+    )
+  } catch (e: unknown) {
+    const error = (e as Error).message ? (e as Error).message : (e as any).toString()
+    return message(`Error rolling: ${error}`, { isPrivate: true })
+  }
 }
