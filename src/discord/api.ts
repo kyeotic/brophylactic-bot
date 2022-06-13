@@ -172,6 +172,7 @@ const nonMessageTypes: readonly InteractionResponseType[] = [
   InteractionResponseType.ApplicationCommandAutocompleteResult,
   InteractionResponseType.Modal,
 ] as const
+
 export function message(
   content?: string,
   {

@@ -142,11 +142,12 @@ async function handleLotteryJoin(
     // eslint-disable-next-line no-console
     lottery.finish().catch((e) => console.error('lottery end error', e))
   } else {
-    updateInteraction({
-      applicationId: payload.application_id,
-      token: payload.token,
-      body: lotteryMessage(lottery),
-    })
+    return lotteryMessage(lottery, InteractionResponseType.UpdateMessage)
+    // updateInteraction({
+    //   applicationId: payload.application_id,
+    //   token: payload.token,
+    //   body: lotteryMessage(lottery),
+    // })
   }
 
   return message(undefined, { type: InteractionResponseType.DeferredMessageUpdate })
@@ -167,7 +168,12 @@ export async function finishLottery(
   await lottery?.finish()
 }
 
-export function lotteryMessage(lottery: BrxLottery): MessageResponse {
+function lotteryMessage(
+  lottery: BrxLottery,
+  type:
+    | InteractionResponseType.ChannelMessageWithSource
+    | InteractionResponseType.UpdateMessage = InteractionResponseType.ChannelMessageWithSource
+): MessageResponse {
   const startTime = lottery.getStart()
   if (!startTime) {
     throw new Error('no start time for lottery')
@@ -188,7 +194,7 @@ export function lotteryMessage(lottery: BrxLottery): MessageResponse {
     players.length < 2 ? '' : `\n**Players**\n${players.map((p) => p.username).join('\n')}`
 
   return {
-    type: InteractionResponseType.ChannelMessageWithSource,
+    type,
     data: {
       content: banner + footer,
       components: lottery.canAddPlayers() ? joinLotteryComponents(lottery.id) : [],
