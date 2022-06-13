@@ -2,25 +2,30 @@
 import urlJoin from 'url-join'
 import request from 'request-micro'
 import type { FetchRequest, HeadersInit } from './types'
+import type { AppLogger } from '../di.js'
 
 export class FirebaseClient {
-  private host: string
-  private projectId: string
+  private readonly host: string
+  private readonly projectId: string
   private token?: string
-  private tokenFn: () => Promise<string>
+  private readonly tokenFn: () => Promise<string>
+  private readonly logger: AppLogger
 
   constructor({
     host,
     tokenFn,
     projectId,
+    logger,
   }: {
     host: string
     projectId: string
     tokenFn: () => Promise<string>
+    logger: AppLogger
   }) {
     this.host = host
     this.projectId = projectId
     this.tokenFn = tokenFn
+    this.logger = logger
   }
 
   asDocumentName({
@@ -72,7 +77,7 @@ export class FirebaseClient {
     const req = await request({
       url,
       method: params.method ?? 'POST',
-      body: params?.body && JSON.stringify(params.body),
+      body: params.body,
       headers: requestHeaders,
       json: true,
     })
@@ -82,8 +87,9 @@ export class FirebaseClient {
       return null
     }
 
-    if (req.statusCode ?? 0 > 399) {
+    if ((req.statusCode ?? 0) > 399) {
       const { error } = req.data as { error: { message: string } }
+      this.logger.error('Firebase Error', req.statusCode, typeof req.statusCode, req.data)
       throw new Error(`Firebase Error ${req.statusCode}: ${error.message}`)
     }
 

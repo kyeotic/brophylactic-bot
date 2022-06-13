@@ -35,6 +35,7 @@ export function initContext(init = {}): AppContext {
   context.logger = logger
 
   context.firebaseClient = new FirebaseClient({
+    logger,
     host: config.firebase.host,
     projectId: config.firebase.projectId,
     tokenFn: () => getToken(config.firebase.cert),

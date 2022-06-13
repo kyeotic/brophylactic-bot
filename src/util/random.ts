@@ -1,9 +1,13 @@
-import seedRandom from 'seed-random'
+import { create } from 'random-seed'
 import config from '../config'
 
 const baseSeedKey = config.discord.botToken as string
 
 export function randomInclusive(min: number, max: number, seed?: string): number {
-  const rng = seed ? Math.random : seedRandom(seed + baseSeedKey)
-  return Math.floor(rng() * (max - min + 1)) + min
+  if (!seed) {
+    // make random inclusive
+    return Math.floor(Math.random() * (max - min + 1)) + min
+  }
+
+  return create(seed + baseSeedKey).intBetween(min, max)
 }
