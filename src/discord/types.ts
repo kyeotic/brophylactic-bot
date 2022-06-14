@@ -1,4 +1,5 @@
 import type { AppContext } from '../di'
+
 // enums
 import {
   InteractionType,
@@ -9,6 +10,16 @@ import {
   APIMessageComponent as MessageComponent,
   ComponentType,
 } from 'discord-api-types/v10'
+
+// enums
+export {
+  InteractionType,
+  InteractionResponseType,
+  ApplicationCommandType,
+  ApplicationCommandOptionType,
+  ButtonStyle,
+  ComponentType,
+}
 
 import type {
   APIGuildMember as DiscordGuildMember,
@@ -33,7 +44,7 @@ import type {
   APIMessageComponentInteraction as MessageComponentInteraction,
   APIMessageComponentButtonInteraction as MessageButtonInteraction,
   APIApplicationCommandInteraction as ApplicationCommandInteraction,
-  APIChatInputApplicationCommandInteraction as SlashCommandInteraction,
+  APIChatInputApplicationCommandInteraction as ChatInputInteraction,
   APIContextMenuInteraction as ContextMenuInteraction,
   APIInteractionResponse as InteractionResponse,
   APIInteractionResponseCallbackData as InteractionResponseCallback,
@@ -52,10 +63,6 @@ import type {
   APIInteractionResponseDeferredChannelMessageWithSource,
   APIInteractionResponseDeferredMessageUpdate,
   APIInteractionResponseUpdateMessage,
-
-  // debug
-  APIChatInputApplicationCommandInteractionData,
-  APIContextMenuInteraction,
   APIActionRowComponent,
   APIMessageActionRowComponent,
 } from 'discord-api-types/v10'
@@ -83,7 +90,7 @@ export type {
   MessageComponentInteraction,
   MessageButtonInteraction,
   ApplicationCommandInteraction,
-  SlashCommandInteraction,
+  ChatInputInteraction,
   ContextMenuInteraction,
   CommandInteractionOption,
   CommandInteractionSubCommand,
@@ -98,15 +105,9 @@ export type {
   CommandInteractionAttachment,
 }
 
-// enums
-export {
-  InteractionType,
-  InteractionResponseType,
-  ApplicationCommandType,
-  ApplicationCommandOptionType,
-  ButtonStyle,
-  ComponentType,
-}
+// ---------------------------------
+// Extended Discord Types
+// ---------------------------------
 
 export type DiscordGuildMemberWithUser = Omit<DiscordGuildMember, 'user'> & {
   user: DiscordUser
@@ -121,9 +122,27 @@ export interface GuildMember {
   joinedAt: string
 }
 
-export interface Command<
-  CommandInteractionType extends SlashCommand<(CommandInteractionOption | undefined)[]>
-> {
+// ---------------------------------
+// Slash Command Definition
+// ---------------------------------
+
+export interface SlashCommandOptions<T extends (CommandInteractionOption | undefined)[]>
+  extends Omit<ChatInputInteraction, 'data'> {
+  data: Omit<CommandInteractionOption, 'options'> & {
+    options: T
+  }
+}
+
+export type SlashSubCommandOptions<T extends (CommandInteractionOption | undefined)[]> = Omit<
+  CommandInteractionSubCommand,
+  'options'
+> & {
+  options?: T
+}
+
+export interface BaseCommand {
+  // The name of the command. Needs to be unique across all commands
+  id: string
   /** The description of the command. */
   description?: string
   /** Whether or not this slash command should be enabled right now. Defaults to true. */
@@ -132,13 +151,27 @@ export interface Command<
   guild?: boolean
   /** Whether this slash command should be created once globally and allowed in DMs. Defaults to false. */
   global?: boolean
+}
+
+export interface SlashCommand<Type extends SlashCommandInteraction> extends BaseCommand {
   /** The slash command options for this command. */
   options?: CommandOption[]
   /** The function that will be called when the command is executed. */
-  execute: (payload: CommandInteractionType, context: AppContext) => Promise<CommandResponse>
-  messageInteractionType?: string
+  handleSlashCommand: (payload: Type, context: AppContext) => Promise<CommandResponse>
 }
-export type CommandInteraction = SlashCommand<(CommandInteractionOption | undefined)[]>
+
+export interface MessageComponentCommand extends BaseCommand {
+  messageInteractionType: string
+  handleMessage: (
+    payload: MessageComponentInteraction,
+    context: AppContext
+  ) => Promise<CommandResponse>
+}
+
+export type SlashCommandInteraction = SlashCommandOptions<(CommandInteractionOption | undefined)[]>
+// ---------------------------------
+// Command Response
+// ---------------------------------
 
 export type CommandResponse = InteractionResponse | Promise<InteractionResponse>
 export type MessageResponse =
@@ -153,81 +186,3 @@ export function isInteractionResponse(
 ): response is InteractionResponse {
   return Reflect.has(response, 'type')
 }
-
-export interface SlashCommand<T extends (CommandInteractionOption | undefined)[]>
-  extends Omit<SlashCommandInteraction, 'data'> {
-  data: Omit<CommandInteractionOption, 'options'> & {
-    options: T
-  }
-}
-
-export type SlashSubCommand<T extends (CommandInteractionOption | undefined)[]> = Omit<
-  CommandInteractionSubCommand,
-  'options'
-> & {
-  options?: T
-}
-
-// From discord-api-types
-
-// export enum InteractionType {
-//   Ping = 1,
-//   ApplicationCommand = 2,
-//   MessageComponent = 3,
-// }
-
-// export enum InteractionResponseType {
-//   /** ACK a `Ping` */
-//   Pong = 1,
-//   /** Respond to an interaction with a message */
-//   ChannelMessageWithSource = 4,
-//   /** ACK an interaction and edit a response later, the user sees a loading state */
-//   DeferredChannelMessageWithSource = 5,
-//   /** For components, ACK an interaction and edit the original message later; the user does not see a loading state */
-//   DeferredUpdateMessage = 6,
-//   /** For components, edit the message the component was attached to */
-//   UpdateMessage = 7,
-//   /** For Application Command Options, send an autocomplete result */
-//   ApplicationCommandAutocompleteResult = 8,
-//   /** For Command or Component interactions, send a Modal response */
-//   Modal = 9,
-// }
-
-// export enum ApplicationCommandType {
-//   /** A text-based command that shows up when a user types `/`
-//    *
-//    * aka slash command */
-//   ChatInput = 1,
-//   /** A UI-based command that shows up when you right click or tap on a user */
-//   User = 2,
-//   /** A UI-based command that shows up when you right click or tap on a message */
-//   Message = 3,
-// }
-
-// export enum ApplicationCommandOptionType {
-//   SubCommand = 1,
-//   SubCommandGroup = 2,
-//   String = 3,
-//   Integer = 4,
-//   Boolean = 5,
-//   User = 6,
-//   Channel = 7,
-//   Role = 8,
-//   Mentionable = 9,
-//   Number = 10,
-//   Attachment = 11,
-// }
-
-// export enum ButtonStyle {
-//   Primary = 1,
-//   Secondary = 2,
-//   Success = 3,
-//   Danger = 4,
-//   Link = 5,
-// }
-
-// export enum MessageComponentType {
-//   ActionRow = 1,
-//   Button = 2,
-//   SelectMenu = 3,
-// }

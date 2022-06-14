@@ -5,8 +5,8 @@ import { ApplicationCommandOptionType } from '../types'
 
 import type { AppContext } from '../../di'
 import type {
-  Command,
   SlashCommand,
+  SlashCommandOptions,
   CommandInteractionInteger,
   DiscordGuildMemberWithUser,
 } from '../types'
@@ -17,9 +17,10 @@ const rangeReward = 30
 const lastDigitReward = 10
 const pairwiseReward = 250
 
-type GuessInteraction = SlashCommand<[CommandInteractionInteger]>
+type GuessInteraction = SlashCommandOptions<[CommandInteractionInteger]>
 
-const command: Command<GuessInteraction> = {
+const command: SlashCommand<GuessInteraction> = {
+  id: 'guess',
   // global: true,
   guild: true,
   description: 'Guess your daily 1-100 magic number',
@@ -31,7 +32,7 @@ const command: Command<GuessInteraction> = {
       description: 'number to guess',
     },
   ],
-  execute: async function (payload: GuessInteraction, context: AppContext) {
+  handleSlashCommand: async function (payload: GuessInteraction, context: AppContext) {
     return await handleGuess(payload, context)
   },
 }

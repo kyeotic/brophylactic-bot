@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import base64Url from 'base64url'
-import { commands } from './interactions'
+import { slashCommands } from './interactions'
 import config from '../config'
 import { deployCommand, getCommands } from './api'
+import { SlashCommand } from './types'
 
 const { decode } = base64Url
 
@@ -17,12 +18,12 @@ export async function redeploy() {
 
 export async function updateGlobalCommands() {
   await Promise.all(
-    Object.entries(commands)
+    [...slashCommands.values()]
       // ONLY GLOBAL COMMANDS
-      .filter(([, command]) => command?.global)
-      .map(([name, command]) => {
+      .filter((command) => command?.global)
+      .map((command) => {
         return {
-          name,
+          name: command.id,
           description: command!.description || 'No description available.',
           options: command!.options?.map((option) => {
             const optionName = option.name
@@ -54,12 +55,12 @@ export async function updateGlobalCommands() {
 
 export async function updateGuildCommands(guildId: string) {
   await Promise.all(
-    Object.entries(commands)
+    [...slashCommands.values()]
       // ONLY GUILD COMMANDS
-      .filter(([, command]) => command!.guild !== false)
-      .map(([name, command]) => {
+      .filter((command) => command!.guild !== false)
+      .map((command: SlashCommand<any>) => {
         return {
-          name,
+          name: command.id,
           description: command!.description || 'No description available.',
           options: command!.options,
         }

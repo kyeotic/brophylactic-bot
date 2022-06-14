@@ -1,6 +1,6 @@
 import { parseCustomId, message } from './api'
 import { isInteractionResponse, InteractionResponseType, InteractionType } from './types'
-import { commands } from './interactions'
+import { slashCommands, messageCommands } from './interactions'
 import type { AppContext } from '../di'
 import { assertNever } from '../util/assert'
 
@@ -8,9 +8,7 @@ import type {
   Interaction,
   ApplicationCommandInteraction,
   MessageComponentInteraction,
-  CommandInteraction,
-  // ComponentInteraction,
-  // SlashCommandInteraction,
+  SlashCommandInteraction,
   InteractionResponse,
   InteractionResponseCallback,
 } from './types'
@@ -42,11 +40,17 @@ async function handleAppCommand(
     return missingType()
   }
 
-  const command = commands[payload.data.name]
+  const command = slashCommands.get(payload.data.name)
 
-  if (!command) return missingCommand()
+  if (!command || !command.handleSlashCommand) {
+    context.logger.warn('Command not found', payload.data.name, [...slashCommands.keys()])
+    return missingCommand()
+  }
 
-  const result = await command.execute(payload as unknown as CommandInteraction, context)
+  const result = await command.handleSlashCommand(
+    payload as unknown as SlashCommandInteraction,
+    context
+  )
 
   if (!isInteractionResponse(result)) return interactionCallback(result)
 
@@ -64,13 +68,16 @@ async function handleMessageInteraction(
 
   const [idType, customId] = parseCustomId(messageId)
 
-  const command = Object.values(commands).find((c) => c?.messageInteractionType === idType)
+  const command = messageCommands.get(idType)
 
-  if (!command) return missingCommand()
+  if (!command || !command.handleMessage) {
+    context.logger.warn('Command not found', idType, [...messageCommands.keys()])
+    return missingCommand()
+  }
 
   // Replace encoded customId
   payload.data.custom_id = customId
-  const result = await command.execute(payload as unknown as CommandInteraction, context)
+  const result = await command.handleMessage(payload as MessageComponentInteraction, context)
 
   if (!isInteractionResponse(result)) return interactionCallback(result)
 
@@ -85,11 +92,12 @@ function interactionCallback(data: InteractionResponseCallback): InteractionResp
 }
 
 function missingCommand(): InteractionResponse {
-  return message('Something went wrong. I was not able to find this command.')
+  return message('Something went wrong. I was not able to find this command.', { isPrivate: true })
 }
 
 function missingType(): InteractionResponse {
   return message(
-    'Something went wrong. I was not able to find the command name in the payload sent by Discord.'
+    'Something went wrong. I was not able to find the command name in the payload sent by Discord.',
+    { isPrivate: true }
   )
 }

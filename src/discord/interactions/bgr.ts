@@ -4,10 +4,10 @@ import { updateInteraction, getGuildMember, asGuildMember, message } from '../ap
 
 import type { AppContext } from '../../di'
 import type {
-  Command,
-  CommandResponse,
   SlashCommand,
-  SlashSubCommand,
+  CommandResponse,
+  SlashCommandOptions,
+  SlashSubCommandOptions,
   CommandInteractionBoolean,
   CommandInteractionUser,
   CommandInteractionInteger,
@@ -15,12 +15,13 @@ import type {
 } from '../types'
 
 type BgrInteraction = BgrViewInteraction | BgrSendInteraction
-type BgrViewInteraction = SlashCommand<[SlashSubCommand<[CommandInteractionBoolean]>]>
-type BgrSendInteraction = SlashCommand<
-  [SlashSubCommand<[CommandInteractionUser, CommandInteractionInteger]>]
+type BgrViewInteraction = SlashCommandOptions<[SlashSubCommandOptions<[CommandInteractionBoolean]>]>
+type BgrSendInteraction = SlashCommandOptions<
+  [SlashSubCommandOptions<[CommandInteractionUser, CommandInteractionInteger]>]
 >
 
-const command: Command<BgrInteraction> = {
+const command: SlashCommand<BgrInteraction> = {
+  id: 'bgr',
   // global: true,
   guild: true,
   description: 'Brophylactic Gaming Reputation (℞), the server currency',
@@ -61,7 +62,7 @@ const command: Command<BgrInteraction> = {
       ],
     },
   ],
-  execute: async function (payload: BgrInteraction, context: AppContext) {
+  handleSlashCommand: async function (payload: BgrInteraction, context: AppContext) {
     // console.log('bgr payload', payload.data?.options)
     // console.log('bgr payload options', payload.data?.options)
 
