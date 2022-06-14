@@ -17,7 +17,6 @@ export type AppLogger = Logger
 export interface AppContext {
   config: typeof config
   firebaseClient: FirebaseClient
-  firestore: Firestore
   userStore: UserStore
   lotteryStore: LotteryStore
   workflow: WorkflowClient
@@ -41,9 +40,8 @@ export function initContext(init = {}): AppContext {
     tokenFn: () => getToken(config.firebase.cert),
   })
 
-  context.firestore = new Firestore({ client: context.firebaseClient })
-  context.userStore = new UserStore({ store: context.firestore })
-  context.lotteryStore = new LotteryStore({ store: context.firestore })
+  context.userStore = new UserStore({ client: context.firebaseClient })
+  context.lotteryStore = new LotteryStore({ client: context.firebaseClient })
 
   context.lottery = {
     init: (props: BrxLotteryNoContext & NewLotteryProps) => BrxLottery.init({ ...props, context }),
