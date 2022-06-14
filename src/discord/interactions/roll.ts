@@ -3,14 +3,14 @@ import { sum } from '../../util/math'
 import { ApplicationCommandOptionType } from '../types'
 import { message } from '../api'
 import type {
-  Command,
   SlashCommand,
+  SlashCommandOptions,
   CommandResponse,
   CommandInteractionString,
   CommandInteractionBoolean,
 } from '../types'
 
-type RollInteraction = SlashCommand<
+type RollInteraction = SlashCommandOptions<
   [
     CommandInteractionString | undefined,
     CommandInteractionBoolean | undefined,
@@ -18,7 +18,8 @@ type RollInteraction = SlashCommand<
   ]
 >
 
-const command: Command<RollInteraction> = {
+const command: SlashCommand<RollInteraction> = {
+  id: 'roll',
   // global: true,
   guild: true,
   description: 'Roll dice',
@@ -42,7 +43,7 @@ const command: Command<RollInteraction> = {
       type: ApplicationCommandOptionType.Boolean,
     },
   ],
-  execute: async function (payload): Promise<CommandResponse> {
+  handleSlashCommand: async function (payload): Promise<CommandResponse> {
     return handleRoll(payload as RollInteraction)
   },
 }

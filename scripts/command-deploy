@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+WORKSPACE=${1:-dev}
+
+_scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+set -o allexport; source "${_scripts}/../.env.base"; set +o allexport
+
+case $WORKSPACE in
+  dev)
+    set -o allexport; source "${_scripts}/../.env.dev"; set +o allexport
+    ;;
+
+  prod)
+    set -o allexport; source "${_scripts}/../.env.prod"; set +o allexport
+    ;;
+
+  *)
+    echo -n "unknown workspace"
+    ;;
+esac
+
+TEST="true" \
+  AWS_ACCESS_KEY_ID=$(aws configure get default.aws_access_key_id) \
+  AWS_SECRET_ACCESS_KEY=$(aws configure get default.aws_secret_access_key) \
+  npx ts-node src/redeploy.ts
+  # npx ts-node
+

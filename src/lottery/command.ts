@@ -1,4 +1,4 @@
-import { updateInteraction, asGuildMember, message, encodeCustomId } from '../discord/api'
+import { asGuildMember, message, encodeCustomId } from '../discord/api'
 import { differenceInSeconds } from '../util/dates'
 import { lotteryTimeMs } from './brxLottery'
 
@@ -16,21 +16,23 @@ import type {
   MessageComponents,
   CommandResponse,
   MessageResponse,
-  Command,
   SlashCommand,
+  MessageComponentCommand,
+  SlashCommandOptions,
   CommandInteractionInteger,
 } from '../discord/types'
 
 import type { AppContext } from '../di'
 import type { BrxLottery } from './brxLottery'
 
-export type LotteryInteraction = SlashCommand<
+export type LotteryInteraction = SlashCommandOptions<
   [CommandInteractionInteger, CommandInteractionInteger | undefined]
 >
 
 export const ID_TYPE = 'LOTTERY'
 
-const command: Command<LotteryInteraction> = {
+const command: SlashCommand<LotteryInteraction> & MessageComponentCommand = {
+  id: 'lottery',
   // global: true,
   guild: true,
   description: 'Starts a lottery with the server',
@@ -49,17 +51,19 @@ const command: Command<LotteryInteraction> = {
       description: 'maximum number of players allowed to join negative lottery (bet * playerLimit)',
     },
   ],
-  execute: async function (
+  messageInteractionType: ID_TYPE,
+  handleSlashCommand: async function (
     payload: LotteryInteraction,
     context: AppContext
   ): Promise<CommandResponse> {
-    if ((payload as unknown as MessageComponentInteraction)?.data?.custom_id) {
-      return handleLotteryJoin(payload as unknown as MessageComponentInteraction, context)
-    }
-
-    return await handleLottery(payload as LotteryInteraction, context)
+    return await handleLottery(payload, context)
   },
-  messageInteractionType: ID_TYPE,
+  handleMessage: async function (
+    payload: MessageComponentInteraction,
+    context: AppContext
+  ): Promise<CommandResponse> {
+    return handleLotteryJoin(payload, context)
+  },
 }
 
 export default command
