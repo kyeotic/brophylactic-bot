@@ -20,11 +20,20 @@ const ID_ERROR = 'ID Required'
 
 // Docs: https://firebase.google.com/docs/firestore/reference/rest
 
-export class Firestore {
-  private client: FirebaseClient
+export interface FireRequestOptions {
+  transaction?: string
+}
 
-  constructor({ client }: { client: FirebaseClient }) {
+export class Firestore<T extends ConvertedDocument> {
+  private readonly client: FirebaseClient
+  private readonly collection: string
+
+  constructor({ client, collection }: { client: FirebaseClient; collection: string }) {
+    if (!collection) {
+      throw new Error(COLLECTION_ERROR)
+    }
     this.client = client
+    this.collection = collection
   }
 
   asDocumentName({
@@ -39,18 +48,11 @@ export class Firestore {
     return this.client.asDocumentName({ path, projectId, databaseId })
   }
 
-  async getDocument<T extends ConvertedDocument>({
-    collection,
-    id,
-    ...props
-  }: GetDocument): Promise<T | null> {
-    if (!collection) {
-      throw new Error(COLLECTION_ERROR)
-    }
+  async getDocument(id: string, options?: FireRequestOptions): Promise<T | null> {
     const doc = (await this.client.request({
       method: 'GET',
-      url: id ? `documents/${collection}/${id}` : `documents/${collection}`,
-      ...props,
+      url: id ? `documents/${this.collection}/${id}` : `documents/${this.collection}`,
+      ...options,
     })) as Document
 
     if (!doc) return null
@@ -61,15 +63,12 @@ export class Firestore {
     } as T
   }
 
-  async createDocument<T>({ collection, id, body, ...props }: CreateDocument): Promise<T | null> {
-    if (!collection) {
-      throw new Error(COLLECTION_ERROR)
-    }
+  async createDocument(item: T, options?: FireRequestOptions): Promise<T | null> {
     const doc = (await this.client.request({
       method: 'POST',
-      url: `documents/${collection}${id ? `?documentId=${id}` : ''}`,
-      body: toDocument(body as Record<string, any>),
-      ...props,
+      url: `documents/${this.collection}?documentId=${item.id}`,
+      body: toDocument(item as Record<string, any>),
+      ...options,
     })) as Document
 
     if (!doc) return null
@@ -80,34 +79,40 @@ export class Firestore {
   }
 
   // https://firebase.google.com/docs/firestore/reference/rest/v1/projects.databases.documents/patch
-  async updateDocument<T extends ConvertedDocument>({
-    collection,
-    id,
-    body,
-    ...props
-  }: UpdateDocument): Promise<T> {
+  async updateDocument<Props extends Partial<T>>(
+    id: string,
+    props: Props,
+    options?: FireRequestOptions
+  ): Promise<Props> {
+    const { collection } = this
     validateRequest({ collection, id })
+
+    const fieldMask = Object.getOwnPropertyNames(props)
 
     const doc = (await this.client.request({
       method: 'PATCH',
       url: `documents/${collection}/${id}`,
-      body: toDocument(body!),
-      ...props,
+      body: toDocument(props),
+      updateMask: {
+        fieldPaths: fieldMask,
+      },
+      ...options,
     })) as Document
 
     return {
       ...fromDocument(doc.fields),
       id,
-    } as T
+    } as Props
   }
 
-  async deleteDocument({ collection, id, ...props }: DeleteDocument): Promise<void> {
+  async deleteDocument(id: string, options?: FireRequestOptions): Promise<void> {
+    const { collection } = this
     validateRequest({ collection, id })
 
     await this.client.request({
       method: 'DELETE',
       url: `documents/${collection}/${id}`,
-      ...props,
+      ...options,
     })
   }
 

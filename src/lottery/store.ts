@@ -1,4 +1,5 @@
-import type { Firestore } from '../firebase/firestore'
+import { Firestore } from '../firebase/firestore'
+import type { FirebaseClient } from '../firebase/client'
 
 import type { GuildMember } from '../discord/types'
 import type { DbLottery } from './types'
@@ -6,62 +7,38 @@ import { Lottery } from './lottery'
 
 // Docs: https://firebase.google.com/docs/firestore/reference/rest
 
-const collection = 'lotteries'
+const COLLECTION = 'lotteries'
 
 export type GuildLottery = Lottery<GuildMember>
 
 export class LotteryStore {
-  private store: Firestore
-  constructor({ store }: { store: Firestore }) {
-    this.store = store
+  private store: Firestore<DbLottery>
+
+  constructor({ client }: { client: FirebaseClient }) {
+    this.store = new Firestore({ client, collection: COLLECTION })
   }
 
   public async get(id: string, transaction?: string): Promise<GuildLottery | null> {
-    const dbLottery = await this.store.getDocument<DbLottery>({
-      collection,
-      id,
-      transaction,
-    })
+    const dbLottery = await this.store.getDocument(id, { transaction })
 
     return dbLottery && new Lottery(dbLottery)
   }
 
   public async put(lottery: GuildLottery): Promise<GuildLottery | null> {
-    await this.store.createDocument<DbLottery>({
-      collection,
-      id: lottery.id,
-      body: lottery.toJSON(),
-    })
+    await this.store.createDocument(lottery.toJSON() as DbLottery)
 
     return lottery
   }
 
   public async delete(id: string): Promise<void> {
-    return await this.store.deleteDocument({
-      collection,
-      id,
-    })
+    return await this.store.deleteDocument(id)
   }
 
   public async setPlayers(id: string, players: GuildMember[]): Promise<void> {
-    await this.store.updateDocument({
-      collection,
-      id,
-      body: { players },
-      updateMask: {
-        fieldPaths: ['players'],
-      },
-    })
+    await this.store.updateDocument(id, { players })
   }
 
   public async setWinner(id: string, winner: GuildMember): Promise<void> {
-    await this.store.updateDocument({
-      collection,
-      id: id,
-      body: { winner },
-      updateMask: {
-        fieldPaths: ['winner'],
-      },
-    })
+    await this.store.updateDocument(id, { winner })
   }
 }

@@ -1,9 +1,12 @@
 import { toValue, toDocument } from '../firebase/convert'
-import type { Firestore } from '../firebase/firestore'
+import { Firestore } from '../firebase/firestore'
+
+import type { FirebaseClient } from '../firebase/client'
 import type { Write } from '../firebase/types'
 import type { GuildMember } from '../discord/types'
 
 const delimiter = '.'
+const COLLECTION = 'users'
 
 export interface User {
   id: string
@@ -12,22 +15,14 @@ export interface User {
   reputationOffset: number
 }
 
-// export interface GuildUser {
-//   id: string
-//   guildId: string
-//   username: string
-// }
-
 export class UserStore {
-  private store: Firestore
-  constructor({ store }: { store: Firestore }) {
-    this.store = store
+  private store: Firestore<User>
+  constructor({ client }: { client: FirebaseClient }) {
+    this.store = new Firestore({ client, collection: COLLECTION })
   }
 
   public async getUser(member: GuildMember, transaction?: string): Promise<User> {
-    let user = await this.store.getDocument<User>({
-      collection: 'users',
-      id: getId(member),
+    let user = await this.store.getDocument(getId(member), {
       transaction,
     })
 
@@ -63,10 +58,7 @@ export class UserStore {
     }
 
     await this.store.commitTransaction({ transaction, writes })
-    return (await this.store.getDocument<User>({
-      collection: 'users',
-      id: getId(member),
-    })) as User
+    return (await this.store.getDocument(getId(member)))!
   }
 
   public async getUserRep(member: GuildMember): Promise<number> {
@@ -137,14 +129,7 @@ export class UserStore {
   }
 
   public async setUserLastGuess(member: GuildMember, lastGuessDate: Date): Promise<void> {
-    await this.store.updateDocument({
-      collection: 'users',
-      id: getId(member),
-      body: { lastGuessDate, name: member.username },
-      updateMask: {
-        fieldPaths: ['lastGuessDate', 'name'],
-      },
-    })
+    await this.store.updateDocument(getId(member), { lastGuessDate, name: member.username })
   }
 }
 
