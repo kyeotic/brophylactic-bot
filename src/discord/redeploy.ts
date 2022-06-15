@@ -2,21 +2,23 @@
 import base64Url from 'base64url'
 import { slashCommands } from './interactions'
 import config from '../config'
-import { deployCommand, getCommands } from './api'
 import { SlashCommand } from './types'
+import { initContext } from '../di'
+import type { DiscordClient } from './api'
 
 const { decode } = base64Url
 
 export async function redeploy() {
+  const { discord } = initContext()
   // await cleanupCommands()
-  await updateGlobalCommands()
+  await updateGlobalCommands(discord)
   if (config.discord.serverId) {
-    await updateGuildCommands(config.discord.serverId)
+    await updateGuildCommands(discord, config.discord.serverId)
   }
   return
 }
 
-export async function updateGlobalCommands() {
+export async function updateGlobalCommands(discord: DiscordClient) {
   await Promise.all(
     [...slashCommands.values()]
       // ONLY GLOBAL COMMANDS
@@ -38,22 +40,20 @@ export async function updateGlobalCommands() {
         }
       })
       .map((command) =>
-        deployCommand({
+        discord.deployCommand({
           applicationId: getApplicationId(),
           command,
-          botToken: config.discord.botToken,
         })
       )
   )
 
-  const appCommmands = await getCommands({
+  const appCommmands = await discord.getCommands({
     applicationId: getApplicationId(),
-    botToken: config.discord.botToken,
   })
   console.log('app commands', appCommmands)
 }
 
-export async function updateGuildCommands(guildId: string) {
+export async function updateGuildCommands(discord: DiscordClient, guildId: string) {
   await Promise.all(
     [...slashCommands.values()]
       // ONLY GUILD COMMANDS
@@ -66,18 +66,16 @@ export async function updateGuildCommands(guildId: string) {
         }
       })
       .map((command) =>
-        deployCommand({
+        discord.deployCommand({
           applicationId: getApplicationId(),
           command,
-          botToken: config.discord.botToken,
           guildId: guildId,
         })
       )
   )
 
-  const guildCommands = await getCommands({
+  const guildCommands = await discord.getCommands({
     applicationId: getApplicationId(),
-    botToken: config.discord.botToken,
     guildId,
   })
   console.log('guild commands', guildId, guildCommands)

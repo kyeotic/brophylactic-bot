@@ -1,4 +1,3 @@
-import { sum } from '../util/math'
 import { times } from '../util/func'
 
 interface DiceRoll {

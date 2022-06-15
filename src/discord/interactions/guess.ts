@@ -46,6 +46,7 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
   if (!payload.data?.options?.length || !payload.guild_id) {
     return message('missing required sub-command')
   }
+
   const guess = payload.data?.options[0].value
   const today = new Date()
 

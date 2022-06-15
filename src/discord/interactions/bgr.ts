@@ -1,6 +1,7 @@
-import { ApplicationCommandOptionType, InteractionType } from '../types'
+import { ApplicationCommandOptionType } from '../types'
 import { formatDate } from '../../util/dates'
-import { updateInteraction, getGuildMember, asGuildMember, message } from '../api'
+import { asGuildMember, message } from '../api'
+import type { DiscordClient } from '../api'
 
 import type { AppContext } from '../../di'
 import type {
@@ -63,12 +64,6 @@ const command: SlashCommand<BgrInteraction> = {
     },
   ],
   handleSlashCommand: async function (payload: BgrInteraction, context: AppContext) {
-    // console.log('bgr payload', payload.data?.options)
-    // console.log('bgr payload options', payload.data?.options)
-
-    if (payload.type !== InteractionType.ApplicationCommand) {
-      return message('Invalid command invocation')
-    }
     if (!payload.data?.options?.length) return message('missing required sub-command')
     const type = payload.data?.options[0].name
 
@@ -107,6 +102,7 @@ async function viewBgr(payload: BgrViewInteraction, context: AppContext): Promis
 }
 
 async function sendBgr(payload: BgrSendInteraction, context: AppContext): Promise<CommandResponse> {
+  const { discord } = context
   // This should be impossible, since the entry verifies it
   // But that code might get moved someday
   if (!payload.data?.options?.length || !payload.guild_id)
@@ -129,7 +125,7 @@ async function sendBgr(payload: BgrSendInteraction, context: AppContext): Promis
   }
 
   const member = asGuildMember(payload.guild_id, payload.member as DiscordGuildMemberWithUser)
-  const receiver = await getGuildMember(
+  const receiver = await discord.getGuildMember(
     BigInt(payload.guild_id as string),
     BigInt(receiverId as string)
   )
@@ -143,7 +139,7 @@ async function sendBgr(payload: BgrSendInteraction, context: AppContext): Promis
       const senderRep = await context.userStore.getUserRep(member)
       const receiverRep = await context.userStore.getUserRep(receiver)
 
-      await updateInteraction({
+      await discord.updateInteraction({
         applicationId: payload.application_id,
         token: payload.token,
         body: message(
@@ -154,7 +150,7 @@ async function sendBgr(payload: BgrSendInteraction, context: AppContext): Promis
     .catch(async (e) => {
       // eslint-disable-next-line no-console
       console.error('error updating rep', e)
-      await updateInteraction({
+      await discord.updateInteraction({
         applicationId: payload.application_id,
         token: payload.token,
         body: message(`Error: ${e.message}`),
