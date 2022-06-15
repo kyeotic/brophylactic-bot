@@ -1,15 +1,15 @@
-import { formatDistanceToNow, utcToZonedTime, formatWithTimezone } from '../../util/dates'
-import { message, asGuildMember } from '../api'
-import { randomInclusive } from '../../util/random'
-import { ApplicationCommandOptionType } from '../types'
+import { formatDistanceToNow, utcToZonedTime, formatWithTimezone } from '../util/dates'
+import { message, asGuildMember } from '../discord/api'
+import { randomInclusive } from '../util/random'
+import { ApplicationCommandOptionType } from '../discord/types'
 
-import type { AppContext } from '../../di'
+import type { AppContext } from '../di'
 import type {
   SlashCommand,
   SlashCommandOptions,
   CommandInteractionInteger,
   DiscordGuildMemberWithUser,
-} from '../types'
+} from '../discord/types'
 
 const magicNumberReward = 1000
 const magicNumberRange = 3

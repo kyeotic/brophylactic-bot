@@ -1,11 +1,11 @@
-import type { BaseCommand, SlashCommand, MessageComponentCommand } from './types'
+import type { BaseCommand, SlashCommand, MessageComponentCommand } from '../discord/types'
 
-import roll from './interactions/roll'
-import bgr from './interactions/bgr'
-import guess from './interactions/guess'
-import lottery from '../lottery/command'
+import roll from './roll'
+import bgr from './bgr'
+import guess from './guess'
+import roulette from '../roulette/command'
 
-const commands: BaseCommand[] = [roll, bgr, guess, lottery]
+const commands: BaseCommand[] = [roll, bgr, guess, roulette]
 
 export const slashCommands = new Map<string, SlashCommand<any>>(
   commands

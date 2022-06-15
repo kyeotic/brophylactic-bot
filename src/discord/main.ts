@@ -1,6 +1,6 @@
 import { parseCustomId, message } from './api'
 import { isInteractionResponse, InteractionResponseType, InteractionType } from './types'
-import { slashCommands, messageCommands } from './interactions'
+import { slashCommands, messageCommands } from '../commands/mod'
 import type { AppContext } from '../di'
 import { assertNever } from '../util/assert'
 

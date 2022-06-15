@@ -2,7 +2,8 @@ import config from '../config'
 import urlJoin from 'url-join'
 import request, { isErrorStatus } from 'request-micro'
 import { InteractionResponseType } from './types'
-import type { GuildMember, DiscordGuildMemberWithUser, MessageResponse } from './types'
+import type { GuildMember, DiscordGuildMemberWithUser, MessageResponse, Command } from './types'
+import type { AppLogger } from '../di'
 
 const defaultHeaders = {
   'Content-Type': 'application/json',
@@ -11,8 +12,17 @@ const defaultHeaders = {
 
 export class DiscordClient {
   private readonly config: typeof config['discord']
-  constructor({ config: clientConfig }: { config: typeof config['discord'] }) {
+  private readonly logger: AppLogger
+
+  constructor({
+    config: clientConfig,
+    logger,
+  }: {
+    config: typeof config['discord']
+    logger: AppLogger
+  }) {
     this.config = clientConfig
+    this.logger = logger
   }
 
   async botRespond(interactionId: string | bigint, token: string, body: any): Promise<void> {
@@ -48,14 +58,8 @@ export class DiscordClient {
     return asGuildMember(guildId.toString(), user)
   }
 
-  async getCommands({
-    applicationId,
-    guildId,
-  }: {
-    applicationId: string
-    guildId?: string
-  }): Promise<any> {
-    await this.send({
+  async getCommands(applicationId: string, guildId?: string): Promise<Command[]> {
+    return this.send<Command[]>({
       method: 'GET',
       useBotToken: true,
       url: guildId
@@ -82,6 +86,24 @@ export class DiscordClient {
     })
   }
 
+  async deleteCommand({
+    applicationId,
+    guildId,
+    commandId,
+  }: {
+    applicationId: string
+    guildId?: string
+    commandId: string
+  }): Promise<void> {
+    await this.send({
+      useBotToken: true,
+      method: 'DELETE',
+      url: guildId
+        ? this.api('applications', applicationId, 'guilds', guildId, 'commands', commandId)
+        : this.api('applications', applicationId, 'commands', commandId),
+    })
+  }
+
   private async send<T>({
     url,
     method = 'POST',
@@ -103,7 +125,8 @@ export class DiscordClient {
     const response = await request({ url, method, body, headers, json: true })
 
     if (isErrorStatus(response)) {
-      throw new Error(response.data)
+      this.logger.error('Discord Error', response.statusCode, response.data)
+      throw new Error(JSON.stringify(response.data))
     }
 
     return response.data as T

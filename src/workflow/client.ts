@@ -16,7 +16,7 @@ export class WorkflowClient {
     this.logger = logger
   }
 
-  async startLottery(input: unknown): Promise<void> {
+  async startRoulette(input: unknown): Promise<void> {
     await this.send('StartExecution', input)
   }
 

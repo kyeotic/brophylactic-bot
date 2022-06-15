@@ -40,9 +40,9 @@ locals {
   project = "${var.app_namespace}_${terraform.workspace}"
   is_prod = terraform.workspace == "prod"
 
-  domain_name           = "${var.api_name}.${data.aws_route53_zone.api.name}"
-  api_gateway_name      = "${local.project}_api"
-  api_lambda_name       = "${local.project}_api"
-  workflow_lambda_name  = "${local.project}_workflow"
-  lottery_workflow_name = "${local.project}_lottery"
+  domain_name            = "${var.api_name}.${data.aws_route53_zone.api.name}"
+  api_gateway_name       = "${local.project}_api"
+  api_lambda_name        = "${local.project}_api"
+  workflow_lambda_name   = "${local.project}_workflow"
+  roulette_workflow_name = "${local.project}_roulette"
 }

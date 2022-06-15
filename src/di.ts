@@ -4,14 +4,14 @@ import logger from './util/logger'
 import { FirebaseClient } from './firebase/client'
 import { getToken } from './firebase/token'
 import { UserStore } from './users/store'
-import { LotteryStore } from './lottery/store'
-import { BrxLottery, BrxLotteryProps, NewLotteryProps } from './lottery/brxLottery'
+import { RouletteLotteryStore } from './roulette/store'
+import { Roulette, RouletteProps, NewLotteryProps } from './roulette/roulette'
 import { WorkflowClient } from './workflow/client'
 import { DiscordClient } from './discord/api'
 
 import type { LoggerWithSub as Logger } from 'lambda-logger-node'
 
-type BrxLotteryNoContext = Omit<BrxLotteryProps, 'context'>
+type RouletteNoContext = Omit<RouletteProps, 'context'>
 export type AppLogger = Logger
 
 export interface AppContext {
@@ -19,11 +19,11 @@ export interface AppContext {
   discord: DiscordClient
   firebaseClient: FirebaseClient
   userStore: UserStore
-  lotteryStore: LotteryStore
+  rouletteStore: RouletteLotteryStore
   workflow: WorkflowClient
-  lottery: {
-    init: (props: BrxLotteryNoContext & NewLotteryProps) => ReturnType<typeof BrxLottery['init']>
-    load: (id: string, props: BrxLotteryNoContext) => ReturnType<typeof BrxLottery['load']>
+  roulette: {
+    init: (props: RouletteNoContext & NewLotteryProps) => ReturnType<typeof Roulette['init']>
+    load: (id: string, props: RouletteNoContext) => ReturnType<typeof Roulette['load']>
   }
   logger: AppLogger
 }
@@ -34,7 +34,7 @@ export function initContext(init = {}): AppContext {
   context.config = config
   context.logger = logger
 
-  context.discord = new DiscordClient({ config: config.discord })
+  context.discord = new DiscordClient({ config: config.discord, logger })
 
   context.firebaseClient = new FirebaseClient({
     logger,
@@ -44,11 +44,11 @@ export function initContext(init = {}): AppContext {
   })
 
   context.userStore = new UserStore({ client: context.firebaseClient })
-  context.lotteryStore = new LotteryStore({ client: context.firebaseClient })
+  context.rouletteStore = new RouletteLotteryStore({ client: context.firebaseClient })
 
-  context.lottery = {
-    init: (props: BrxLotteryNoContext & NewLotteryProps) => BrxLottery.init({ ...props, context }),
-    load: (id: string, props: BrxLotteryNoContext) => BrxLottery.load(id, { ...props, context }),
+  context.roulette = {
+    init: (props: RouletteNoContext & NewLotteryProps) => Roulette.init({ ...props, context }),
+    load: (id: string, props: RouletteNoContext) => Roulette.load(id, { ...props, context }),
   }
 
   context.workflow = new WorkflowClient({ config: config.workflow, logger })

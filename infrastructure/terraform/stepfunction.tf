@@ -1,11 +1,11 @@
 module "step_function" {
   source = "terraform-aws-modules/step-functions/aws"
 
-  name = local.lottery_workflow_name
+  name = local.roulette_workflow_name
   type = "STANDARD"
 
   definition = jsonencode({
-    Comment = "Lottery workflow for the brobot"
+    Comment = "Roulette workflow for the brobot"
     StartAt = "Start"
     States = {
       Start = {

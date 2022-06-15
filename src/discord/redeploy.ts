@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import base64Url from 'base64url'
-import { slashCommands } from './interactions'
+import { slashCommands } from '../commands/mod'
 import config from '../config'
 import { SlashCommand } from './types'
 import { initContext } from '../di'
@@ -9,11 +9,14 @@ import type { DiscordClient } from './api'
 const { decode } = base64Url
 
 export async function redeploy() {
-  const { discord } = initContext()
+  const { discord, logger } = initContext()
   // await cleanupCommands()
-  await updateGlobalCommands(discord)
+  // await updateGlobalCommands(discord)
   if (config.discord.serverId) {
-    await updateGuildCommands(discord, config.discord.serverId)
+    // await cleanupCommands(discord, getApplicationId(), config.discord.serverId)
+    // await updateGuildCommands(discord, config.discord.serverId)
+    const commands = await discord.getCommands(getApplicationId(), config.discord.serverId)
+    logger.info('commands', commands)
   }
   return
 }
@@ -47,9 +50,7 @@ export async function updateGlobalCommands(discord: DiscordClient) {
       )
   )
 
-  const appCommmands = await discord.getCommands({
-    applicationId: getApplicationId(),
-  })
+  const appCommmands = await discord.getCommands(getApplicationId())
   console.log('app commands', appCommmands)
 }
 
@@ -74,20 +75,17 @@ export async function updateGuildCommands(discord: DiscordClient, guildId: strin
       )
   )
 
-  const guildCommands = await discord.getCommands({
-    applicationId: getApplicationId(),
-    guildId,
-  })
+  const guildCommands = await discord.getCommands(getApplicationId(), guildId)
   console.log('guild commands', guildId, guildCommands)
 }
 
-// export async function cleanupCommands() {
-//   const commands = await getSlashCommands()
-//   for (const command of commands.values()) {
-//     await deleteSlashCommand(command.id)
-//   }
-//   console.log('commands', commands)
-// }
+export async function cleanupCommands(discord: DiscordClient, appId: string, guildId?: string) {
+  const commands = await discord.getCommands(appId, guildId)
+  for (const command of commands.values()) {
+    await discord.deleteCommand({ applicationId: appId, guildId, commandId: command.id })
+  }
+  console.log('commands', commands)
+}
 
 function getApplicationId() {
   const token = config.discord.botToken

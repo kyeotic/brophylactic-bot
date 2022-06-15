@@ -24,6 +24,7 @@ export {
 import type {
   APIGuildMember as DiscordGuildMember,
   APIUser as DiscordUser,
+  APIApplicationCommand,
   //command definitions
   APIApplicationCommandOption as CommandOption,
   APIApplicationCommandSubcommandOption as CommandSubcommandOption,
@@ -73,6 +74,7 @@ export type {
   InteractionResponseCallback,
   MessageComponent,
   //command definitions
+  APIApplicationCommand as Command,
   CommandOption,
   CommandSubcommandOption,
   CommandSubcommandGroupOption,

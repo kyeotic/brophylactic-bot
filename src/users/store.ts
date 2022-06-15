@@ -12,6 +12,7 @@ export interface User {
   id: string
   name: string
   lastGuessDate?: Date
+  lastSardinesDate?: Date
   reputationOffset: number
 }
 
@@ -130,6 +131,15 @@ export class UserStore {
 
   public async setUserLastGuess(member: GuildMember, lastGuessDate: Date): Promise<void> {
     await this.store.updateDocument(getId(member), { lastGuessDate, name: member.username })
+  }
+
+  public async getUserLastSardines(member: GuildMember): Promise<Date | null> {
+    const user = await this.getUser(member)
+    return user?.lastSardinesDate ? user.lastSardinesDate : null
+  }
+
+  public async setUserLastSardines(member: GuildMember, lastSardinesDate: Date): Promise<void> {
+    await this.store.updateDocument(getId(member), { lastSardinesDate, name: member.username })
   }
 }
 

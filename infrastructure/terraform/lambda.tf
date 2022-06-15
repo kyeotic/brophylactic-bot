@@ -3,7 +3,7 @@ locals {
   lambda_vars = {
     stage                      = terraform.workspace
     lambdaVersion              = local.lambda_version
-    stepFunctionArn            = "arn:${data.aws_partition.current.partition}:states:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:stateMachine:${local.lottery_workflow_name}"
+    stepFunctionArn            = "arn:${data.aws_partition.current.partition}:states:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:stateMachine:${local.roulette_workflow_name}"
     FIREBASE_64                = var.FIREBASE_64
     DISCORD_PUBLIC_KEY         = var.DISCORD_PUBLIC_KEY
     BOT_TOKEN                  = var.BOT_TOKEN

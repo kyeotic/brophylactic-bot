@@ -1,14 +1,14 @@
-import roll from '../../games/dice'
-import { sum } from '../../util/math'
-import { ApplicationCommandOptionType } from '../types'
-import { message } from '../api'
+import roll from '../games/dice'
+import { sum } from '../util/math'
+import { ApplicationCommandOptionType } from '../discord/types'
+import { message } from '../discord/api'
 import type {
   SlashCommand,
   SlashCommandOptions,
   CommandResponse,
   CommandInteractionString,
   CommandInteractionBoolean,
-} from '../types'
+} from '../discord/types'
 
 type RollInteraction = SlashCommandOptions<
   [

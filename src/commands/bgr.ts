@@ -1,9 +1,8 @@
-import { ApplicationCommandOptionType } from '../types'
-import { formatDate } from '../../util/dates'
-import { asGuildMember, message } from '../api'
-import type { DiscordClient } from '../api'
+import { ApplicationCommandOptionType } from '../discord/types'
+import { formatDate } from '../util/dates'
+import { asGuildMember, message } from '../discord/api'
 
-import type { AppContext } from '../../di'
+import type { AppContext } from '../di'
 import type {
   SlashCommand,
   CommandResponse,
@@ -13,7 +12,7 @@ import type {
   CommandInteractionUser,
   CommandInteractionInteger,
   DiscordGuildMemberWithUser,
-} from '../types'
+} from '../discord/types'
 
 type BgrInteraction = BgrViewInteraction | BgrSendInteraction
 type BgrViewInteraction = SlashCommandOptions<[SlashSubCommandOptions<[CommandInteractionBoolean]>]>

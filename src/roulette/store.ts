@@ -2,30 +2,30 @@ import { Firestore } from '../firebase/firestore'
 import type { FirebaseClient } from '../firebase/client'
 
 import type { GuildMember } from '../discord/types'
-import type { DbLottery } from './types'
-import { Lottery } from './lottery'
+import type { DbRouletteLottery } from './types'
+import { Lottery } from '../games/lottery'
 
 // Docs: https://firebase.google.com/docs/firestore/reference/rest
 
 const COLLECTION = 'lotteries'
 
-export type GuildLottery = Lottery<GuildMember>
+export type RouletteLottery = Lottery<GuildMember>
 
-export class LotteryStore {
-  private store: Firestore<DbLottery>
+export class RouletteLotteryStore {
+  private store: Firestore<DbRouletteLottery>
 
   constructor({ client }: { client: FirebaseClient }) {
     this.store = new Firestore({ client, collection: COLLECTION })
   }
 
-  public async get(id: string, transaction?: string): Promise<GuildLottery | null> {
+  public async get(id: string, transaction?: string): Promise<RouletteLottery | null> {
     const dbLottery = await this.store.getDocument(id, { transaction })
 
     return dbLottery && new Lottery(dbLottery)
   }
 
-  public async put(lottery: GuildLottery): Promise<GuildLottery | null> {
-    await this.store.createDocument(lottery.toJSON() as DbLottery)
+  public async put(lottery: RouletteLottery): Promise<RouletteLottery | null> {
+    await this.store.createDocument(lottery.toJSON() as DbRouletteLottery)
 
     return lottery
   }
