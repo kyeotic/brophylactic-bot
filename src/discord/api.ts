@@ -1,155 +1,117 @@
 import config from '../config'
 import urlJoin from 'url-join'
-import request from 'request-micro'
+import request, { isErrorStatus } from 'request-micro'
 import { InteractionResponseType } from './types'
-import type {
-  GuildMember,
-  DiscordGuildMemberWithUser,
-  InteractionResponse,
-  CommandResponse,
-  MessageResponse,
-} from './types'
+import type { GuildMember, DiscordGuildMemberWithUser, MessageResponse } from './types'
 
 const defaultHeaders = {
   'Content-Type': 'application/json',
   'User-Agent': config.discord.userAgent,
 }
 
-export async function botRespond(
-  interactionId: string | bigint,
-  token: string,
-  body: any
-): Promise<void> {
-  await request({
-    url: urlJoin(
-      config.discord.apiHost,
-      'interactions',
-      interactionId.toString(),
-      token,
-      'callback'
-    ),
-    method: 'POST',
-    headers: defaultHeaders,
-    body: JSON.stringify(body),
-  })
-}
+export class DiscordClient {
+  private readonly config: typeof config['discord']
+  constructor({ config: clientConfig }: { config: typeof config['discord'] }) {
+    this.config = clientConfig
+  }
 
-export async function ackDeferred({
-  token,
-  interactionId,
-}: {
-  token: string
-  interactionId: string
-}): Promise<void> {
-  await request({
-    url: urlJoin(config.discord.apiHost, 'interactions', interactionId, token, 'callback'),
-    method: 'POST',
-    headers: defaultHeaders,
-    body: JSON.stringify({
-      type: InteractionResponseType.DeferredChannelMessageWithSource,
-    }),
-  })
-}
+  async botRespond(interactionId: string | bigint, token: string, body: any): Promise<void> {
+    await this.send({
+      url: this.api('interactions', interactionId.toString(), token, 'callback'),
+      body,
+    })
+  }
 
-export async function updateInteraction({
-  applicationId,
-  token,
-  body,
-  messageId = '@original',
-}: {
-  applicationId: string
-  token: string
-  body: any
-  messageId?: string
-}) {
-  await request({
-    url: urlJoin(config.discord.apiHost, 'webhooks', applicationId, token, 'messages', messageId),
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
+  async updateInteraction({
+    applicationId,
+    token,
+    body,
+    messageId = '@original',
+  }: {
+    applicationId: string
+    token: string
+    body: any
+    messageId?: string
+  }) {
+    await this.send({
+      url: this.api('webhooks', applicationId, token, 'messages', messageId),
+      method: 'PATCH',
+      body,
+    })
+  }
 
-  // console.log('discord', res.status, await res.text())
-}
+  async getGuildMember(guildId: string | bigint, userId: string | bigint): Promise<GuildMember> {
+    const user = await this.send<DiscordGuildMemberWithUser>({
+      url: this.api('guilds', guildId.toString(), 'members', userId.toString()),
+    })
 
-export async function deployCommand({
-  applicationId,
-  guildId,
-  command,
-  botToken,
-}: {
-  applicationId: string
-  guildId?: string
-  command: any
-  botToken: string
-}): Promise<void> {
-  await request({
-    url: guildId
-      ? urlJoin(
-          config.discord.apiHost,
-          'applications',
-          applicationId,
-          'guilds',
-          guildId,
-          'commands'
-        )
-      : urlJoin(config.discord.apiHost, 'applications', applicationId, 'commands'),
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bot ${botToken}`,
-    },
-    body: JSON.stringify(command),
-  })
-}
+    return asGuildMember(guildId.toString(), user)
+  }
 
-export async function getCommands({
-  applicationId,
-  guildId,
-  botToken,
-}: {
-  applicationId: string
-  guildId?: string
-  botToken: string
-}): Promise<any> {
-  await request({
-    url: guildId
-      ? urlJoin(
-          config.discord.apiHost,
-          'applications',
-          applicationId,
-          'guilds',
-          guildId,
-          'commands'
-        )
-      : urlJoin(config.discord.apiHost, 'applications', applicationId, 'commands'),
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bot ${botToken}`,
-    },
-  })
-}
+  async getCommands({
+    applicationId,
+    guildId,
+  }: {
+    applicationId: string
+    guildId?: string
+  }): Promise<any> {
+    await this.send({
+      method: 'GET',
+      useBotToken: true,
+      url: guildId
+        ? this.api('applications', applicationId, 'guilds', guildId, 'commands')
+        : this.api('applications', applicationId, 'commands'),
+    })
+  }
 
-export async function getGuildMember(
-  guildId: string | bigint,
-  userId: string | bigint
-): Promise<GuildMember> {
-  const res = await request({
-    url: urlJoin(
-      config.discord.apiHost,
-      'guilds',
-      guildId.toString(),
-      'members',
-      userId.toString()
-    ),
-    headers: defaultHeaders,
-    json: true,
-  })
+  async deployCommand({
+    applicationId,
+    guildId,
+    command,
+  }: {
+    applicationId: string
+    guildId?: string
+    command: any
+  }): Promise<void> {
+    await this.send({
+      useBotToken: true,
+      url: guildId
+        ? this.api('applications', applicationId, 'guilds', guildId, 'commands')
+        : this.api('applications', applicationId, 'commands'),
+      body: command,
+    })
+  }
 
-  return asGuildMember(guildId.toString(), res.data as DiscordGuildMemberWithUser)
+  private async send<T>({
+    url,
+    method = 'POST',
+    headers,
+    body,
+    useBotToken = false,
+  }: {
+    url: string
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+    headers?: Record<string, string>
+    body?: Record<string, any>
+    useBotToken?: boolean
+  }) {
+    headers = { ...defaultHeaders, ...headers }
+    if (useBotToken) {
+      headers.Authorization = `Bot ${this.config.botToken}`
+    }
+
+    const response = await request({ url, method, body, headers, json: true })
+
+    if (isErrorStatus(response)) {
+      throw new Error(response.data)
+    }
+
+    return response.data as T
+  }
+
+  api(...paths: string[]): string {
+    return urlJoin(config.discord.apiHost, ...paths)
+  }
 }
 
 export function asGuildMember(guildId: string, member: DiscordGuildMemberWithUser): GuildMember {
@@ -158,12 +120,6 @@ export function asGuildMember(guildId: string, member: DiscordGuildMemberWithUse
     guildId: guildId,
     username: member?.nick ?? member.user?.username,
     joinedAt: member.joined_at,
-  }
-}
-
-export function ackButton() {
-  return {
-    type: InteractionResponseType.DeferredMessageUpdate,
   }
 }
 
@@ -181,7 +137,7 @@ export function message(
   }: { isPrivate?: boolean; type?: InteractionResponseType } = {}
 ): MessageResponse {
   if (nonMessageTypes.includes(type)) {
-    throw new Error('Invalid interactiont type for message response')
+    throw new Error('Invalid interaction type for message response')
   }
   return {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -190,16 +146,6 @@ export function message(
     data: {
       content,
       flags: isPrivate ? 64 : undefined,
-    },
-  }
-}
-
-export function privateMessage(content: string): MessageResponse {
-  return {
-    type: InteractionResponseType.ChannelMessageWithSource,
-    data: {
-      content,
-      flags: 64, // private
     },
   }
 }

@@ -1,14 +1,10 @@
-import { fromDocument, toValue, toDocument } from './convert'
+import { fromDocument, toDocument } from './convert'
 import type {
   BeginTransaction,
   CommitTransaction,
-  CreateDocument,
-  DeleteDocument,
   MoveDocuments,
-  GetDocument,
   RequestInterface,
   RollBack,
-  UpdateDocument,
   Document,
   CommitResult,
   ConvertedDocument,

@@ -7,11 +7,10 @@ import {
   GatewayIntents,
 } from 'discordeno'
 
+import config from './config'
 import { main } from './discord/main'
 import { initContext } from './di'
-import { botRespond } from './discord/api'
 import type { Interaction } from './discord/types'
-import config from './config'
 
 const bot = createBot({
   token: config.discord.botToken,
@@ -22,9 +21,10 @@ const bot = createBot({
     },
     interactionCreate(bot: Bot, input: DenoInteraction) {
       const interaction = input as unknown as Interaction
+      const context = initContext()
       // console.log('received interaction', JSON.stringify(interaction, null, 2))
-      main(interaction, initContext())
-        .then((body) => botRespond(interaction.id, interaction.token, body))
+      main(interaction, context)
+        .then((body) => context.discord.botRespond(interaction.id, interaction.token, body))
         .catch((error) => console.error('bot error', error))
     },
   },

@@ -1,13 +1,13 @@
 import config from './config'
+import logger from './util/logger'
 
 import { FirebaseClient } from './firebase/client'
-import { Firestore } from './firebase/firestore'
 import { getToken } from './firebase/token'
 import { UserStore } from './users/store'
 import { LotteryStore } from './lottery/store'
 import { BrxLottery, BrxLotteryProps, NewLotteryProps } from './lottery/brxLottery'
 import { WorkflowClient } from './workflow/client'
-import logger from './util/logger'
+import { DiscordClient } from './discord/api'
 
 import type { LoggerWithSub as Logger } from 'lambda-logger-node'
 
@@ -16,6 +16,7 @@ export type AppLogger = Logger
 
 export interface AppContext {
   config: typeof config
+  discord: DiscordClient
   firebaseClient: FirebaseClient
   userStore: UserStore
   lotteryStore: LotteryStore
@@ -32,6 +33,8 @@ export function initContext(init = {}): AppContext {
 
   context.config = config
   context.logger = logger
+
+  context.discord = new DiscordClient({ config: config.discord })
 
   context.firebaseClient = new FirebaseClient({
     logger,

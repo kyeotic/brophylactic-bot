@@ -1,4 +1,3 @@
-import { updateInteraction } from '../discord/api'
 import { Lottery } from './lottery'
 
 import type { AppContext } from '../di'
@@ -120,7 +119,7 @@ export class BrxLottery {
   }
 
   async finalizeInteraction(message: string): Promise<void> {
-    await updateInteraction({
+    await this.context.discord.updateInteraction({
       applicationId: this.interaction.application_id,
       token: this.interaction.token,
       body: {
