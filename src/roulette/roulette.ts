@@ -11,7 +11,6 @@ export const rouletteTimeMs = rouletteTimeSeconds * 1000
 
 export interface RouletteProps {
   context: AppContext
-  interaction: Interaction
 }
 
 export interface NewLotteryProps {
@@ -21,7 +20,6 @@ export interface NewLotteryProps {
 
 export class Roulette {
   public readonly lottery: RouletteLottery
-  private readonly interaction: Interaction
   private readonly context: AppContext
 
   static init(props: RouletteProps & NewLotteryProps): { roulette?: Roulette; error?: Error } {
@@ -49,24 +47,19 @@ export class Roulette {
     }
   }
 
-  private constructor({
-    interaction,
-    context,
-    lottery,
-  }: RouletteProps & { lottery: RouletteLottery }) {
+  private constructor({ context, lottery }: RouletteProps & { lottery: RouletteLottery }) {
     this.lottery = lottery
-    this.interaction = interaction
     this.context = context
   }
 
-  async start(): Promise<Date> {
+  async start(interaction: Interaction): Promise<Date> {
     this.lottery.start()
 
     await this.context.rouletteStore.put(this.lottery)
 
     await this.context.workflow.startRoulette({
       id: this.lottery.id,
-      interaction: this.interaction,
+      interaction: interaction,
       duration: rouletteTimeSeconds,
     })
 
@@ -104,22 +97,10 @@ export class Roulette {
     await this.context.rouletteStore.setPlayers(this.lottery.id, this.lottery.players)
   }
 
-  async finalizeInteraction(message: string): Promise<void> {
-    await this.context.discord.updateInteraction({
-      applicationId: this.interaction.application_id,
-      token: this.interaction.token,
-      body: {
-        content: message,
-        components: [],
-      },
-    })
-  }
-
-  async finish() {
-    if (!this.lottery.canFinish())
-      return this.finalizeInteraction(
-        `${this.lottery.creator.username}'s roulette game was cancelled, not enough players joined.`
-      )
+  async finish(): Promise<string> {
+    if (!this.lottery.canFinish()) {
+      return `${this.lottery.creator.username}'s roulette game was cancelled, not enough players joined.`
+    }
 
     const { winner, payouts } = this.lottery.finish()
     const names = payouts.map(([player]) => player.username)
@@ -128,13 +109,11 @@ export class Roulette {
       ...payouts.map(([member, offset]) => ({ member, offset }))
     )
 
-    // TODO get all new rep values and include in message
-    this.finalizeInteraction(
-      `The roulette game has ended. ${names.join(', ')} all bet ℞${this.getBet()}. ${
-        winner.username
-      } won ℞${this.lottery.potSize}`
-    )
-
     await this.context.rouletteStore.delete(this.lottery.id)
+
+    // TODO get all new rep values and include in message
+    return `The roulette game has ended. ${names.join(', ')} all bet ℞${this.getBet()}. ${
+      winner.username
+    } won ℞${this.lottery.potSize}`
   }
 }

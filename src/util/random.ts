@@ -11,3 +11,8 @@ export function randomInclusive(min: number, max: number, seed?: string): number
 
   return create(seed + baseSeedKey).intBetween(min, max)
 }
+
+export function weightedRandom(min: number, max: number, seed?: string): number {
+  const rand = seed ? create(seed + baseSeedKey).random() : Math.random()
+  return Math.round(max / (rand * max + min))
+}

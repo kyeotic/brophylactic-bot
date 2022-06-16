@@ -1,7 +1,7 @@
 import config from '../config'
 import urlJoin from 'url-join'
 import request, { isErrorStatus } from 'request-micro'
-import { InteractionResponseType } from './types'
+import { InteractionResponseType, MessageComponents } from './types'
 import type { GuildMember, DiscordGuildMemberWithUser, MessageResponse, Command } from './types'
 import type { AppLogger } from '../di'
 
@@ -157,7 +157,8 @@ export function message(
   {
     isPrivate = false,
     type = InteractionResponseType.ChannelMessageWithSource,
-  }: { isPrivate?: boolean; type?: InteractionResponseType } = {}
+    components,
+  }: { isPrivate?: boolean; type?: InteractionResponseType; components?: MessageComponents } = {}
 ): MessageResponse {
   if (nonMessageTypes.includes(type)) {
     throw new Error('Invalid interaction type for message response')
@@ -168,6 +169,7 @@ export function message(
     type,
     data: {
       content,
+      components,
       flags: isPrivate ? 64 : undefined,
     },
   }

@@ -13,10 +13,10 @@ export async function redeploy() {
   // await cleanupCommands()
   // await updateGlobalCommands(discord)
   if (config.discord.serverId) {
-    // await cleanupCommands(discord, getApplicationId(), config.discord.serverId)
-    // await updateGuildCommands(discord, config.discord.serverId)
-    const commands = await discord.getCommands(getApplicationId(), config.discord.serverId)
-    logger.info('commands', commands)
+    await cleanupCommands(discord, getApplicationId(), config.discord.serverId)
+    await updateGuildCommands(discord, config.discord.serverId)
+    // const commands = await discord.getCommands(getApplicationId(), config.discord.serverId)
+    // logger.info('commands', commands)
   }
   return
 }

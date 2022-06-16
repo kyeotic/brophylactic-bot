@@ -78,7 +78,6 @@ async function handleRoulette(
   const memberBgr = await context.userStore.getUserRep(member)
 
   const { roulette, error } = context.roulette.init({
-    interaction: payload as unknown as Interaction,
     creator: member,
     bet: amount,
   })
@@ -90,7 +89,7 @@ async function handleRoulette(
     )
   }
 
-  await roulette.start()
+  await roulette.start(payload as unknown as Interaction)
 
   return rouletteMessage(roulette)
 }
@@ -135,7 +134,16 @@ export async function finishRoulette(
     throw new Error('Error loading roulette:' + error?.message)
   }
 
-  await roulette?.finish()
+  const finalMessage = await roulette?.finish()
+
+  await context.discord.updateInteraction({
+    applicationId: event.interaction.application_id,
+    token: event.interaction.token,
+    body: {
+      content: finalMessage,
+      components: [],
+    },
+  })
 }
 
 function rouletteMessage(

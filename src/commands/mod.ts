@@ -4,8 +4,9 @@ import roll from './roll'
 import bgr from './bgr'
 import guess from './guess'
 import roulette from '../roulette/command'
+import sardines from '../sardines/command'
 
-const commands: BaseCommand[] = [roll, bgr, guess, roulette]
+const commands: BaseCommand[] = [roll, bgr, guess, roulette, sardines]
 
 export const slashCommands = new Map<string, SlashCommand<any>>(
   commands

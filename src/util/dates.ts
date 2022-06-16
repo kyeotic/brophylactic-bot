@@ -28,3 +28,15 @@ export function humanizeMilliseconds(milliseconds: number) {
 
   return `${dayString}${hourString}${minuteString}${secondString}`
 }
+
+// Hacky method to check guess based on configurable timezone
+export function isToday(timeZone: string, date: Date): boolean {
+  const zonedDay = getDayString(timeZone, new Date())
+  const guessDay = getDayString(timeZone, date)
+
+  return zonedDay === guessDay
+}
+
+export function getDayString(timeZone: string, date: Date): string {
+  return formatWithTimezone(utcToZonedTime(date, timeZone), 'yyyy-MM-dd', { timeZone })
+}

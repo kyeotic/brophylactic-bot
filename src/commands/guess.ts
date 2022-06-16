@@ -1,4 +1,5 @@
-import { formatDistanceToNow, utcToZonedTime, formatWithTimezone } from '../util/dates'
+import { formatDistanceToNow } from '../util/dates'
+import { isToday, getDayString } from '../util/dates'
 import { message, asGuildMember } from '../discord/api'
 import { randomInclusive } from '../util/random'
 import { ApplicationCommandOptionType } from '../discord/types'
@@ -103,24 +104,12 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
   }
 }
 
-// Hacky method to check guess based on configurable timezone
-export function isToday(timeZone: string, date: Date): boolean {
-  const zonedDay = getDayString(timeZone, new Date())
-  const guessDay = getDayString(timeZone, date)
-
-  return zonedDay === guessDay
-}
-
 function isWithin(num: number, target: number, range: number): boolean {
   return num >= target - range && num <= target + range
 }
 
 function lastDigit(num: number): number {
   return parseFloat(num.toString().slice(-1))
-}
-
-function getDayString(timeZone: string, date: Date): string {
-  return formatWithTimezone(utcToZonedTime(date, timeZone), 'yyyy-MM-dd', { timeZone })
 }
 
 /**
