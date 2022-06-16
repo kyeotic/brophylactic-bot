@@ -102,7 +102,9 @@ export class Sardines {
   }
 
   canAddPlayer(): boolean {
-    const didLose = doesPlayerLose(this.lottery.players.length + 1)
+    // Length is all players, but joiners should not count the creator
+    // So do not add one to check the incoming player, just leave it at length
+    const didLose = doesPlayerLose(this.lottery.players.length)
     return !didLose
     // return doesPlayerLose(this.lottery.players.length + 1)
   }
