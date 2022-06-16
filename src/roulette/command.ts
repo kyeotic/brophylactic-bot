@@ -163,7 +163,7 @@ function rouletteMessage(
   const banner = `${creatorName} has started a roulette game for ℞${roulette.getBet()}. Click the button below within ${timeRemaining} seconds to place an equal bet and join the game.`
 
   const footer =
-    players.length < 2 ? '' : `\n**Players**\n${players.map((p) => p.username).join('\n')}`
+    players.length < 2 ? '' : `\n**Players**\n\n${players.map((p) => p.username).join('\n')}`
 
   return {
     type,
