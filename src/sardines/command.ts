@@ -152,7 +152,7 @@ function sardinesMessage(
   const banner = `${creatorName} has started a sardines game for ℞${sardines.getBet()}. Click the button below place an pay the buy-in and attempt to join the game.\nThere is currently a ${failureChance}% chance of ending the game when joining. A winner is randomly selected among all players in the game _before_ it ends.`
 
   const footer =
-    players.length < 2 ? '' : `\n**Players**\n${players.map((p) => p.username).join('\n')}`
+    players.length < 2 ? '' : `\n**Players**\n\n${players.map((p) => p.username).join('\n')}`
 
   return {
     type,
