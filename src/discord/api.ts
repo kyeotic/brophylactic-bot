@@ -197,8 +197,11 @@ export function messageButton(
   ]
 }
 
-export function bgrLabel(amount: string | number): string {
-  return `℞**${amount.toString()}**`
+export function bgrLabel(
+  amount: string | number,
+  { bold = true }: { bold?: boolean } = {}
+): string {
+  return bold ? `℞**${amount.toString()}**` : `℞${amount.toString()}`
 }
 
 /** encode the type and id into customId for use in message components*/

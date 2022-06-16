@@ -4,6 +4,7 @@ import { Firestore } from '../firebase/firestore'
 import type { FirebaseClient } from '../firebase/client'
 import type { Write } from '../firebase/types'
 import type { GuildMember } from '../discord/types'
+import { bgrLabel } from '../discord/api'
 
 const delimiter = '.'
 const COLLECTION = 'users'
@@ -94,7 +95,9 @@ export class UserStore {
       .map(({ member, offset }) => {
         if (!Number.isInteger(offset)) {
           throw new Error(
-            `must provide a valid integer offset ${offset === undefined ? `, got ℞${offset}` : ''}`
+            `must provide a valid integer offset ${
+              offset === undefined ? `, got ${bgrLabel(offset)}` : ''
+            }`
           )
         }
         return [

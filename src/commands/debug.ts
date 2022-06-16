@@ -1,11 +1,9 @@
-import { asGuildMember, message, encodeCustomId, bgrLabel, messageButton } from '../discord/api'
-import { isToday } from '../util/dates'
+import { message, encodeCustomId, bgrLabel, messageButton } from '../discord/api'
 
 import { InteractionResponseType } from '../discord/types'
 
 import type {
   MessageComponentInteraction,
-  MessageComponents,
   CommandResponse,
   SlashCommand,
   MessageComponentCommand,
@@ -48,13 +46,10 @@ async function handleCommand(
   context: AppContext
 ): Promise<CommandResponse> {
   const id = nanoid()
-  return {
+  return message(`This is a content debug: ${bgrLabel(200)}`, {
     type: InteractionResponseType.ChannelMessageWithSource,
-    data: {
-      content: `This is a content debug: ${bgrLabel(200)}`,
-      components: messageButton(encodeCustomId(ID_TYPE, id), 'Debug'),
-    },
-  }
+    components: messageButton(encodeCustomId(ID_TYPE, id), 'Debug'),
+  })
 }
 
 async function handleMessage(
@@ -62,11 +57,8 @@ async function handleMessage(
   context: AppContext
 ): Promise<CommandResponse> {
   const customId = payload.data.custom_id
-  return {
+  return message(`This is a content debug: ${bgrLabel(randomInclusive(50, 100))}`, {
     type: InteractionResponseType.UpdateMessage,
-    data: {
-      content: `This is a content debug: ${bgrLabel(randomInclusive(50, 100))}`,
-      components: messageButton(encodeCustomId(ID_TYPE, customId), 'Debug'),
-    },
-  }
+    components: messageButton(encodeCustomId(ID_TYPE, customId), 'Debug'),
+  })
 }

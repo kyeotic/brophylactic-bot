@@ -3,6 +3,7 @@ import { Lottery } from '../games/lottery'
 import type { AppContext } from '../di'
 import type { RouletteLottery } from './store'
 import type { GuildMember, Interaction } from '../discord/types'
+import { bgrLabel } from '../discord/api'
 
 export const rouletteTimeSeconds = 30
 // export const rouletteTimeSeconds = 5 // debug
@@ -112,8 +113,8 @@ export class Roulette {
     await this.context.rouletteStore.delete(this.lottery.id)
 
     // TODO get all new rep values and include in message
-    return `The roulette game has ended. ${names.join(', ')} all bet ℞${this.getBet()}. ${
+    return `The roulette game has ended. ${names.join(', ')} all bet ${bgrLabel(this.getBet())}. ${
       winner.username
-    } won ℞${this.lottery.potSize}`
+    } won ${bgrLabel(this.lottery.potSize)}`
   }
 }

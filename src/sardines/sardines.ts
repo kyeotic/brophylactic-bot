@@ -3,6 +3,7 @@ import { SardinesLottery } from './lottery'
 import type { AppContext } from '../di'
 import type { GuildMember } from '../discord/types'
 import type { NewLotteryProps } from '../roulette/roulette'
+import { bgrLabel } from '../discord/api'
 
 export interface SardinesProps {
   context: AppContext
@@ -132,12 +133,12 @@ export class Sardines {
     // TODO get all new rep values and include in message
     return `The sardines game started by ${this.lottery.creator.username} was ended by ${
       loser.username
-    } failing to join. They were still charged.\n${
-      winner.username
-    } won ℞${this.lottery.getPayout()} with a payout multiplier of **${(
-      this.lottery.multiplier * 100
-    ).toPrecision(3)}%**.\n\n${names.join(
-      ', '
-    )} all bet ℞${this.getBet()} for a total pot of ℞${this.lottery.potSize.toString()}.`
+    } failing to join. They were still charged.\n${winner.username} won ${bgrLabel(
+      this.lottery.getPayout()
+    )} with a payout multiplier of **${(this.lottery.multiplier * 100).toPrecision(
+      3
+    )}%**.\n\n${names.join(', ')} all bet ${bgrLabel(this.getBet())} for a total pot of ${bgrLabel(
+      this.lottery.potSize.toString()
+    )}.`
   }
 }

@@ -1,4 +1,4 @@
-import { asGuildMember, message, encodeCustomId } from '../discord/api'
+import { asGuildMember, message, messageButton, encodeCustomId, bgrLabel } from '../discord/api'
 import { joinFailureChance, MIN_PLAYERS_BEFORE_REJOIN } from './sardines'
 import { isToday } from '../util/dates'
 
@@ -89,7 +89,11 @@ async function handleSardines(
 
   if (memberBgr < sardines.buyIn) {
     return message(
-      `${member.username} only has ${memberBgr} and cannot bet in a sardines game whose buy-in is ℞${sardines.buyIn}`
+      `${
+        member.username
+      } only has ${memberBgr} and cannot bet in a sardines game whose buy-in is ${bgrLabel(
+        sardines.buyIn
+      )}`
     )
   }
 
@@ -149,32 +153,15 @@ function sardinesMessage(
   const players = sardines.getPlayers()
 
   const failureChance = (joinFailureChance(players.length) * 100).toPrecision(2)
-  const banner = `${creatorName} has started a sardines game for ℞${sardines.getBet()}. Click the button below to pay the buy-in and attempt to join the game.\nThere is currently a ${failureChance}% chance of ending the game when joining. A winner is randomly selected among all players in the game _before_ it ends.`
+  const banner = `${creatorName} has started a sardines game for ${bgrLabel(
+    sardines.getBet()
+  )}. Click the button below to pay the buy-in and attempt to join the game.\nThere is currently a ${failureChance}% chance of ending the game when joining. A winner is randomly selected among all players in the game _before_ it ends.`
 
   const footer =
     players.length < 2 ? '' : `\n\n**Players**\n${players.map((p) => p.username).join('\n')}`
 
-  return {
+  return message(banner + footer, {
     type,
-    data: {
-      content: banner + footer,
-      components: sardinesComponents(sardines.id),
-    },
-  }
-}
-
-function sardinesComponents(id: string): MessageComponents {
-  return [
-    {
-      type: ComponentType.ActionRow,
-      components: [
-        {
-          type: ComponentType.Button,
-          label: 'Join Sardines',
-          style: ButtonStyle.Primary,
-          custom_id: encodeCustomId(ID_TYPE, id),
-        },
-      ],
-    },
-  ]
+    components: messageButton(encodeCustomId(ID_TYPE, sardines.id), 'Join Sardines'),
+  })
 }

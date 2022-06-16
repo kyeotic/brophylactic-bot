@@ -1,4 +1,4 @@
-import { asGuildMember, message, encodeCustomId } from '../discord/api'
+import { asGuildMember, message, messageButton, encodeCustomId, bgrLabel } from '../discord/api'
 import { differenceInSeconds } from '../util/dates'
 import { rouletteTimeMs } from './roulette'
 
@@ -85,7 +85,11 @@ async function handleRoulette(
 
   if (memberBgr < roulette.buyIn) {
     return message(
-      `${member.username} only has ${memberBgr} and cannot bet in a roulette game whose buy-in is ℞${roulette.buyIn}`
+      `${
+        member.username
+      } only has ${memberBgr} and cannot bet in a roulette game whose buy-in is ${bgrLabel(
+        roulette.buyIn
+      )}`
     )
   }
 
@@ -160,32 +164,15 @@ function rouletteMessage(
   const creatorName = roulette.getCreator().username
   const players = roulette.getPlayers()
 
-  const banner = `${creatorName} has started a roulette game for ℞${roulette.getBet()}. Click the button below within ${timeRemaining} seconds to place an equal bet and join the game.`
+  const banner = `${creatorName} has started a roulette game for ${bgrLabel(
+    roulette.getBet()
+  )}. Click the button below within ${timeRemaining} seconds to place an equal bet and join the game.`
 
   const footer =
     players.length < 2 ? '' : `\n\n**Players**\n${players.map((p) => p.username).join('\n')}`
 
-  return {
+  return message(banner + footer, {
     type,
-    data: {
-      content: banner + footer,
-      components: rouletteComponents(roulette.id),
-    },
-  }
-}
-
-function rouletteComponents(id: string): MessageComponents {
-  return [
-    {
-      type: ComponentType.ActionRow,
-      components: [
-        {
-          type: ComponentType.Button,
-          label: 'Join Roulette',
-          style: ButtonStyle.Primary,
-          custom_id: encodeCustomId(ID_TYPE, id),
-        },
-      ],
-    },
-  ]
+    components: messageButton(encodeCustomId(ID_TYPE, roulette.id), 'Join Roulette'),
+  })
 }

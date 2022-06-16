@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from '../util/dates'
 import { isToday, getDayString } from '../util/dates'
-import { message, asGuildMember } from '../discord/api'
+import { message, asGuildMember, bgrLabel } from '../discord/api'
 import { randomInclusive } from '../util/random'
 import { ApplicationCommandOptionType } from '../discord/types'
 
@@ -57,7 +57,9 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
 
   if (!guess || !Number.isInteger(guess) || guess < 0 || guess > 100) {
     return message(
-      `Guess a number between 1-100 to win ℞${magicNumberReward}. Only guess allowed per day.\n${memberName} made their last Guess ${
+      `Guess a number between 1-100 to win ${bgrLabel(
+        magicNumberReward
+      )}. Only guess allowed per day.\n${memberName} made their last Guess ${
         lastGuess
           ? `${formatDistanceToNow(lastGuess, { addSuffix: true, includeSeconds: false })}`
           : 'never'
@@ -80,22 +82,30 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
   if (isCorrect) {
     await context.userStore.incrementUserRep(member, magicNumberReward)
     return message(
-      `${memberName} correctly guessed that their number was ${magicNumber} and has been awarded ℞${magicNumberReward}`
+      `${memberName} correctly guessed that their number was ${magicNumber} and has been awarded ${bgrLabel(
+        magicNumberReward
+      )}`
     )
   } else if (isMagicPair(magicNumber, guess)) {
     await context.userStore.incrementUserRep(member, pairwiseReward)
     return message(
-      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However they are magic number pairs and so they have been awarded ℞${pairwiseReward}`
+      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However they are magic number pairs and so they have been awarded ${bgrLabel(
+        pairwiseReward
+      )}`
     )
   } else if (isWithinRange) {
     await context.userStore.incrementUserRep(member, rangeReward)
     return message(
-      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However it is within ${magicNumberRange} and so they have been awarded ℞${rangeReward}`
+      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However it is within ${magicNumberRange} and so they have been awarded ${bgrLabel(
+        rangeReward
+      )}`
     )
   } else if (matchedLastDigit) {
     await context.userStore.incrementUserRep(member, lastDigitReward)
     return message(
-      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However they matched the last digit and so they have been awarded ℞${lastDigitReward}`
+      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However they matched the last digit and so they have been awarded ${bgrLabel(
+        lastDigitReward
+      )}`
     )
   } else {
     return message(

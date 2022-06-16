@@ -1,6 +1,6 @@
 import { ApplicationCommandOptionType } from '../discord/types'
 import { formatDate } from '../util/dates'
-import { asGuildMember, message } from '../discord/api'
+import { asGuildMember, bgrLabel, message } from '../discord/api'
 
 import type { AppContext } from '../di'
 import type {
@@ -97,7 +97,9 @@ async function viewBgr(payload: BgrViewInteraction, context: AppContext): Promis
     ? formatDate(new Date(member.joinedAt), 'yyyy-MM-dd')
     : '<join date missing>'
 
-  return message(`${member.username} joined on ${joined} has ℞${bgr}`, { isPrivate: !isPublic })
+  return message(`${member.username} joined on ${joined} has ${bgrLabel(bgr)} `, {
+    isPrivate: !isPublic,
+  })
 }
 
 async function sendBgr(payload: BgrSendInteraction, context: AppContext): Promise<CommandResponse> {
@@ -142,7 +144,9 @@ async function sendBgr(payload: BgrSendInteraction, context: AppContext): Promis
         applicationId: payload.application_id,
         token: payload.token,
         body: message(
-          `${senderName} sent ${receiverName} ℞${amount}.\n${senderName}: ℞${senderRep}\t${receiverName}: ℞${receiverRep}`
+          `${senderName} sent ${receiverName} ${bgrLabel(amount)}.\n${senderName}: ${bgrLabel(
+            senderRep
+          )}\t${receiverName}: ${bgrLabel(receiverRep)}`
         ),
       })
     })
@@ -157,5 +161,5 @@ async function sendBgr(payload: BgrSendInteraction, context: AppContext): Promis
     })
 
   //updateInteraction
-  return message(`${member.username} is sending ${receiverName} ℞${amount}`)
+  return message(`${member.username} is sending ${receiverName} ${bgrLabel(amount)}`)
 }
