@@ -20,7 +20,7 @@ export interface SardinesProps {
 // Test with range(1,20).map(n => n / (n + 4)).map(n => (n * 100).toPrecision(2) + '%').join(', ')
 // A scale of 4 gives the following distribution
 // 20%, 33%, 43%, 50%, 56%, 60%, 64%, 67%, 69%, 71%, 73%, 75%, 76%, 78%, 79%, 80%, 81%, 82%, 83%, 83%
-export const MIN_PLAYERS_BEFORE_REJOIN = 5
+export const MIN_PLAYERS_BEFORE_REJOIN = 4
 const SCALE = 4
 const hill = (n: number, scale: number): number => n / (n + scale)
 export const joinFailureChance = (n: number): number => hill(n, SCALE)
@@ -114,11 +114,10 @@ export class Sardines {
   }
 
   async finish(loser: GuildMember): Promise<string> {
+    const bettors = this.lottery.players.map((player) => player.username).concat(loser.username)
     const { winner, payouts } = this.lottery.finish()
-    const names = [
-      ...new Set([...this.lottery.players.map((player) => player.username)]).values(),
-    ].map((name) => {
-      const count = this.lottery.players.filter((p) => p.username === name).length
+    const names = [...new Set([...bettors]).values()].map((name) => {
+      const count = bettors.filter((p) => p === name).length
       return count > 1 ? `${name} (x${count})` : name
     })
 
@@ -131,10 +130,12 @@ export class Sardines {
     // TODO get all new rep values and include in message
     return `The sardines game started by ${this.lottery.creator.username} was ended by ${
       loser.username
-    } failing to join. They were still charged. ${names.join(
+    } failing to join. They were still charged.\n${
+      winner.username
+    } won ℞${this.lottery.getPayout()} with a payout multiplier of **${(
+      this.lottery.multiplier * 100
+    ).toPrecision(3)}%**.\n\n${names.join(
       ', '
-    )} all bet ℞${this.getBet()} with a payout of **${(this.lottery.multiplier * 100).toPrecision(
-      3
-    )}%**. ${winner.username} won ℞${this.lottery.getPayout()}`
+    )} all bet ℞${this.getBet()} for a total pot of ℞${this.lottery.potSize.toString()}.`
   }
 }

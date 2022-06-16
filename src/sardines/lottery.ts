@@ -18,9 +18,14 @@ export class SardinesLottery extends Lottery<GuildMember> {
     return payouts[weightedRandom(1, payouts.length, this.id) - 1]
   }
 
+  get potSize(): number {
+    // For sardines the pot size includes the loser, but the players does not
+    return this.bet * (this._players.length + 1)
+  }
+
   override getPayout() {
     // In a sardines lottery the winner gets
     // POT * PLAYER_SIZE * MULTIPLIER
-    return Math.floor(this.potSize * this._players.length * this.multiplier)
+    return Math.floor(this.potSize * this.multiplier)
   }
 }
