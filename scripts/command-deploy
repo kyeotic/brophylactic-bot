@@ -20,7 +20,7 @@ case $WORKSPACE in
     ;;
 esac
 
-TEST="true" \
+TEST="true" stage=$WORKSPACE \
   AWS_ACCESS_KEY_ID=$(aws configure get default.aws_access_key_id) \
   AWS_SECRET_ACCESS_KEY=$(aws configure get default.aws_secret_access_key) \
   npx ts-node src/redeploy.ts

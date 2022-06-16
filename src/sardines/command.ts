@@ -77,9 +77,9 @@ async function handleSardines(
   const memberBgr = await context.userStore.getUserRep(member)
   const lastSardines = await context.userStore.getUserLastSardines(member)
 
-  // if (lastSardines && isToday(context.config.discord.timezone, lastSardines)) {
-  //   return message('You already started a sardines game today', { isPrivate: true })
-  // }
+  if (lastSardines && isToday(context.config.discord.timezone, lastSardines)) {
+    return message('You already started a sardines game today', { isPrivate: true })
+  }
 
   const { sardines, error } = context.sardines.init({
     creator: member,
@@ -113,12 +113,12 @@ async function handleSardinesJoin(
     return message(error?.message, { type: InteractionResponseType.DeferredMessageUpdate })
 
   const member = asGuildMember(payload.guild_id!, payload.member!)
-  // if (!sardines.canJoinRepeat() && sardines.getPlayers().find((p) => p.id === member.id)) {
-  //   return message(
-  //     `Cannot join a sardines game you are already in until the minimum player count of ${MIN_PLAYERS_BEFORE_REJOIN} is met.`,
-  //     { isPrivate: true }
-  //   )
-  // }
+  if (!sardines.canJoinRepeat() && sardines.getPlayers().find((p) => p.id === member.id)) {
+    return message(
+      `Cannot join a sardines game you are already in until the minimum player count of ${MIN_PLAYERS_BEFORE_REJOIN} is met.`,
+      { isPrivate: true }
+    )
+  }
 
   const memberRep = await context.userStore.getUserRep(member)
 

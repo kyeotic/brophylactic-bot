@@ -3,10 +3,11 @@ import type { BaseCommand, SlashCommand, MessageComponentCommand } from '../disc
 import roll from './roll'
 import bgr from './bgr'
 import guess from './guess'
+import debug from './debug'
 import roulette from '../roulette/command'
 import sardines from '../sardines/command'
 
-const commands: BaseCommand[] = [roll, bgr, guess, roulette, sardines]
+const commands: BaseCommand[] = [debug, roll, bgr, guess, roulette, sardines]
 
 export const slashCommands = new Map<string, SlashCommand<any>>(
   commands

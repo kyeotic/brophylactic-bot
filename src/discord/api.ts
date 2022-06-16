@@ -1,7 +1,7 @@
 import config from '../config'
 import urlJoin from 'url-join'
 import request, { isErrorStatus } from 'request-micro'
-import { InteractionResponseType, MessageComponents } from './types'
+import { InteractionResponseType, ComponentType, ButtonStyle, MessageComponents } from './types'
 import type { GuildMember, DiscordGuildMemberWithUser, MessageResponse, Command } from './types'
 import type { AppLogger } from '../di'
 
@@ -77,6 +77,7 @@ export class DiscordClient {
     guildId?: string
     command: any
   }): Promise<void> {
+    console.log('deploy', applicationId, guildId, command, this.config.botToken)
     await this.send({
       useBotToken: true,
       url: guildId
@@ -126,6 +127,7 @@ export class DiscordClient {
 
     if (isErrorStatus(response)) {
       this.logger.error('Discord Error', response.statusCode, response.data)
+      this.logger.debug('Headers', response.headers)
       throw new Error(JSON.stringify(response.data))
     }
 
@@ -173,6 +175,30 @@ export function message(
       flags: isPrivate ? 64 : undefined,
     },
   }
+}
+
+export function messageButton(
+  id: string,
+  label: string,
+  { style = ButtonStyle.Primary }: { style?: Exclude<ButtonStyle, ButtonStyle.Link> } = {}
+): MessageComponents {
+  return [
+    {
+      type: ComponentType.ActionRow,
+      components: [
+        {
+          label,
+          type: ComponentType.Button,
+          style,
+          custom_id: id,
+        },
+      ],
+    },
+  ]
+}
+
+export function bgrLabel(amount: string | number): string {
+  return `℞**${amount.toString()}**`
 }
 
 /** encode the type and id into customId for use in message components*/
