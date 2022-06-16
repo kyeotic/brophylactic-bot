@@ -116,6 +116,8 @@ export class Sardines {
   async finish(loser: GuildMember): Promise<string> {
     const bettors = this.lottery.players.map((player) => player.username).concat(loser.username)
     const { winner, payouts } = this.lottery.finish()
+    payouts.push([loser, this.lottery.buyIn * -1])
+
     const names = [...new Set([...bettors]).values()].map((name) => {
       const count = bettors.filter((p) => p === name).length
       return count > 1 ? `${name} (x${count})` : name
