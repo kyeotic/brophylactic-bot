@@ -113,7 +113,7 @@ export class Sardines {
     await this.context.userStore.incrementUserRep(player, this.lottery.buyIn * -1)
   }
 
-  async finish(): Promise<string> {
+  async finish(loser: GuildMember): Promise<string> {
     const { winner, payouts } = this.lottery.finish()
     const names = [
       ...new Set([...this.lottery.players.map((player) => player.username)]).values(),
@@ -129,7 +129,9 @@ export class Sardines {
     await this.context.sardinesStore.delete(this.lottery.id)
 
     // TODO get all new rep values and include in message
-    return `The sardines game has ended. ${names.join(
+    return `The sardines game started by ${this.lottery.creator.username} was ended by ${
+      loser.username
+    } failing to join. They were still charged. ${names.join(
       ', '
     )} all bet ℞${this.getBet()} with a payout of **${(this.lottery.multiplier * 100).toPrecision(
       3

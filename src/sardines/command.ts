@@ -130,7 +130,7 @@ async function handleSardinesJoin(
     await sardines.addPlayer(member)
     return sardinesMessage(sardines, InteractionResponseType.UpdateMessage)
   } else {
-    const finalMessage = await sardines.finish()
+    const finalMessage = await sardines.finish(member)
     return message(finalMessage, { type: InteractionResponseType.UpdateMessage, components: [] })
   }
 }
@@ -149,10 +149,10 @@ function sardinesMessage(
   const players = sardines.getPlayers()
 
   const failureChance = (joinFailureChance(players.length) * 100).toPrecision(2)
-  const banner = `${creatorName} has started a sardines game for ℞${sardines.getBet()}. Click the button below place an pay the buy-in and attempt to join the game.\nThere is currently a ${failureChance}% chance of ending the game when joining. A winner is randomly selected among all players in the game _before_ it ends.`
+  const banner = `${creatorName} has started a sardines game for ℞${sardines.getBet()}. Click the button below to pay the buy-in and attempt to join the game.\nThere is currently a ${failureChance}% chance of ending the game when joining. A winner is randomly selected among all players in the game _before_ it ends.`
 
   const footer =
-    players.length < 2 ? '' : `\n**Players**\n\n${players.map((p) => p.username).join('\n')}`
+    players.length < 2 ? '' : `\n\n**Players**\n${players.map((p) => p.username).join('\n')}`
 
   return {
     type,
