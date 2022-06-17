@@ -16,15 +16,19 @@ export interface SardinesProps {
   If nobody joins in 12 hours they can join their own game to claim the NO_ACTIVITY_PRIZE
   Every player that joins must pay the BUY_IN, which they immediately lose
   When joining a player has a chance to end the game, equal to ()
-*/
 
-// Test with range(1,20).map(n => n / (n + 4)).map(n => (n * 100).toPrecision(2) + '%').join(', ')
-// A scale of 4 gives the following distribution
-// 20%, 33%, 43%, 50%, 56%, 60%, 64%, 67%, 69%, 71%, 73%, 75%, 76%, 78%, 79%, 80%, 81%, 82%, 83%, 83%
+
+  For odds playground see:  https://codepen.io/tyrsius/pen/gOvEKjv?editors=0010
+                            https://www.desmos.com/calculator/4ioz4cm8zs
+*/
 export const MIN_PLAYERS_BEFORE_REJOIN = 4
-const SCALE = 4
-const hill = (n: number, scale: number): number => n / (n + scale)
-export const joinFailureChance = (n: number): number => hill(n, SCALE)
+
+const A = 0.4
+const B = 0.3
+const C = 1.8
+
+export const joinFailureChance = (n: number) => 1 - (A - n + B) / (n + C) - 1
+
 const doesPlayerLose = (n: number): boolean => Math.random() < joinFailureChance(n)
 
 export class Sardines {
