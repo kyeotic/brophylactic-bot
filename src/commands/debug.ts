@@ -57,7 +57,8 @@ async function handleMessage(
   context: AppContext
 ): Promise<CommandResponse> {
   const customId = payload.data.custom_id
-  return message(`This is a content debug: ${bgrLabel(randomInclusive(50, 100))}`, {
+  const user = payload.member?.user?.id
+  return message(`This is a content debug: ${bgrLabel(randomInclusive(50, 100))}. Hey <@${user}>`, {
     type: InteractionResponseType.UpdateMessage,
     components: messageButton(encodeCustomId(ID_TYPE, customId), 'Debug'),
   })

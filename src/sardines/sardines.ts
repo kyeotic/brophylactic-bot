@@ -3,7 +3,8 @@ import { SardinesLottery } from './lottery'
 import type { AppContext } from '../di'
 import type { GuildMember } from '../discord/types'
 import type { NewLotteryProps } from '../roulette/roulette'
-import { bgrLabel } from '../discord/api'
+import { bgrLabel, mention } from '../discord/api'
+import config from '../config'
 
 export interface SardinesProps {
   context: AppContext
@@ -21,7 +22,8 @@ export interface SardinesProps {
   For odds playground see:  https://codepen.io/tyrsius/pen/gOvEKjv?editors=0010
                             https://www.desmos.com/calculator/4ioz4cm8zs
 */
-export const MIN_PLAYERS_BEFORE_REJOIN = 4
+export const MIN_PLAYERS_BEFORE_REJOIN = config.stage === 'local' ? 1 : 4
+console.log(config)
 
 const A = 0.4
 const B = 0.3
@@ -139,7 +141,7 @@ export class Sardines {
     // TODO get all new rep values and include in message
     return `The sardines game started by ${this.lottery.creator.username} was ended by ${
       loser.username
-    } failing to join. They were still charged.\n${winner.username} won ${bgrLabel(
+    } failing to join. They were still charged.\n${mention(winner)} won ${bgrLabel(
       this.lottery.getPayout()
     )} with a payout multiplier of **${(this.lottery.multiplier * 100).toPrecision(
       3

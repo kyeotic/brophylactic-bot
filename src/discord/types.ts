@@ -23,6 +23,7 @@ export {
 
 import type {
   APIGuildMember as DiscordGuildMember,
+  APIInteractionGuildMember,
   APIUser as DiscordUser,
   APIApplicationCommand,
   //command definitions
@@ -69,6 +70,10 @@ import type {
 } from 'discord-api-types/v10'
 
 export type {
+  //Basic
+  APIInteractionGuildMember,
+  DiscordGuildMember,
+  // Interaction
   Interaction,
   InteractionResponse,
   InteractionResponseCallback,

@@ -2,7 +2,14 @@ import config from '../config'
 import urlJoin from 'url-join'
 import request, { isErrorStatus } from 'request-micro'
 import { InteractionResponseType, ComponentType, ButtonStyle, MessageComponents } from './types'
-import type { GuildMember, DiscordGuildMemberWithUser, MessageResponse, Command } from './types'
+import type {
+  GuildMember,
+  DiscordGuildMemberWithUser,
+  MessageResponse,
+  Command,
+  APIInteractionGuildMember,
+  DiscordGuildMember,
+} from './types'
 import type { AppLogger } from '../di'
 
 const defaultHeaders = {
@@ -202,6 +209,19 @@ export function bgrLabel(
   { bold = true }: { bold?: boolean } = {}
 ): string {
   return bold ? `℞**${amount.toString()}**` : `℞${amount.toString()}`
+}
+
+export function mention(
+  user: GuildMember | DiscordGuildMember | DiscordGuildMemberWithUser | APIInteractionGuildMember
+): string {
+  let id
+  if ((user as DiscordGuildMember).user?.id) id = (user as DiscordGuildMember).user?.id
+  else if ((user as GuildMember).id) id = (user as GuildMember).id
+  else {
+    console.error('Unknown user type', user)
+    throw new Error('Unknown user type')
+  }
+  return `<@${id}>`
 }
 
 /** encode the type and id into customId for use in message components*/
