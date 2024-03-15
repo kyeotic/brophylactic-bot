@@ -19,6 +19,51 @@ const lastDigitReward = 10
 const pairwiseReward = 250
 
 type GuessInteraction = SlashCommandOptions<[CommandInteractionInteger]>
+type Rule = {
+  name: string
+  predicate: (answer: number, guess: number) => boolean
+  reward: number
+  message: (opts: { memberName: string; answer: number; guess: number }) => string
+}
+
+const rules: Rule[] = [
+  {
+    name: 'Correct',
+    predicate: (answer, guess) => answer === guess,
+    reward: magicNumberReward,
+    message: ({ memberName, answer }) =>
+      `${memberName} correctly guessed that their number was ${answer} and has been awarded ${bgrLabel(
+        magicNumberReward
+      )}`,
+  },
+  {
+    name: 'Magic Pair',
+    predicate: (answer, guess) => isMagicPair(answer, guess),
+    reward: magicNumberReward,
+    message: ({ memberName, answer, guess }) =>
+      `${memberName} incorrectly guessed that their number was ${guess}, it was ${answer}. However they are magic number pairs and so they have been awarded ${bgrLabel(
+        pairwiseReward
+      )}`,
+  },
+  {
+    name: 'Near Correct',
+    predicate: (answer, guess) => isWithin(guess, answer, magicNumberRange),
+    reward: rangeReward,
+    message: ({ memberName, answer, guess }) =>
+      `${memberName} incorrectly guessed that their number was ${guess}, it was ${answer}. However it is within ${magicNumberRange} and so they have been awarded ${bgrLabel(
+        rangeReward
+      )}`,
+  },
+  {
+    name: 'Last Digit',
+    predicate: (answer, guess) => lastDigit(answer) === lastDigit(guess),
+    reward: lastDigitReward,
+    message: ({ memberName, answer, guess }) =>
+      `${memberName} incorrectly guessed that their number was ${guess}, it was ${answer}. However they matched the last digit and so they have been awarded ${bgrLabel(
+        lastDigitReward
+      )}`,
+  },
+]
 
 const command: SlashCommand<GuessInteraction> = {
   id: 'guess',
@@ -55,7 +100,7 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
   const memberName = member.username
   const lastGuess = await context.userStore.getUserLastGuess(member)
 
-  if (!guess || !Number.isInteger(guess) || guess < 0 || guess > 100) {
+  if (!guess || !Number.isInteger(guess) || guess < 1 || guess > 100) {
     return message(
       `Guess a number between 1-100 to win ${bgrLabel(
         magicNumberReward
@@ -75,38 +120,11 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
 
   const magicNumber = randomInclusive(1, 100, `${memberName}:${getDayString(timeZone, new Date())}`)
 
-  const isCorrect = magicNumber === guess
-  const isWithinRange = isWithin(guess, magicNumber, magicNumberRange)
-  const matchedLastDigit = lastDigit(magicNumber) === lastDigit(guess)
+  const match = rules.find((r) => r.predicate(magicNumber, guess))
 
-  if (isCorrect) {
-    await context.userStore.incrementUserRep(member, magicNumberReward)
-    return message(
-      `${memberName} correctly guessed that their number was ${magicNumber} and has been awarded ${bgrLabel(
-        magicNumberReward
-      )}`
-    )
-  } else if (isMagicPair(magicNumber, guess)) {
-    await context.userStore.incrementUserRep(member, pairwiseReward)
-    return message(
-      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However they are magic number pairs and so they have been awarded ${bgrLabel(
-        pairwiseReward
-      )}`
-    )
-  } else if (isWithinRange) {
-    await context.userStore.incrementUserRep(member, rangeReward)
-    return message(
-      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However it is within ${magicNumberRange} and so they have been awarded ${bgrLabel(
-        rangeReward
-      )}`
-    )
-  } else if (matchedLastDigit) {
-    await context.userStore.incrementUserRep(member, lastDigitReward)
-    return message(
-      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}. However they matched the last digit and so they have been awarded ${bgrLabel(
-        lastDigitReward
-      )}`
-    )
+  if (match) {
+    await context.userStore.incrementUserRep(member, match.reward)
+    return message(match.message({ memberName, answer: magicNumber, guess }))
   } else {
     return message(
       `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}`
@@ -123,14 +141,11 @@ function lastDigit(num: number): number {
 }
 
 /**
- * A Magic Pair occurs when the numbers are reverses of each other.
- * Since 100 and 99 cannot have a reversed pair they are a special case of magic pairs.
- * (Despite all NN pairs, e.g. 88 and 77, lacking a magic pair, only 99 is a special case)
+ * A Magic Pair occurs when the numbers form a gauss sum
+ * i.e. the magic number and the guess add up to 101
  */
 function isMagicPair(a: number, b: number) {
-  if ((a === 100 && b === 99) || (a === 99 && b === 100)) return true
-  if (reverse(paddedNum(a)) === paddedNum(b)) return true
-  return false
+  return 101 - a === b
 }
 
 function paddedNum(num: number): string {
