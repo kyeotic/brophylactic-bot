@@ -4,7 +4,7 @@ set -e
 WORKSPACE=${1:-dev}
 
 _scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-set -o allexport; source "${_scripts}/../.env.base"; set +o allexport
+set -o allexport; source "${_scripts}/../.env"; set +o allexport
 
 case $WORKSPACE in
   dev)

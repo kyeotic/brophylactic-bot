@@ -13,8 +13,6 @@ variable "BOT_TOKEN" {
   sensitive = true
 }
 variable "DISCORD_SERVER_ID" {}
-variable "DISCORD_RESIDENT_ROLE_ID" {}
-variable "DISCORD_NEW_MEMBER_ROLE_ID" {}
 
 #-------------------------------------------
 # Configurable variables

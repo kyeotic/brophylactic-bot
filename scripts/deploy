@@ -9,7 +9,7 @@ _app="${_scripts}/.."
 _terraform="${_app}/infrastructure/terraform"
 
 # import base properties, e.g. APP_NAME
-set -o allexport; source "${_app}/.env.base"; set +o allexport
+set -o allexport; source "${_app}/.env"; set +o allexport
 
 
 if [ -z ${WORKSPACE+x} ]; then
@@ -86,8 +86,6 @@ TF_VAR_FIREBASE_64=$FIREBASE_64 \
 TF_VAR_DISCORD_PUBLIC_KEY=$DISCORD_PUBLIC_KEY \
 TF_VAR_BOT_TOKEN=$BOT_TOKEN \
 TF_VAR_DISCORD_SERVER_ID=$DISCORD_SERVER_ID \
-TF_VAR_DISCORD_RESIDENT_ROLE_ID=$DISCORD_RESIDENT_ROLE_ID \
-TF_VAR_DISCORD_NEW_MEMBER_ROLE_ID=$DISCORD_NEW_MEMBER_ROLE_ID \
   terraform apply "${terraform_args[@]}"
 
 popd

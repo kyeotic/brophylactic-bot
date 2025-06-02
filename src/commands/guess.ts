@@ -32,16 +32,14 @@ const rules: Rule[] = [
     predicate: (answer, guess) => answer === guess,
     reward: magicNumberReward,
     message: ({ memberName, answer }) =>
-      `${memberName} correctly guessed that their number was ${answer} and has been awarded ${bgrLabel(
-        magicNumberReward
-      )}`,
+      `# Winner 🚀\n\n**${answer}** is the right number! You won ${bgrLabel(magicNumberReward)}`,
   },
   {
     name: 'Magic Pair',
     predicate: (answer, guess) => isMagicPair(answer, guess),
-    reward: magicNumberReward,
+    reward: pairwiseReward,
     message: ({ memberName, answer, guess }) =>
-      `${memberName} incorrectly guessed that their number was ${guess}, it was ${answer}. However they are magic number pairs and so they have been awarded ${bgrLabel(
+      `## Magic Number Match 🪄\n\nYour guess of ${guess} magically pairs with the correct answer ${answer}. You won ${bgrLabel(
         pairwiseReward
       )}`,
   },
@@ -50,7 +48,7 @@ const rules: Rule[] = [
     predicate: (answer, guess) => isWithin(guess, answer, magicNumberRange),
     reward: rangeReward,
     message: ({ memberName, answer, guess }) =>
-      `${memberName} incorrectly guessed that their number was ${guess}, it was ${answer}. However it is within ${magicNumberRange} and so they have been awarded ${bgrLabel(
+      `### Near Correct \n\nYour guess of ${answer} is within ${magicNumberRange} of the correct answer. You won ${bgrLabel(
         rangeReward
       )}`,
   },
@@ -59,7 +57,7 @@ const rules: Rule[] = [
     predicate: (answer, guess) => lastDigit(answer) === lastDigit(guess),
     reward: lastDigitReward,
     message: ({ memberName, answer, guess }) =>
-      `${memberName} incorrectly guessed that their number was ${guess}, it was ${answer}. However they matched the last digit and so they have been awarded ${bgrLabel(
+      `### Last Digit\n\nYour guess of ${answer} matches the last digit of the correct answer ${answer}. You won ${bgrLabel(
         lastDigitReward
       )}`,
   },
@@ -126,9 +124,7 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
     await context.userStore.incrementUserRep(member, match.reward)
     return message(match.message({ memberName, answer: magicNumber, guess }))
   } else {
-    return message(
-      `${memberName} incorrectly guessed that their number was ${guess}, it was ${magicNumber}`
-    )
+    return message(`You guessed ${guess} but the correct number was ${magicNumber}`)
   }
 }
 

@@ -5,7 +5,7 @@
   "author": "Tim Kye <tim@kye.dev>",
   "license": "MIT",
   "scripts": {
-    "start": "ts-node src/bot",
+    "start": "npx tsx src/bot",
     "build": "run-s build:tsc build:es build:package",
     "build:package": "del build/ && mkdir build/ && zip build/lambda.zip -j -r dist/ -x \"*.tsbuildinfo\"",
     "build:tsc": "del dist/ && tsc --project tsconfig.build.json",
@@ -55,6 +55,7 @@
     "npm-run-all": "^4.1.5",
     "prettier": "^2.6.2",
     "ts-node": "^10.8.1",
+    "tsx": "^4.19.4",
     "typescript": "^4.7.2"
   }
 }

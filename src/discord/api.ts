@@ -208,7 +208,7 @@ export function bgrLabel(
   amount: string | number,
   { bold = true }: { bold?: boolean } = {}
 ): string {
-  return bold ? `℞**${amount.toString()}**` : `℞${amount.toString()}`
+  return bold ? `**℞${amount.toString()}**` : `℞${amount.toString()}`
 }
 
 export function mention(
