@@ -39,7 +39,7 @@ const rules: Rule[] = [
     predicate: (answer, guess) => isMagicPair(answer, guess),
     reward: pairwiseReward,
     message: ({ memberName, answer, guess }) =>
-      `## Magic Number Match 🪄\n\nYour guess of ${guess} magically pairs with the correct answer ${answer}. You won ${bgrLabel(
+      `## Magic Number Match 🪄\n\nYour guess of **${guess}** magically pairs with the correct answer **${answer}**. You won ${bgrLabel(
         pairwiseReward
       )}`,
   },
@@ -48,7 +48,7 @@ const rules: Rule[] = [
     predicate: (answer, guess) => isWithin(guess, answer, magicNumberRange),
     reward: rangeReward,
     message: ({ memberName, answer, guess }) =>
-      `### Near Correct \n\nYour guess of ${answer} is within ${magicNumberRange} of the correct answer. You won ${bgrLabel(
+      `### Near Correct \n\nYour guess of **${guess}** is within ${magicNumberRange} of the correct answer **${answer}**. You won ${bgrLabel(
         rangeReward
       )}`,
   },
@@ -57,7 +57,7 @@ const rules: Rule[] = [
     predicate: (answer, guess) => lastDigit(answer) === lastDigit(guess),
     reward: lastDigitReward,
     message: ({ memberName, answer, guess }) =>
-      `### Last Digit\n\nYour guess of ${answer} matches the last digit of the correct answer ${answer}. You won ${bgrLabel(
+      `### Last Digit\n\nYour guess of **${guess}** matches the last digit of the correct answer **${answer}**. You won ${bgrLabel(
         lastDigitReward
       )}`,
   },
@@ -124,7 +124,7 @@ async function handleGuess(payload: GuessInteraction, context: AppContext) {
     await context.userStore.incrementUserRep(member, match.reward)
     return message(match.message({ memberName, answer: magicNumber, guess }))
   } else {
-    return message(`You guessed ${guess} but the correct number was ${magicNumber}`)
+    return message(`You guessed **${guess}** but the correct number was **${magicNumber}**`)
   }
 }
 
