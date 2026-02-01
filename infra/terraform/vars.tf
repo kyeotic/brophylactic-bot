@@ -16,8 +16,8 @@ variable "hostname" {
 }
 
 variable "tunnel_service_url" {
-  description = "URL the tunnel points to (the bot's HTTP server on the homelab)"
-  default     = "http://localhost:8006"
+  description = "URL the tunnel points to (the bot's HTTP server in Docker compose)"
+  default     = "http://bot:8006"
 }
 
 #-------------------------------------------

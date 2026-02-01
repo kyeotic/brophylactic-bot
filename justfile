@@ -4,8 +4,11 @@ local:
 command-deploy env="dev":
   ./scripts/command-deploy {{env}}
 
-infra-deploy env:
-  ./scripts/deploy {{env}}
+infra-deploy:
+  ./scripts/deploy
+
+get-tunnel-token:
+  terraform -chdir=infra/terraform output -raw tunnel_token
 
 deploy:
   docker build --platform linux/amd64 -t docker.local.kye.dev/brophylactic-bot:latest .

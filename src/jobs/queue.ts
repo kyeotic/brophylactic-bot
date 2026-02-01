@@ -40,6 +40,11 @@ export class JobQueue {
     this.intervalId = setInterval(() => this.processDueJobs(), pollIntervalMs)
   }
 
+  async getPendingJobs(): Promise<JobDocument[]> {
+    const jobs = await this.store.listDocuments()
+    return jobs.filter((j) => j.status === 'pending')
+  }
+
   stop(): void {
     if (this.intervalId) {
       clearInterval(this.intervalId)

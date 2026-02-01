@@ -10,7 +10,9 @@ import { SardinesLotteryStore } from './sardines/store'
 import { Sardines, SardinesProps } from './sardines/sardines'
 import { JobQueue } from './jobs/queue'
 import { DiscordClient } from './discord/api'
+import { finishRoulette, recoverCountdowns } from './roulette/command'
 
+import type { Interaction } from './discord/types'
 import type { Logger } from 'pino'
 
 type NoContext<T> = Omit<T, 'context'>
@@ -73,6 +75,17 @@ export function initContext(init = {}): AppContext {
   }
 
   context.jobQueue = new JobQueue({ client: context.firebaseClient, logger })
+
+  // Register job handlers
+  context.jobQueue.register('roulette:finish', async (payload) => {
+    const { id, interaction } = payload as { id: string; interaction: Interaction }
+    await finishRoulette({ id, interaction }, context)
+  })
+
+  // Recover any in-flight roulette countdowns (fire-and-forget)
+  recoverCountdowns(context).catch((err) =>
+    logger.error({ err }, 'Failed to recover roulette countdowns')
+  )
 
   return context
 }

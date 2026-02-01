@@ -12,6 +12,8 @@ import { main } from './discord/main'
 import { initContext } from './di'
 import type { Interaction } from './discord/types'
 
+const context = initContext()
+
 const bot = createBot({
   token: config.discord.botToken,
   intents: config.discord.botIntents.reduce((flags, i) => flags | GatewayIntents[i], 0),
@@ -21,7 +23,6 @@ const bot = createBot({
     },
     interactionCreate(bot: Bot, input: DenoInteraction) {
       const interaction = input as unknown as Interaction
-      const context = initContext()
       // console.log('received interaction', JSON.stringify(interaction, null, 2))
       main(interaction, context)
         .then((body) => context.discord.botRespond(interaction.id, interaction.token, body))
@@ -34,6 +35,7 @@ const bot = createBot({
 })
 
 async function app() {
+  context.jobQueue.start()
   await startBot(bot)
 }
 

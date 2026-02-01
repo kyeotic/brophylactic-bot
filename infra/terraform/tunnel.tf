@@ -2,15 +2,15 @@ resource "random_id" "tunnel_secret" {
   byte_length = 32
 }
 
-resource "cloudflare_tunnel" "bot" {
+resource "cloudflare_zero_trust_tunnel_cloudflared" "bot" {
   account_id = var.cloudflare_account_id
   name       = "brophylactic-bot"
   secret     = random_id.tunnel_secret.b64_std
 }
 
-resource "cloudflare_tunnel_config" "bot" {
+resource "cloudflare_zero_trust_tunnel_cloudflared_config" "bot" {
   account_id = var.cloudflare_account_id
-  tunnel_id  = cloudflare_tunnel.bot.id
+  tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.bot.id
 
   config {
     ingress_rule {

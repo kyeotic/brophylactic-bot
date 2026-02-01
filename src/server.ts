@@ -2,18 +2,11 @@ import http from 'node:http'
 import { verifyKey } from './discord/signature'
 import { initContext } from './di'
 import { main } from './discord/main'
-import { finishRoulette } from './roulette/command'
 
 import type { Interaction } from './discord/types'
 
 const context = initContext()
 const logger = context.logger
-
-// Register job handlers
-context.jobQueue.register('roulette:finish', async (payload) => {
-  const { id, interaction } = payload as { id: string; interaction: Interaction }
-  await finishRoulette({ id, interaction }, context)
-})
 
 const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && req.url === '/health') {

@@ -8,7 +8,6 @@ import { bgrLabel } from '../discord/api'
 export const rouletteTimeSeconds = 30
 // export const rouletteTimeSeconds = 5 // debug
 export const rouletteTimeMs = rouletteTimeSeconds * 1000
-// const updateInterval =
 
 export interface RouletteProps {
   context: AppContext

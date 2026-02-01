@@ -1,8 +1,5 @@
-
 #!/bin/bash
 set -e
-
-WORKSPACE=${1}
 
 _scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _app="${_scripts}/.."
@@ -10,34 +7,12 @@ _terraform="${_app}/infra/terraform"
 
 # import base properties, e.g. APP_NAME
 set -o allexport; source "${_app}/.env.base"; set +o allexport
-
-
-if [ -z ${WORKSPACE+x} ]; then
-  echo "Must supply environment name";
-  exit 1
-fi
+set -o allexport; source "${_app}/.env.prod"; set +o allexport
 
 if [ -z ${APP_NAME+x} ]; then
   echo "Must supply APP_NAME (should be in .env)";
   exit 1
 fi
-
-
-case "$WORKSPACE" in
-  dev)
-    WORKSPACE="dev"
-    VAR_FILE=${2:-"../env_configs/dev.tfvars"}
-    set -o allexport; source "${_app}/.env.dev"; set +o allexport
-    ;;
-  prod)
-    WORKSPACE="prod"
-    VAR_FILE=${2:-"../env_configs/prod.tfvars"}
-    set -o allexport; source "${_app}/.env.prod"; set +o allexport
-    ;;
-  *)
-    echo $"Usage: $0 {dev|prod}"
-    exit 1
-esac
 
 # Terraform state, bucket name
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r '.Account')
@@ -54,14 +29,7 @@ terraform init \
   -backend-config="key=${APP_NAME}" \
   >/dev/null
 
-# If the workspace does not exist, create it.
-if ! terraform workspace select ${WORKSPACE} >/dev/null; then
-    terraform workspace new ${WORKSPACE}
-fi
-
-terraform_args=(
-  -var-file=$VAR_FILE
-)
+terraform_args=()
 
 if [ ! -z ${CI+x} ]; then
   terraform_args+=(-auto-approve)

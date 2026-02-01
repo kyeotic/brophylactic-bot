@@ -1,6 +1,6 @@
 import { asGuildMember, message, messageButton, encodeCustomId, bgrLabel } from '../discord/api'
 import { differenceInSeconds } from '../util/dates'
-import { rouletteTimeMs } from './roulette'
+import { rouletteTimeMs, rouletteTimeSeconds } from './roulette'
 
 import {
   ButtonStyle,
@@ -95,6 +95,8 @@ async function handleRoulette(
 
   await roulette.start(payload as unknown as Interaction)
 
+  startCountdown(roulette, payload as unknown as Interaction, context)
+
   return rouletteMessage(roulette)
 }
 
@@ -126,6 +128,20 @@ async function handleRouletteJoin(
   return rouletteMessage(roulette, InteractionResponseType.UpdateMessage)
 }
 
+export async function recoverCountdowns(context: AppContext): Promise<void> {
+  const pendingJobs = await context.jobQueue.getPendingJobs()
+  const rouletteJobs = pendingJobs.filter((j) => j.type === 'roulette:finish')
+
+  for (const job of rouletteJobs) {
+    const { id, interaction } = job.payload as { id: string; interaction: Interaction }
+    const { roulette } = await context.roulette.load(id, { interaction })
+    if (roulette && roulette.getStart()) {
+      context.logger.info(`Recovering countdown for roulette ${id}`)
+      startCountdown(roulette, interaction, context)
+    }
+  }
+}
+
 export async function finishRoulette(
   event: { id: string; interaction: Interaction },
   context: AppContext
@@ -148,6 +164,50 @@ export async function finishRoulette(
       components: [],
     },
   })
+}
+
+const countdownIntervalMs = 5000
+
+function startCountdown(roulette: Roulette, interaction: Interaction, context: AppContext): void {
+  const endTime = roulette.getStart()!.getTime() + rouletteTimeMs
+
+  function tick() {
+    const remaining = differenceInSeconds(endTime, new Date())
+    if (remaining <= 0) return
+
+    const body = rouletteMessageBody(roulette)
+    context.discord
+      .updateInteraction({
+        applicationId: interaction.application_id,
+        token: interaction.token,
+        body,
+      })
+      .catch((err) => context.logger.error({ err }, 'Countdown update failed'))
+
+    setTimeout(tick, countdownIntervalMs)
+  }
+
+  setTimeout(tick, countdownIntervalMs)
+}
+
+function rouletteMessageBody(roulette: Roulette) {
+  const startTime = roulette.getStart()
+  if (!startTime) throw new Error('no start time for roulette')
+  const timeRemaining = differenceInSeconds(startTime.getTime() + rouletteTimeMs, new Date())
+  const creatorName = roulette.getCreator().username
+  const players = roulette.getPlayers()
+
+  const banner = `${creatorName} has started a roulette game for ${bgrLabel(
+    roulette.getBet()
+  )}. Click the button below within ${timeRemaining} seconds to place an equal bet and join the game.`
+
+  const footer =
+    players.length < 2 ? '' : `\n\n**Players**\n${players.map((p) => p.username).join('\n')}`
+
+  return {
+    content: banner + footer,
+    components: messageButton(encodeCustomId(ID_TYPE, roulette.id), 'Join Roulette'),
+  }
 }
 
 function rouletteMessage(
