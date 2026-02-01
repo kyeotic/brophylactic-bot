@@ -8,6 +8,7 @@ export class FirebaseClient {
   private readonly host: string
   private readonly projectId: string
   private token?: string
+  private tokenExpiresAt = 0
   private readonly tokenFn: () => Promise<string>
   private readonly logger: AppLogger
 
@@ -47,8 +48,10 @@ export class FirebaseClient {
   }
 
   public async getToken() {
-    if (!this.token) {
+    if (!this.token || Date.now() >= this.tokenExpiresAt) {
       this.token = await this.tokenFn()
+      // Token expires in 1 hour; refresh 5 minutes early
+      this.tokenExpiresAt = Date.now() + 55 * 60 * 1000
     }
     return this.token
   }

@@ -3,6 +3,11 @@ services:
     image: docker.local.kye.dev/brophylactic-bot:latest
     container_name: brophylactic-bot
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "1m"
+        max-file: "3"
     labels:
       stook: redeploy
     environment:

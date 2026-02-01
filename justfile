@@ -1,5 +1,5 @@
-local:
-  ./scripts/local
+local env="dev":
+  ./scripts/local {{env}}
 
 command-deploy env="dev":
   ./scripts/command-deploy {{env}}
