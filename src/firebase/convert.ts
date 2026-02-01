@@ -13,6 +13,7 @@ export function toValue(
 ): Value | undefined {
   if (value === undefined) return undefined
   if (value === null) return { nullValue: null }
+  if (typeof value === 'boolean') return { booleanValue: value }
   if (typeof value === 'string') return { stringValue: value }
   if (value instanceof Date) return { timestampValue: value.toISOString() }
   if (typeof value === 'number' && Math.abs(value) < Number.MAX_SAFE_INTEGER)
@@ -54,7 +55,7 @@ export function fromValue(
   if (field.doubleValue !== undefined) return Number(field.doubleValue)
   if (field.timestampValue !== undefined) return new Date(field.timestampValue)
   if (field.stringValue !== undefined) return field.stringValue
-  if (field.arrayValue) return field.arrayValue.values.map(fromValue)
+  if (field.arrayValue) return (field.arrayValue.values ?? []).map(fromValue)
   if (field.mapValue) return fromDocument(field.mapValue.fields)
   return undefined
 }

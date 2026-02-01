@@ -1,6 +1,5 @@
 import base64 from 'base64url'
 
-const region = process.env['AWS_REGION'] || 'us-west-2'
 const stage = process.env.stage || 'dev'
 
 const requiredEnvs = {
@@ -8,9 +7,6 @@ const requiredEnvs = {
   publicKey: 'DISCORD_PUBLIC_KEY',
   botToken: 'BOT_TOKEN',
   serverId: 'DISCORD_SERVER_ID',
-  stepFunctionArn: 'stepFunctionArn',
-  accessKeyId: 'AWS_ACCESS_KEY_ID',
-  secretAccessKey: 'AWS_SECRET_ACCESS_KEY',
 } as const
 
 const envs = Object.fromEntries(
@@ -23,7 +19,6 @@ const envs = Object.fromEntries(
 
 const config = {
   port: 8006,
-  region,
   stage,
   discord: {
     timezone: 'America/Los_Angeles',
@@ -41,13 +36,6 @@ const config = {
     databaseUrl: 'https://brophylactic-gaming.firebaseio.com',
     projectId: 'brophylactic-gaming',
     cert: JSON.parse(base64.decode(envs.firebase64)),
-  },
-  workflow: {
-    region,
-    stepFunctionArn: envs.stepFunctionArn,
-    accessKeyId: envs.accessKeyId,
-    secretAccessKey: envs.secretAccessKey,
-    sessionToken: process.env.AWS_SESSION_TOKEN ?? undefined,
   },
 } as const
 

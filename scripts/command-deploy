@@ -4,7 +4,7 @@ set -e
 WORKSPACE=${1:-dev}
 
 _scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-set -o allexport; source "${_scripts}/../.env"; set +o allexport
+set -o allexport; source "${_scripts}/../.env.base"; set +o allexport
 
 case $WORKSPACE in
   dev)
@@ -20,9 +20,4 @@ case $WORKSPACE in
     ;;
 esac
 
-TEST="true" stage=$WORKSPACE \
-  AWS_ACCESS_KEY_ID=$(aws configure get default.aws_access_key_id) \
-  AWS_SECRET_ACCESS_KEY=$(aws configure get default.aws_secret_access_key) \
-  npx ts-node src/redeploy.ts
-  # npx ts-node
-
+stage=$WORKSPACE npx tsx src/redeploy.ts

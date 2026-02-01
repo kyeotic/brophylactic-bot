@@ -101,6 +101,24 @@ export class Firestore<T extends ConvertedDocument> {
     } as Props
   }
 
+  async listDocuments(options?: FireRequestOptions): Promise<T[]> {
+    const res = (await this.client.request({
+      method: 'GET',
+      url: `documents/${this.collection}`,
+      ...options,
+    })) as { documents?: Document[] }
+
+    if (!res.documents) return []
+
+    return res.documents.map((doc) => {
+      const id = doc.name.split('/').pop()!
+      return {
+        ...fromDocument(doc.fields),
+        id,
+      } as T
+    })
+  }
+
   async deleteDocument(id: string, options?: FireRequestOptions): Promise<void> {
     const { collection } = this
     validateRequest({ collection, id })

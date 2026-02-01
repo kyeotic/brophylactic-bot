@@ -13,3 +13,4 @@ node_modules/
 /firebase-cert.json
 appspec.yaml
 .deno_dir/
+/.bws

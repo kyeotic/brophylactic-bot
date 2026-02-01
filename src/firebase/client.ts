@@ -89,7 +89,7 @@ export class FirebaseClient {
 
     if ((req.statusCode ?? 0) > 399) {
       const { error } = req.data as { error: { message: string } }
-      this.logger.error('Firebase Error', req.statusCode, typeof req.statusCode, req.data)
+      this.logger.error({ statusCode: req.statusCode, data: req.data }, 'Firebase Error')
       throw new Error(`Firebase Error ${req.statusCode}: ${error.message}`)
     }
 

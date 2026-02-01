@@ -1,10 +1,10 @@
 require('esbuild')
   .build({
-    entryPoints: ['src/lambda.ts'],
+    entryPoints: ['src/server.ts'],
     bundle: true,
-    outfile: 'dist/lambda.js',
+    outfile: 'dist/server.js',
     platform: 'node',
-    target: 'node16.9',
+    target: 'node20',
     // minify: true,
   })
   .catch(() => process.exit(1))

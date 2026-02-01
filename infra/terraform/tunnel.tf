@@ -1,0 +1,25 @@
+resource "random_id" "tunnel_secret" {
+  byte_length = 32
+}
+
+resource "cloudflare_tunnel" "bot" {
+  account_id = var.cloudflare_account_id
+  name       = "brophylactic-bot"
+  secret     = random_id.tunnel_secret.b64_std
+}
+
+resource "cloudflare_tunnel_config" "bot" {
+  account_id = var.cloudflare_account_id
+  tunnel_id  = cloudflare_tunnel.bot.id
+
+  config {
+    ingress_rule {
+      hostname = "${var.hostname}.${var.zone}"
+      service  = var.tunnel_service_url
+    }
+
+    ingress_rule {
+      service = "http_status:404"
+    }
+  }
+}

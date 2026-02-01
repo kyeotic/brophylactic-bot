@@ -1,0 +1,16 @@
+services:
+  bot:
+    image: docker.local.kye.dev/brophylactic-bot:latest
+    container_name: brophylactic-bot
+    restart: unless-stopped
+    ports:
+      - '8006:8006'
+    labels:
+      - 'stook=redeploy'
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN:?err}
+      - DISCORD_PUBLIC_KEY=${DISCORD_PUBLIC_KEY:?err}
+      - DISCORD_SERVER_ID=${DISCORD_SERVER_ID:?err}
+      - FIREBASE_64=${FIREBASE_64:?err}
+      - NODE_ENV=production
+      - LOG_LEVEL=${LOG_LEVEL:-info}

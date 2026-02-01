@@ -43,7 +43,10 @@ async function handleAppCommand(
   const command = slashCommands.get(payload.data.name)
 
   if (!command || !command.handleSlashCommand) {
-    context.logger.warn('Command not found', payload.data.name, [...slashCommands.keys()])
+    context.logger.warn(
+      { name: payload.data.name, commands: [...slashCommands.keys()] },
+      'Command not found'
+    )
     return missingCommand()
   }
 
@@ -71,7 +74,7 @@ async function handleMessageInteraction(
   const command = messageCommands.get(idType)
 
   if (!command || !command.handleMessage) {
-    context.logger.warn('Command not found', idType, [...messageCommands.keys()])
+    context.logger.warn({ idType, commands: [...messageCommands.keys()] }, 'Command not found')
     return missingCommand()
   }
 

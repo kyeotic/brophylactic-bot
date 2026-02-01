@@ -6,10 +6,10 @@ WORKSPACE=${1}
 
 _scripts="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _app="${_scripts}/.."
-_terraform="${_app}/infrastructure/terraform"
+_terraform="${_app}/infra/terraform"
 
 # import base properties, e.g. APP_NAME
-set -o allexport; source "${_app}/.env"; set +o allexport
+set -o allexport; source "${_app}/.env.base"; set +o allexport
 
 
 if [ -z ${WORKSPACE+x} ]; then
@@ -26,14 +26,12 @@ fi
 case "$WORKSPACE" in
   dev)
     WORKSPACE="dev"
-    TF_VAR_BOT_TOKEN="${BOT_TOKEN_TEST}"
-    VAR_FILE=${2:-"./env_configs/dev.tfvars"}
+    VAR_FILE=${2:-"../env_configs/dev.tfvars"}
     set -o allexport; source "${_app}/.env.dev"; set +o allexport
     ;;
   prod)
     WORKSPACE="prod"
-    TF_VAR_BOT_TOKEN="${BOT_TOKEN}"
-    VAR_FILE=${2:-"./env_configs/prod.tfvars"}
+    VAR_FILE=${2:-"../env_configs/prod.tfvars"}
     set -o allexport; source "${_app}/.env.prod"; set +o allexport
     ;;
   *)
@@ -41,20 +39,9 @@ case "$WORKSPACE" in
     exit 1
 esac
 
-VAR_FILE=${2:-"../env_configs/${WORKSPACE}.tfvars"}
-
 # Terraform state, bucket name
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity | jq -r '.Account')
 terraform_state_bucket="terraform-remote-$AWS_ACCOUNT_ID"
-
-# Build
-pushd "${_app}" >/dev/null
-if [ "$CI" != true ] ; then
-    npm run build
-    # ${_scripts}/bundle_lambda
-    # ${_scripts}/get_layer
-fi
-popd >/dev/null
 
 # Cleanup .terraform
 pushd "${_terraform}" >/dev/null
@@ -82,10 +69,8 @@ fi
 
 echo "Deploying"
 
-TF_VAR_FIREBASE_64=$FIREBASE_64 \
-TF_VAR_DISCORD_PUBLIC_KEY=$DISCORD_PUBLIC_KEY \
-TF_VAR_BOT_TOKEN=$BOT_TOKEN \
-TF_VAR_DISCORD_SERVER_ID=$DISCORD_SERVER_ID \
+TF_VAR_cloudflare_api_token=$CLOUDFLARE_API_TOKEN \
+TF_VAR_cloudflare_account_id=$CLOUDFLARE_ACCOUNT_ID \
   terraform apply "${terraform_args[@]}"
 
 popd

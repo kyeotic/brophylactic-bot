@@ -1,0 +1,11 @@
+[[secrets]]
+id = "eeda65df-d8ac-46be-8cc7-b3e400486839"
+path = ".env.base"
+
+[[secrets]]
+id = "80733d02-c251-491e-9fec-b3e40048da8d"
+path = ".env.dev"
+
+[[secrets]]
+id = "d95756f8-2258-4d6e-a5ab-b3e40048edde"
+path = ".env.prod"

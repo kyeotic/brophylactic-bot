@@ -23,7 +23,6 @@ export interface SardinesProps {
                             https://www.desmos.com/calculator/4ioz4cm8zs
 */
 export const MIN_PLAYERS_BEFORE_REJOIN = config.stage === 'local' ? 1 : 4
-console.log(config)
 
 const A = 0.4
 const B = 0.3

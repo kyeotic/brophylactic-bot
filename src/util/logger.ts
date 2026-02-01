@@ -1,11 +1,13 @@
-import config from '../config'
-import { Logger, LineFormatter, JsonFormatter } from 'lambda-logger-node'
+import pino from 'pino'
 
-const logger = Logger({
-  minimumLogLevel: config.stage === 'test' ? 'SILENT' : config.stage === 'prod' ? 'INFO' : 'DEBUG',
-  useBearerRedactor: false,
-  // We are not exporting logs anywhere yet, so prod doesn't need the JSON noise
-  formatter: config.stage === 'prod' ? LineFormatter : JsonFormatter,
+const level = process.env.LOG_LEVEL || (process.env.stage === 'prod' ? 'info' : 'debug')
+
+const logger = pino({
+  level,
+  transport:
+    process.env.NODE_ENV !== 'production'
+      ? { target: 'pino-pretty', options: { colorize: true } }
+      : undefined,
 })
 
 export default logger

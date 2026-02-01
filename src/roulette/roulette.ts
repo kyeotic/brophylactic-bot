@@ -58,11 +58,11 @@ export class Roulette {
 
     await this.context.rouletteStore.put(this.lottery)
 
-    await this.context.workflow.startRoulette({
-      id: this.lottery.id,
-      interaction: interaction,
-      duration: rouletteTimeSeconds,
-    })
+    await this.context.jobQueue.enqueue(
+      'roulette:finish',
+      { id: this.lottery.id, interaction },
+      rouletteTimeSeconds
+    )
 
     // We called start() above, this can't be empty
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

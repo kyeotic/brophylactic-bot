@@ -8,10 +8,10 @@ import { RouletteLotteryStore } from './roulette/store'
 import { Roulette, RouletteProps, NewLotteryProps } from './roulette/roulette'
 import { SardinesLotteryStore } from './sardines/store'
 import { Sardines, SardinesProps } from './sardines/sardines'
-import { WorkflowClient } from './workflow/client'
+import { JobQueue } from './jobs/queue'
 import { DiscordClient } from './discord/api'
 
-import type { LoggerWithSub as Logger } from 'lambda-logger-node'
+import type { Logger } from 'pino'
 
 type NoContext<T> = Omit<T, 'context'>
 export type AppLogger = Logger
@@ -24,15 +24,19 @@ export interface AppContext {
   userStore: UserStore
   rouletteStore: RouletteLotteryStore
   roulette: {
-    init: (props: NoContext<RouletteProps> & NewLotteryProps) => ReturnType<typeof Roulette['init']>
-    load: (id: string, props: NoContext<RouletteProps>) => ReturnType<typeof Roulette['load']>
+    init: (
+      props: NoContext<RouletteProps> & NewLotteryProps
+    ) => ReturnType<(typeof Roulette)['init']>
+    load: (id: string, props: NoContext<RouletteProps>) => ReturnType<(typeof Roulette)['load']>
   }
   sardinesStore: SardinesLotteryStore
   sardines: {
-    init: (props: NoContext<SardinesProps> & NewLotteryProps) => ReturnType<typeof Sardines['init']>
-    load: (id: string, props: NoContext<SardinesProps>) => ReturnType<typeof Sardines['load']>
+    init: (
+      props: NoContext<SardinesProps> & NewLotteryProps
+    ) => ReturnType<(typeof Sardines)['init']>
+    load: (id: string, props: NoContext<SardinesProps>) => ReturnType<(typeof Sardines)['load']>
   }
-  workflow: WorkflowClient
+  jobQueue: JobQueue
 }
 
 export function initContext(init = {}): AppContext {
@@ -68,7 +72,7 @@ export function initContext(init = {}): AppContext {
     load: (id: string, props: NoContext<SardinesProps>) => Sardines.load(id, { ...props, context }),
   }
 
-  context.workflow = new WorkflowClient({ config: config.workflow, logger })
+  context.jobQueue = new JobQueue({ client: context.firebaseClient, logger })
 
   return context
 }

@@ -18,14 +18,14 @@ const defaultHeaders = {
 }
 
 export class DiscordClient {
-  private readonly config: typeof config['discord']
+  private readonly config: (typeof config)['discord']
   private readonly logger: AppLogger
 
   constructor({
     config: clientConfig,
     logger,
   }: {
-    config: typeof config['discord']
+    config: (typeof config)['discord']
     logger: AppLogger
   }) {
     this.config = clientConfig
@@ -133,8 +133,8 @@ export class DiscordClient {
     const response = await request({ url, method, body, headers, json: true })
 
     if (isErrorStatus(response)) {
-      this.logger.error('Discord Error', response.statusCode, response.data)
-      this.logger.debug('Headers', response.headers)
+      this.logger.error({ statusCode: response.statusCode, data: response.data }, 'Discord Error')
+      this.logger.debug({ headers: response.headers }, 'Headers')
       throw new Error(JSON.stringify(response.data))
     }
 
