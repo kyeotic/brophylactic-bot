@@ -20,9 +20,3 @@ variable "tunnel_service_url" {
   default     = "http://bot:8006"
 }
 
-#-------------------------------------------
-# Configurable variables
-#-------------------------------------------
-variable "region" {
-  default = "us-west-2"
-}

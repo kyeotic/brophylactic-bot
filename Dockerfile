@@ -8,5 +8,5 @@ RUN npm run build
 
 FROM node:20-slim
 WORKDIR /app
-COPY --from=build /app/dist/bot.js ./dist/
-CMD ["node", "dist/bot.js"]
+COPY --from=build /app/dist/server.js ./dist/
+CMD ["node", "dist/server.js"]

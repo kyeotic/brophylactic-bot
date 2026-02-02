@@ -18,11 +18,15 @@ services:
       - NODE_ENV=production
       - LOG_LEVEL=${LOG_LEVEL:-info}
 
-  # Uncomment when Cloudflare tunnel DNS is resolved (see tech-debt.md)
-  # tunnel:
-  #   image: cloudflare/cloudflared:latest
-  #   container_name: brophylactic-tunnel
-  #   restart: unless-stopped
-  #   command: tunnel run
-  #   environment:
-  #     - TUNNEL_TOKEN=${TUNNEL_TOKEN:?err}
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: brophylactic-tunnel
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN:?err}
+    logging:
+      driver: json-file
+      options:
+        max-size: "1m"
+        max-file: "3"
