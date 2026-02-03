@@ -6,10 +6,8 @@ services:
     logging:
       driver: json-file
       options:
-        max-size: "1m"
-        max-file: "3"
-    labels:
-      stook: redeploy
+        max-size: '1m'
+        max-file: '3'
     environment:
       - BOT_TOKEN=${BOT_TOKEN:?err}
       - DISCORD_PUBLIC_KEY=${DISCORD_PUBLIC_KEY:?err}
@@ -28,5 +26,5 @@ services:
     logging:
       driver: json-file
       options:
-        max-size: "1m"
-        max-file: "3"
+        max-size: '1m'
+        max-file: '3'
