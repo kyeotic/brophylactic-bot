@@ -49,7 +49,7 @@ No test framework is configured. The `test/` directory contains only shell scrip
 
 ## Deployment
 
-Docker image built via `just deploy`, pushed to `docker.local.kye.dev/brophylactic-bot:latest`. Deployed to homelab via Portainer, publicly accessible through Cloudflare tunnel.
+Docker image built via `just deploy`, pushed to `docker.local.kye.dev/discord-bot:latest`. Deployed to homelab via Portainer, publicly accessible through Cloudflare tunnel.
 
 ## Environment
 

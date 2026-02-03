@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-    key = "brobot"
+    key = "discord-bot"
   }
   required_version = ">= 1.2"
   required_providers {

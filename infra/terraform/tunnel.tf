@@ -4,7 +4,7 @@ resource "random_id" "tunnel_secret" {
 
 resource "cloudflare_zero_trust_tunnel_cloudflared" "bot" {
   account_id = local.cloudflare_account_id
-  name       = "brophylactic-bot"
+  name       = "discord-bot"
   secret     = random_id.tunnel_secret.b64_std
 }
 

@@ -6,7 +6,8 @@ _app="${_scripts}/.."
 _terraform="${_app}/infra/terraform"
 
 # import base properties, e.g. APP_NAME
-set -o allexport; source "${_app}/.env.base"; set +o allexport
+# set -o allexport; source "${_app}/.env.base"; set +o allexport
+APP_NAME="discord-bot"
 set -o allexport; source "${_app}/.env.prod"; set +o allexport
 
 if [ -z ${APP_NAME+x} ]; then

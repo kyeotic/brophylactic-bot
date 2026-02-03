@@ -1,5 +1,5 @@
 host = "https://portainer.local.kye.dev"
 
-[stacks.brobot]
+[stacks.discord-bot]
 compose_file = "infra/compose.yaml"
 env_file = ".env.prod"

@@ -1,7 +1,7 @@
 services:
   bot:
-    image: docker.local.kye.dev/brophylactic-bot:latest
-    container_name: brophylactic-bot
+    image: docker.local.kye.dev/discord-bot:latest
+    container_name: discord-bot
     restart: unless-stopped
     logging:
       driver: json-file
@@ -20,7 +20,7 @@ services:
 
   tunnel:
     image: cloudflare/cloudflared:latest
-    container_name: brophylactic-tunnel
+    container_name: discord-tunnel
     restart: unless-stopped
     command: tunnel run
     environment:

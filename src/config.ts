@@ -24,7 +24,7 @@ const config = {
     timezone: 'America/Los_Angeles',
     useGateway: true,
     apiHost: 'https://discord.com/api/v10',
-    userAgent: 'DiscordBot (https://github.com/kyeotic/brophylactic-bot, v1)',
+    userAgent: 'DiscordBot (https://github.com/kyeotic/discord-bot, v1)',
     serverId: envs.serverId,
     publicKey: envs.publicKey,
     botToken: envs.botToken,
