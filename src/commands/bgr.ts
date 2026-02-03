@@ -24,7 +24,7 @@ const command: SlashCommand<BgrInteraction> = {
   id: 'bgr',
   // global: true,
   guild: true,
-  description: 'Brophylactic Gaming Reputation (℞), the server currency',
+  description: 'Server Reputation (℞), the server currency',
   options: [
     {
       name: 'view',
