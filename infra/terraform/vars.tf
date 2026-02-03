@@ -1,12 +1,6 @@
 #-------------------------------------------
 # Required variables
 #-------------------------------------------
-variable "cloudflare_api_token" {
-  sensitive = true
-}
-
-variable "cloudflare_account_id" {}
-
 variable "zone" {
   default = "kye.dev"
 }
@@ -20,3 +14,6 @@ variable "tunnel_service_url" {
   default     = "http://bot:8006"
 }
 
+variable "cloudflare_account_name" {
+  default = "tim@kye.dev"
+}

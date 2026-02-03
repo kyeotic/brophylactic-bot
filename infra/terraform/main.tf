@@ -15,6 +15,12 @@ terraform {
   }
 }
 
-provider "cloudflare" {
-  api_token = var.cloudflare_api_token
+provider "cloudflare" { }
+
+data "cloudflare_accounts" "self" {
+  name = var.cloudflare_account_name
+}
+
+locals {
+  cloudflare_account_id = data.cloudflare_accounts.self.accounts[0].id
 }

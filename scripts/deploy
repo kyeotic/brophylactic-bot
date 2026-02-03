@@ -37,8 +37,6 @@ fi
 
 echo "Deploying"
 
-TF_VAR_cloudflare_api_token=$CLOUDFLARE_API_TOKEN \
-TF_VAR_cloudflare_account_id=$CLOUDFLARE_ACCOUNT_ID \
-  terraform apply "${terraform_args[@]}"
+terraform apply "${terraform_args[@]}"
 
 popd

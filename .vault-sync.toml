@@ -1,6 +1,6 @@
 [[secrets]]
-id = "eeda65df-d8ac-46be-8cc7-b3e400486839"
-path = ".env.base"
+id = "57c667f8-eec3-4139-b7ca-b3e600557309"
+path = ".env"
 
 [[secrets]]
 id = "80733d02-c251-491e-9fec-b3e40048da8d"
