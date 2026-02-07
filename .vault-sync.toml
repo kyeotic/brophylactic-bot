@@ -1,11 +1,11 @@
-[[secrets]]
+[secrets.env]
 id = "57c667f8-eec3-4139-b7ca-b3e600557309"
 path = ".env"
 
-[[secrets]]
+[secrets.env-dev]
 id = "80733d02-c251-491e-9fec-b3e40048da8d"
 path = ".env.dev"
 
-[[secrets]]
+[secrets.env-prod]
 id = "d95756f8-2258-4d6e-a5ab-b3e40048edde"
 path = ".env.prod"
