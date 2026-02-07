@@ -1,0 +1,164 @@
+use chrono::Utc;
+
+use crate::context::Context;
+use crate::discord::helpers::{bgr_label, to_guild_member};
+use crate::util::dates::{format_distance_to_now, get_day_string, is_today};
+use crate::util::random::seeded_random_inclusive;
+
+const MAGIC_NUMBER_REWARD: i64 = 1000;
+const MAGIC_NUMBER_RANGE: i64 = 3;
+const RANGE_REWARD: i64 = 30;
+const LAST_DIGIT_REWARD: i64 = 10;
+const PAIRWISE_REWARD: i64 = 250;
+
+struct Rule {
+    predicate: fn(i64, i64) -> bool,
+    reward: i64,
+    message: fn(i64, i64) -> String,
+}
+
+const RULES: &[Rule] = &[
+    Rule {
+        predicate: |answer, guess| answer == guess,
+        reward: MAGIC_NUMBER_REWARD,
+        message: |answer, _guess| {
+            format!(
+                "# Winner \u{1f680}\n\n**{}** is the right number! You won {}",
+                answer,
+                bgr_label(MAGIC_NUMBER_REWARD, false)
+            )
+        },
+    },
+    Rule {
+        predicate: |answer, guess| is_magic_pair(answer, guess),
+        reward: PAIRWISE_REWARD,
+        message: |answer, guess| {
+            format!(
+                "## Magic Number Match \u{1fa84}\n\nYour guess of **{}** magically pairs with the correct answer **{}**. You won {}",
+                guess,
+                answer,
+                bgr_label(PAIRWISE_REWARD, false)
+            )
+        },
+    },
+    Rule {
+        predicate: |answer, guess| is_within(guess, answer, MAGIC_NUMBER_RANGE),
+        reward: RANGE_REWARD,
+        message: |answer, guess| {
+            format!(
+                "### Near Correct \n\nYour guess of **{}** is within {} of the correct answer **{}**. You won {}",
+                guess,
+                MAGIC_NUMBER_RANGE,
+                answer,
+                bgr_label(RANGE_REWARD, false)
+            )
+        },
+    },
+    Rule {
+        predicate: |answer, guess| last_digit(answer) == last_digit(guess),
+        reward: LAST_DIGIT_REWARD,
+        message: |answer, guess| {
+            format!(
+                "### Last Digit\n\nYour guess of **{}** matches the last digit of the correct answer **{}**. You won {}",
+                guess,
+                answer,
+                bgr_label(LAST_DIGIT_REWARD, false)
+            )
+        },
+    },
+];
+
+/// Guess your daily 1-100 magic number
+#[poise::command(slash_command, guild_only)]
+pub async fn guess(
+    ctx: Context<'_>,
+    #[description = "number to guess"]
+    #[min = 1]
+    #[max = 100]
+    number: i64,
+) -> Result<(), anyhow::Error> {
+    let data = ctx.data();
+    let timezone = &data.config.discord.timezone;
+    let guild_id = ctx.guild_id().ok_or_else(|| anyhow::anyhow!("Not in a guild"))?;
+
+    let member_data = ctx
+        .author_member()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("Could not get member info"))?;
+    let member = to_guild_member(guild_id, ctx.author(), member_data.joined_at);
+    let member_name = &member.username;
+
+    let last_guess = data.user_store.get_user_last_guess(&member).await?;
+
+    if number < 1 || number > 100 {
+        let last_guess_str = match last_guess {
+            Some(dt) => format_distance_to_now(dt),
+            None => "never".to_string(),
+        };
+        ctx.send(
+            poise::CreateReply::default().content(format!(
+                "Guess a number between 1-100 to win {}. Only guess allowed per day.\n{} made their last Guess {}",
+                bgr_label(MAGIC_NUMBER_REWARD, false),
+                member_name,
+                last_guess_str
+            )),
+        )
+        .await?;
+        return Ok(());
+    }
+
+    if let Some(last) = last_guess {
+        if is_today(timezone, last) {
+            ctx.send(
+                poise::CreateReply::default()
+                    .content("You already guessed today")
+                    .ephemeral(true),
+            )
+            .await?;
+            return Ok(());
+        }
+    }
+
+    let now = Utc::now();
+    data.user_store.set_user_last_guess(&member, now).await?;
+
+    let seed = format!("{}:{}", member_name, get_day_string(timezone, now));
+    let magic_number =
+        seeded_random_inclusive(1, 100, &seed, &data.config.discord.bot_token);
+
+    let matched_rule = RULES.iter().find(|r| (r.predicate)(magic_number, number));
+
+    match matched_rule {
+        Some(rule) => {
+            data.user_store
+                .increment_user_rep(&member, rule.reward)
+                .await?;
+            let msg = (rule.message)(magic_number, number);
+            ctx.send(poise::CreateReply::default().content(msg))
+                .await?;
+        }
+        None => {
+            ctx.send(poise::CreateReply::default().content(format!(
+                "You guessed **{}** but the correct number was **{}**",
+                number, magic_number
+            )))
+            .await?;
+        }
+    }
+
+    Ok(())
+}
+
+fn is_within(num: i64, target: i64, range: i64) -> bool {
+    num >= target - range && num <= target + range
+}
+
+fn last_digit(num: i64) -> i64 {
+    num % 10
+}
+
+/// A Magic Pair occurs when the numbers form a Gauss sum,
+/// i.e. the magic number and the guess add up to 101.
+fn is_magic_pair(a: i64, b: i64) -> bool {
+    101 - a == b
+}
