@@ -13,7 +13,6 @@ services:
       - DISCORD_PUBLIC_KEY=${DISCORD_PUBLIC_KEY:?err}
       - DISCORD_SERVER_ID=${DISCORD_SERVER_ID:?err}
       - FIREBASE_64=${FIREBASE_64:?err}
-      - NODE_ENV=production
       - LOG_LEVEL=${LOG_LEVEL:-info}
 
   tunnel:

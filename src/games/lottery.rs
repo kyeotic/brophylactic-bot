@@ -73,6 +73,7 @@ impl<Player: Clone + PartialEq> Lottery<Player> {
     }
 
     /// Restore a lottery from persisted data.
+    #[allow(dead_code)]
     pub fn from_parts(
         id: String,
         creator: Player,

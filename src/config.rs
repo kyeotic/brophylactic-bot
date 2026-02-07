@@ -2,6 +2,7 @@ use std::env;
 
 #[derive(Debug, Clone)]
 pub struct Config {
+    #[allow(dead_code)]
     pub port: u16,
     pub stage: String,
     pub discord: DiscordConfig,
@@ -12,6 +13,7 @@ pub struct Config {
 pub struct DiscordConfig {
     pub timezone: String,
     pub bot_token: String,
+    #[allow(dead_code)]
     pub public_key: String,
     pub server_id: String,
 }
@@ -29,7 +31,7 @@ impl Config {
         let bot_token = required_env("BOT_TOKEN")?;
         let public_key = required_env("DISCORD_PUBLIC_KEY")?;
         let server_id = required_env("DISCORD_SERVER_ID")?;
-        let firebase_64 = env::var("FIREBASE_64").unwrap_or_default();
+        let firebase_64 = required_env("FIREBASE_64")?;
 
         Ok(Config {
             port: 8006,

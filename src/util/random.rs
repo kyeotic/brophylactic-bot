@@ -18,22 +18,24 @@ pub fn seeded_random_inclusive(min: i64, max: i64, seed: &str, base_seed: &str) 
 
 /// Generate a weighted random number between min and max.
 /// Lower values are exponentially more likely than higher values.
+#[allow(dead_code)]
 pub fn weighted_random(min: i64, max: i64) -> i64 {
-    let rand: f64 = rand::thread_rng().gen();
+    let rand: f64 = rand::thread_rng().r#gen();
     (max as f64 / (rand * max as f64 + min as f64)).round() as i64
 }
 
 /// Generate a weighted random number between min and max using a seeded RNG.
 pub fn seeded_weighted_random(min: i64, max: i64, seed: &str, base_seed: &str) -> i64 {
     let mut rng = make_seeded_rng(seed, base_seed);
-    let rand: f64 = rng.gen();
+    let rand: f64 = rng.r#gen();
     (max as f64 / (rand * max as f64 + min as f64)).round() as i64
 }
 
 /// Generate a random f64 in [0, 1) from a seeded RNG.
+#[allow(dead_code)]
 pub fn seeded_random_f64(seed: &str, base_seed: &str) -> f64 {
     let mut rng = make_seeded_rng(seed, base_seed);
-    rng.gen()
+    rng.r#gen()
 }
 
 fn make_seeded_rng(seed: &str, base_seed: &str) -> ChaCha8Rng {

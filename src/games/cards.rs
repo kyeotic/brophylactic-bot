@@ -1,7 +1,9 @@
+#[allow(dead_code)]
 pub const RANKS: &[&str] = &[
     "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A",
 ];
 
+#[allow(dead_code)]
 pub const SUITS: &[&str] = &[
     "\u{2665}\u{fe0f}", // ♥️
     "\u{2666}\u{fe0f}", // ♦️
@@ -10,6 +12,7 @@ pub const SUITS: &[&str] = &[
 ];
 
 /// Build a full 52-card poker deck (13 ranks x 4 suits).
+#[allow(dead_code)]
 pub fn poker_deck() -> Vec<String> {
     RANKS
         .iter()

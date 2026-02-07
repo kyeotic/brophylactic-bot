@@ -133,6 +133,7 @@ impl JobQueue {
     }
 
     /// Stop the polling loop.
+    #[allow(dead_code)]
     pub fn stop(&mut self) {
         if let Some(handle) = self.poll_handle.take() {
             handle.abort();

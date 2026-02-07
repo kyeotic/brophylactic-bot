@@ -23,9 +23,6 @@ use tracing::{error, info};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Load .env file (ignore error if not present)
-    let _ = dotenvy::dotenv();
-
     // Initialize tracing
     let log_level = std::env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
     tracing_subscriber::fmt()
@@ -51,6 +48,15 @@ async fn main() -> anyhow::Result<()> {
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: commands::all(),
+            pre_command: |ctx| {
+                Box::pin(async move {
+                    info!(
+                        command = ctx.command().name,
+                        user = ctx.author().name,
+                        "Command invoked"
+                    );
+                })
+            },
             event_handler: |ctx, event, _framework, data| {
                 Box::pin(event_handler(ctx, event, data))
             },

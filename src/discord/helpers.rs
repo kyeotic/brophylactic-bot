@@ -7,6 +7,7 @@ use serenity::all::{
 use crate::discord::types::GuildMember;
 
 /// Build a simple text response message.
+#[allow(dead_code)]
 pub fn message(content: &str, ephemeral: bool) -> CreateInteractionResponse {
     CreateInteractionResponse::Message(
         CreateInteractionResponseMessage::new()
@@ -16,6 +17,7 @@ pub fn message(content: &str, ephemeral: bool) -> CreateInteractionResponse {
 }
 
 /// Build a response with a button component.
+#[allow(dead_code)]
 pub fn message_with_button(
     content: &str,
     button_id: &str,

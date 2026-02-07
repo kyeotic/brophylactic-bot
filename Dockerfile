@@ -1,12 +1,28 @@
-FROM node:20-slim AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY tsconfig.json tsconfig.build.json esbuild.js ./
-COPY src/ src/
-RUN npm run build
+FROM rust:1.93 AS base
+RUN cargo install cargo-chef sccache --locked
+ENV RUSTC_WRAPPER=sccache SCCACHE_DIR=/sccache
 
-FROM node:20-slim
+FROM base AS planner
 WORKDIR /app
-COPY --from=build /app/dist/server.js ./dist/
-CMD ["node", "dist/server.js"]
+COPY . .
+RUN --mount=type=cache,target=$SCCACHE_DIR,sharing=locked \
+    cargo chef prepare --recipe-path recipe.json
+
+FROM base AS builder
+WORKDIR /app
+COPY --from=planner /app/recipe.json recipe.json
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,target=$SCCACHE_DIR,sharing=locked \
+    cargo chef cook --release --recipe-path recipe.json
+
+COPY . .
+RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
+    --mount=type=cache,target=/usr/local/cargo/git,sharing=locked \
+    --mount=type=cache,target=$SCCACHE_DIR,sharing=locked \
+    cargo build --release
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /app/target/release/discord-bot /usr/local/bin/
+CMD ["discord-bot"]

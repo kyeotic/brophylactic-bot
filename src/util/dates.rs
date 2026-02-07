@@ -23,16 +23,19 @@ pub fn get_day_string(timezone: &str, date: DateTime<Utc>) -> String {
 }
 
 /// Format a UTC datetime as "YYYY-MM-DD" for today in the given timezone.
+#[allow(dead_code)]
 pub fn today_string(timezone: &str) -> String {
     get_day_string(timezone, Utc::now())
 }
 
 /// Convert a millisecond duration to a human-readable string (e.g. "1d 5h 10m 48s").
+#[allow(dead_code)]
 pub fn humanize_milliseconds(milliseconds: u64) -> String {
     millisecond::Millisecond::from_millis(milliseconds).to_string()
 }
 
 /// Calculate the number of days between a date and now.
+#[allow(dead_code)]
 pub fn days_since(date: NaiveDate) -> i64 {
     let today = Utc::now().date_naive();
     (today - date).num_days()
