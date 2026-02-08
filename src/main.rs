@@ -36,7 +36,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let config = Config::load()?;
-    info!(stage = %config.stage, "Starting bot");
+    info!("Starting bot");
 
     // Initialize Firestore
     let db = firebase::client::create_firestore_db(

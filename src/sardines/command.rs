@@ -6,7 +6,8 @@ use serenity::{
 use crate::context::Context;
 use crate::discord::helpers::{bgr_label, encode_custom_id, parse_custom_id, to_guild_member};
 use crate::discord::types::InteractionType;
-use crate::sardines::sardines::{join_failure_chance, Sardines};
+use crate::sardines::sardines::Sardines;
+use crate::sardines::sardines::join_failure_chance;
 use crate::util::dates::is_today;
 
 /// Start a game of sardines
@@ -28,7 +29,7 @@ pub async fn sardines(
     // Check daily limit
     let last_sardines = data.user_store.get_user_last_sardines(&guild_member).await?;
     if let Some(last) = last_sardines {
-        if is_today(&data.config.discord.timezone, last) {
+        if is_today(data.config.discord.timezone, last) {
             ctx.send(
                 poise::CreateReply::default()
                     .content("You already started a sardines game today")
@@ -125,7 +126,7 @@ pub async fn handle_sardines_join(
                         CreateInteractionResponseMessage::new()
                             .content(format!(
                                 "Cannot join a sardines game you are already in until the minimum player count of {} is met.",
-                                crate::sardines::sardines::min_players_before_rejoin(&data.config)
+                                data.config.min_players_before_rejoin
                             ))
                             .ephemeral(true),
                     ),

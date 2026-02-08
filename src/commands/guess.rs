@@ -78,7 +78,7 @@ pub async fn guess(
     number: i64,
 ) -> Result<(), anyhow::Error> {
     let data = ctx.data();
-    let timezone = &data.config.discord.timezone;
+    let timezone = data.config.discord.timezone;
     let guild_id = ctx.guild_id().ok_or_else(|| anyhow::anyhow!("Not in a guild"))?;
 
     let member_data = ctx
@@ -124,7 +124,7 @@ pub async fn guess(
 
     let seed = format!("{}:{}", member_name, get_day_string(timezone, now));
     let magic_number =
-        seeded_random_inclusive(1, 100, &seed, &data.config.discord.bot_token);
+        seeded_random_inclusive(1, 100, &seed, &data.config.random_seed);
 
     let matched_rule = RULES.iter().find(|r| (r.predicate)(magic_number, number));
 

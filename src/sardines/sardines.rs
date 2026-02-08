@@ -14,14 +14,6 @@ const C: f64 = 1.8;
 
 const PAYOUT_MULTIPLIERS: [f64; 5] = [1.2, 1.5, 1.8, 2.0, 2.5];
 
-pub fn min_players_before_rejoin(config: &Config) -> usize {
-    if config.stage == "local" || config.stage == "dev" {
-        1
-    } else {
-        4
-    }
-}
-
 /// Calculate the chance that a joining player ends the game.
 /// n = current number of players in the game.
 pub fn join_failure_chance(n: usize) -> f64 {
@@ -38,7 +30,7 @@ fn does_player_lose(n: usize) -> bool {
 pub struct Sardines {
     pub lottery: SardinesLottery,
     store: SardinesStore,
-    bot_token: String,
+    random_seed: String,
 }
 
 impl Sardines {
@@ -54,7 +46,7 @@ impl Sardines {
         Ok(Self {
             lottery,
             store: SardinesStore::new(db.clone()),
-            bot_token: config.discord.bot_token.clone(),
+            random_seed: config.random_seed.clone(),
         })
     }
 
@@ -67,7 +59,7 @@ impl Sardines {
         Ok(Self {
             lottery,
             store,
-            bot_token: config.discord.bot_token.clone(),
+            random_seed: config.random_seed.clone(),
         })
     }
 
@@ -105,7 +97,7 @@ impl Sardines {
     }
 
     pub fn can_join_repeat(&self, config: &Config) -> bool {
-        self.lottery.players.len() >= min_players_before_rejoin(config)
+        self.lottery.players.len() >= config.min_players_before_rejoin
     }
 
     /// Check if the next player can be added without ending the game.
@@ -142,7 +134,7 @@ impl Sardines {
     /// Get the payout multiplier using weighted random seeded by lottery ID.
     fn get_multiplier(&self) -> f64 {
         let idx =
-            seeded_weighted_random(1, PAYOUT_MULTIPLIERS.len() as i64, &self.lottery.id, &self.bot_token)
+            seeded_weighted_random(1, PAYOUT_MULTIPLIERS.len() as i64, &self.lottery.id, &self.random_seed)
                 as usize
                 - 1;
         PAYOUT_MULTIPLIERS[idx.min(PAYOUT_MULTIPLIERS.len() - 1)]

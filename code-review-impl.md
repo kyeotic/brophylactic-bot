@@ -10,17 +10,17 @@
 
 ## config.rs
 
-- [ ] `stage` usage — it's only checked in `min_players_before_rejoin` and the startup log. Remove it and move the min players to config
-- [ ] Add `job_queue_poll_interval_ms` to Config
-- [ ] Add `min_players_before_rejoin` to Config (currently hardcoded in sardines)
-- [ ] Parse timezone into `chrono_tz::Tz` once in `Config::load` instead of re-parsing from string in every date function call
-- [ ] Add a dedicated `random_seed`/`salt` field to Config (replaces bot token as seed — see sardines entry)
+- [x] `stage` usage — it's only checked in `min_players_before_rejoin` and the startup log. Remove it and move the min players to config
+- [x] Add `job_queue_poll_interval_ms` to Config
+- [x] Add `min_players_before_rejoin` to Config (currently hardcoded in sardines)
+- [x] Parse timezone into `chrono_tz::Tz` once in `Config::load` instead of re-parsing from string in every date function call
+- [x] Add a dedicated `random_seed`/`salt` field to Config (replaces bot token as seed — see sardines entry)
 
 ## util/dates.rs
 
-- [ ] Replace `get_day_string` manual formatting with `zoned.format("%Y-%m-%d").to_string()`
-- [ ] Update `is_today` and `get_day_string` to accept `Tz` instead of `&str` (after Config change above)
-- [ ] Remove `.expect("Invalid timezone")` panic paths (handled by Config parsing)
+- [x] Replace `get_day_string` manual formatting with `zoned.format("%Y-%m-%d").to_string()`
+- [x] Update `is_today` and `get_day_string` to accept `Tz` instead of `&str` (after Config change above)
+- [x] Remove `.expect("Invalid timezone")` panic paths (handled by Config parsing)
 
 ## users/store.rs
 
@@ -34,11 +34,11 @@
 
 ## sardines/sardines.rs
 
-- [ ] Move `min_players_before_rejoin` threshold into Config (remove function)
+- [x] Move `min_players_before_rejoin` threshold into Config (remove function)
 - [ ] Rewrite `join_failure_chance` comment to describe the curve behavior (low chance at few players, approaching 100% asymptotically) instead of showing TS algebraic derivation
 - [ ] Change `Sardines::init` and `Sardines::load` to take `FirestoreDb` by value (or document the clone) — don't hide ownership behind `&`
 - [ ] `Sardines.load`: have it take all needed dependencies at load time rather than some at init and some later
-- [ ] Stop using bot token as random seed — use the new `Config.random_seed` field instead
+- [x] Stop using bot token as random seed — use the new `Config.random_seed` field instead
 - [ ] Extract "pick a seeded-random element from a slice" into a utility function in `util/random.rs`
 - [ ] Rewrite `finish` result message (line 212) to pre-allocate variables and use inline format style
 - [ ] Verify `pot_size` (+1 for loser) is intentional and add a clarifying comment

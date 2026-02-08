@@ -1,18 +1,20 @@
+use chrono_tz::Tz;
 use std::env;
 
 #[derive(Debug, Clone)]
 pub struct Config {
     #[allow(dead_code)] // used by HTTP gateway (http is not implemented yet)
     pub port: u16,
-    pub stage: String,
     pub job_queue_poll_interval_ms: u64,
+    pub min_players_before_rejoin: usize,
+    pub random_seed: String,
     pub discord: DiscordConfig,
     pub firebase: FirebaseConfig,
 }
 
 #[derive(Debug, Clone)]
 pub struct DiscordConfig {
-    pub timezone: String,
+    pub timezone: Tz,
     pub bot_token: String,
     #[allow(dead_code)] // used by HTTP gateway for sig verification (http is not implemented yet)
     pub public_key: String,
@@ -33,13 +35,24 @@ impl Config {
         let public_key = required_env("DISCORD_PUBLIC_KEY")?;
         let server_id = required_env("DISCORD_SERVER_ID")?;
         let firebase_64 = required_env("FIREBASE_64")?;
+        let random_seed =
+            env::var("RANDOM_SEED").unwrap_or_else(|_| "discord-bot-default-seed".to_string());
+
+        let min_players_before_rejoin = if stage == "local" || stage == "dev" {
+            1
+        } else {
+            4
+        };
 
         Ok(Config {
             port: 8006,
-            stage,
             job_queue_poll_interval_ms: 5000,
+            min_players_before_rejoin,
+            random_seed,
             discord: DiscordConfig {
-                timezone: "America/Los_Angeles".to_string(),
+                timezone: "America/Los_Angeles"
+                    .parse::<Tz>()
+                    .map_err(|e| anyhow::anyhow!("Invalid timezone: {e}"))?,
                 bot_token,
                 public_key,
                 server_id,
