@@ -93,10 +93,7 @@ impl UserStore {
     }
 
     /// Atomically increment reputation offsets for multiple users in a single transaction.
-    pub async fn increment_user_reps(
-        &self,
-        updates: &[(GuildMember, i64)],
-    ) -> anyhow::Result<()> {
+    pub async fn increment_user_reps(&self, updates: &[(GuildMember, i64)]) -> anyhow::Result<()> {
         self.db
             .run_transaction(|db, tx| {
                 let updates = updates.to_vec();
@@ -117,10 +114,8 @@ impl UserStore {
 
                     // Write phase: update all users
                     for (doc_id, member, offset, existing) in &user_states {
-                        let current_offset = existing
-                            .as_ref()
-                            .map(|u| u.reputation_offset)
-                            .unwrap_or(0);
+                        let current_offset =
+                            existing.as_ref().map(|u| u.reputation_offset).unwrap_or(0);
                         let updated = User {
                             id: doc_id.clone(),
                             name: member.username.clone(),

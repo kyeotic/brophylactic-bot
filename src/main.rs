@@ -57,9 +57,7 @@ async fn main() -> anyhow::Result<()> {
                     );
                 })
             },
-            event_handler: |ctx, event, _framework, data| {
-                Box::pin(event_handler(ctx, event, data))
-            },
+            event_handler: |ctx, event, _framework, data| Box::pin(event_handler(ctx, event, data)),
             ..Default::default()
         })
         .setup(move |ctx, _ready, framework| {

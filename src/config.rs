@@ -2,7 +2,7 @@ use std::env;
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    #[allow(dead_code)]
+    #[allow(dead_code)] // used by HTTP gateway (http is not implemented yet)
     pub port: u16,
     pub stage: String,
     pub discord: DiscordConfig,
@@ -13,7 +13,7 @@ pub struct Config {
 pub struct DiscordConfig {
     pub timezone: String,
     pub bot_token: String,
-    #[allow(dead_code)]
+    #[allow(dead_code)] // used by HTTP gateway for sig verification (http is not implemented yet)
     pub public_key: String,
     pub server_id: String,
 }

@@ -4,53 +4,54 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Discord bot for gaming/gambling features (Sardines lottery, Roulette, dice rolling, guessing games). Built with TypeScript, runs as a long-running Docker container, uses Firebase/Firestore for persistence and job scheduling.
+Discord bot for gaming/gambling features (Sardines lottery, Roulette, dice rolling, guessing games). Built with Rust using the poise/serenity framework, runs as a long-running Docker container, uses Firestore for persistence and job scheduling.
 
 ## Commands
 
 ```bash
-npm start          # Run bot locally via gateway (npx tsx src/bot.ts)
-npm run start:server # Run HTTP server locally (npx tsx src/server.ts)
-npm run build      # Full build: tsc → esbuild bundle
-npm run check      # Run prettier + eslint
-npm run style      # Format with prettier
-npm run lint       # ESLint
-just deploy        # Build and push Docker image
+just dev           # Run locally with .env.dev vars (cargo run)
+just build         # Release build (cargo build --release)
+just check         # Check compilation (cargo check)
+just test          # Run tests (cargo test)
+just lint          # Clippy lints with -D warnings
+just fmt           # Format code (cargo fmt)
+just fmt-check     # Check formatting without modifying
+just deploy        # Build Docker image and push + stack-sync
 ```
-
-No test framework is configured. The `test/` directory contains only shell script fixtures.
 
 ## Architecture
 
-**Entry points:**
-- `src/bot.ts` — Local dev: connects via Discord WebSocket gateway
-- `src/server.ts` — Production: HTTP server receiving Discord interaction webhooks, with Firestore-backed job queue for delayed tasks
+**Framework:** Uses [poise](https://docs.rs/poise) (built on serenity 0.12) for Discord bot framework. Commands are defined with `#[poise::command]` macros. The bot connects via Discord WebSocket gateway.
 
-**Dependency injection:** `src/di.ts` creates an `AppContext` with config, logger, Discord client, Firebase client, user store, game stores, and job queue. All command handlers receive this context.
+**Application context:** `src/context.rs` defines `AppContext` (holds Config, FirestoreDb, Http, UserStore, JobQueue) and the poise `Context<'a>` type alias. All command handlers receive this context.
 
-**Interaction routing:** `src/discord/main.ts` is the central router that dispatches slash commands and button interactions to the appropriate handler.
+**Command registration:** `src/commands/mod.rs` collects all commands via `all()`. Commands: debug, roll, bgr (reputation), guess, roulette, sardines.
 
-**Command registration:** `src/commands/mod.ts` is the command registry. Game-specific commands live in `src/sardines/command.ts` and `src/roulette/command.ts`.
+**Game pattern:** Both Sardines and Roulette follow the same module structure: `command.rs` (poise command handler + button interaction handler), `store.rs` (Firestore persistence), and a main logic file (`sardines.rs`/`roulette.rs`). Roulette uses the job queue for delayed completion.
 
-**Game pattern:** Both Sardines and Roulette follow the same structure: `command.ts` (Discord handler), `store.ts` (Firestore persistence), `types.ts` (type definitions), and a main logic file. Roulette uses a Firestore-backed job queue for delayed completion.
+**Button interactions:** Handled via `event_handler` in `src/main.rs` which matches on component `custom_id` prefixes (DEBUG, ROULETTE, SARDINES). Custom IDs are encoded as `TYPE:id` via `discord::helpers`.
 
-**Job queue:** `src/jobs/queue.ts` provides a polling-based job queue backed by a Firestore `jobs` collection. Jobs are enqueued with a delay and executed when due. Replaces AWS Step Functions.
+**Job queue:** `src/jobs/queue.rs` — polling-based job queue backed by Firestore `jobs` collection. Jobs are enqueued with a delay, polled at intervals, and executed when due. Handlers are registered by job type string.
 
-**Firebase client:** Custom HTTP-based Firestore client in `src/firebase/` (not the Firebase SDK). Handles JWT auth, document CRUD, listing, and Firestore value conversion.
+**Firebase/Firestore:** Uses the `firestore` crate (not the Firebase SDK). Client initialized in `src/firebase/client.rs` from a base64-encoded service account JSON (`FIREBASE_64` env var). Firestore documents use `#[serde(rename_all = "camelCase")]` and `firestore::serialize_as_timestamp` for date fields.
 
-**Logging:** Uses `pino` for structured logging (`src/util/logger.ts`). Uses `pino-pretty` in development.
+**User system:** `src/users/store.rs` — users are identified by `{guild_id}.{user_id}` document IDs. Reputation is calculated from guild join date + stored offset. Reputation changes use Firestore transactions for atomicity.
 
-## Code Style
+**Discord helpers:** `src/discord/helpers.rs` provides response builders, mention formatting, BGR (reputation) labels, and `GuildMember` conversion from serenity types.
 
-- Prettier: 2 spaces, no semicolons, single quotes, 100 char width
-- ESLint: TypeScript plugin with relaxed rules (allows `any`, console)
-- Target: ES2020, CommonJS modules
-- Path aliases: bare imports resolve to `src/` and `types/`
+## Key Dependencies
+
+- `poise` 0.6 / `serenity` 0.12 — Discord framework
+- `firestore` 0.47 / `gcloud-sdk` — Firestore client
+- `tokio` — async runtime
+- `tracing` / `tracing-subscriber` — structured logging
+- `chrono` / `chrono-humanize` / `chrono-tz` — date/time handling
+- `anyhow` / `thiserror` — error handling
 
 ## Deployment
 
-Docker image built via `just deploy`, pushed to `docker.local.kye.dev/discord-bot:latest`. Deployed to homelab via Portainer, publicly accessible through Cloudflare tunnel.
+Docker image built via `just deploy`, pushed to `docker.local.kye.dev/discord-bot:latest`. Uses cargo-chef + sccache for cached builds. Deployed to homelab via stack-sync, publicly accessible through Cloudflare tunnel.
 
 ## Environment
 
-Required env vars are listed in `.env.example`. Key ones: `BOT_TOKEN`, `DISCORD_PUBLIC_KEY`, `DISCORD_SERVER_ID`, `FIREBASE_64` (base64-encoded service account JSON), `LOG_LEVEL`.
+Required env vars: `BOT_TOKEN`, `DISCORD_PUBLIC_KEY`, `DISCORD_SERVER_ID`, `FIREBASE_64` (base64-encoded service account JSON). Optional: `LOG_LEVEL` (default: info), `stage` (default: dev).
