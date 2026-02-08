@@ -3,10 +3,10 @@ use firestore::FirestoreDb;
 use crate::config::Config;
 use crate::discord::helpers::{bgr_label, mention};
 use crate::discord::types::GuildMember;
-use crate::games::lottery::{Lottery, StoredPlayer};
+use crate::games::lottery::{Lottery, PersistedPlayer};
 use crate::sardines::store::{SardinesLottery, SardinesStore};
 use crate::users::UserStore;
-use crate::util::random::seeded_weighted_random;
+use crate::util::random::seeded_weighted_random_element;
 
 const A: f64 = 0.4;
 const B: f64 = 0.3;
@@ -15,10 +15,11 @@ const C: f64 = 1.8;
 const PAYOUT_MULTIPLIERS: [f64; 5] = [1.2, 1.5, 1.8, 2.0, 2.5];
 
 /// Calculate the chance that a joining player ends the game.
-/// n = current number of players in the game.
+/// Returns a value between 0.0 and 1.0. At low player counts the chance is small
+/// (e.g. ~0% at 1 player), rising steeply through the mid range and approaching
+/// 100% asymptotically as the player count grows.
 pub fn join_failure_chance(n: usize) -> f64 {
     let n = n as f64;
-    // TS: 1 - (A - n + B) / (n + C) - 1 = -(A - n + B) / (n + C) = -(0.7 - n) / (n + 1.8)
     -((A - n + B) / (n + C))
 }
 
@@ -30,28 +31,36 @@ fn does_player_lose(n: usize) -> bool {
 pub struct Sardines {
     pub lottery: SardinesLottery,
     store: SardinesStore,
+    user_store: UserStore,
     random_seed: String,
 }
 
 impl Sardines {
     pub fn init(
-        db: &FirestoreDb,
+        db: FirestoreDb,
         config: &Config,
+        user_store: UserStore,
         creator: &GuildMember,
         bet: i64,
     ) -> anyhow::Result<Self> {
-        let stored_creator = StoredPlayer::from(creator);
+        let stored_creator = PersistedPlayer::from(creator);
         let mut lottery = Lottery::new(stored_creator.clone(), bet)?;
         lottery.add_player(stored_creator);
         Ok(Self {
             lottery,
-            store: SardinesStore::new(db.clone()),
+            store: SardinesStore::new(db),
+            user_store,
             random_seed: config.random_seed.clone(),
         })
     }
 
-    pub async fn load(db: &FirestoreDb, config: &Config, id: &str) -> anyhow::Result<Self> {
-        let store = SardinesStore::new(db.clone());
+    pub async fn load(
+        db: FirestoreDb,
+        config: &Config,
+        user_store: UserStore,
+        id: &str,
+    ) -> anyhow::Result<Self> {
+        let store = SardinesStore::new(db);
         let lottery = store
             .get(id)
             .await?
@@ -59,17 +68,18 @@ impl Sardines {
         Ok(Self {
             lottery,
             store,
+            user_store,
             random_seed: config.random_seed.clone(),
         })
     }
 
-    pub async fn start(&mut self, user_store: &UserStore) -> anyhow::Result<String> {
+    pub async fn start(&mut self) -> anyhow::Result<String> {
         let start_time = self.lottery.start();
         self.store.put(&self.lottery).await?;
 
         // Immediately deduct creator's bet
         let creator = GuildMember::from(&self.lottery.creator);
-        user_store
+        self.user_store
             .increment_user_rep(&creator, -self.lottery.bet)
             .await?;
 
@@ -88,11 +98,11 @@ impl Sardines {
         self.lottery.bet
     }
 
-    pub fn creator(&self) -> &StoredPlayer {
+    pub fn creator(&self) -> &PersistedPlayer {
         &self.lottery.creator
     }
 
-    pub fn players(&self) -> &[StoredPlayer] {
+    pub fn players(&self) -> &[PersistedPlayer] {
         &self.lottery.players
     }
 
@@ -108,36 +118,29 @@ impl Sardines {
         !does_player_lose(self.lottery.players.len())
     }
 
-    pub async fn add_player(
-        &mut self,
-        player: &GuildMember,
-        user_store: &UserStore,
-    ) -> anyhow::Result<()> {
-        let stored = StoredPlayer::from(player);
+    pub async fn add_player(&mut self, player: &GuildMember) -> anyhow::Result<()> {
+        let stored = PersistedPlayer::from(player);
         self.lottery.add_player(stored);
         self.store
             .set_players(&self.lottery.id, &self.lottery.players)
             .await?;
 
         // Immediately deduct buy-in
-        user_store
+        self.user_store
             .increment_user_rep(player, -self.lottery.bet)
             .await?;
         Ok(())
     }
 
-    /// Pot size includes the loser (players + 1 for the loser who triggered game end).
+    /// Total pot across all bettors, including the loser who triggered game end.
+    /// The +1 accounts for the loser, who is not in `players` but still paid the buy-in.
     fn pot_size(&self) -> i64 {
         self.lottery.bet * (self.lottery.players.len() as i64 + 1)
     }
 
     /// Get the payout multiplier using weighted random seeded by lottery ID.
     fn get_multiplier(&self) -> f64 {
-        let idx =
-            seeded_weighted_random(1, PAYOUT_MULTIPLIERS.len() as i64, &self.lottery.id, &self.random_seed)
-                as usize
-                - 1;
-        PAYOUT_MULTIPLIERS[idx.min(PAYOUT_MULTIPLIERS.len() - 1)]
+        *seeded_weighted_random_element(&PAYOUT_MULTIPLIERS, &self.lottery.id, &self.random_seed)
     }
 
     /// Get the winner's payout: pot_size * multiplier.
@@ -145,11 +148,7 @@ impl Sardines {
         (self.pot_size() as f64 * self.get_multiplier()).floor() as i64
     }
 
-    pub async fn finish(
-        &self,
-        loser: &GuildMember,
-        user_store: &UserStore,
-    ) -> anyhow::Result<String> {
+    pub async fn finish(&self, loser: &GuildMember) -> anyhow::Result<String> {
         // Pick a random winner from existing players
         let result = self.lottery.finish();
         let winner = &result.winner;
@@ -177,7 +176,7 @@ impl Sardines {
                 .map(|name| {
                     let count = bettors.iter().filter(|n| *n == name).count();
                     if count > 1 {
-                        format!("{} (x{})", name, count)
+                        format!("{name} (x{count})")
                     } else {
                         name.clone()
                     }
@@ -197,19 +196,20 @@ impl Sardines {
             updates = vec![(loser.clone(), net)];
         }
 
-        user_store.increment_user_reps(&updates).await?;
+        self.user_store.increment_user_reps(&updates).await?;
         self.store.delete(&self.lottery.id).await?;
 
+        let creator_name = &self.lottery.creator.username;
+        let loser_name = &loser.username;
+        let winner_mention = mention(&winner.id);
+        let payout_label = bgr_label(payout, false);
+        let multiplier_pct = multiplier * 100.0;
+        let bettor_names = unique_names.join(", ");
+        let bet_label = bgr_label(self.bet(), false);
+        let pot_label = bgr_label(self.pot_size(), false);
+
         Ok(format!(
-            "The sardines game started by {} was ended by {} failing to join. They were still charged.\n{} won {} with a payout multiplier of **{:.0}%**.\n\n{} all bet {} for a total pot of {}.",
-            self.lottery.creator.username,
-            loser.username,
-            mention(&winner.id),
-            bgr_label(payout, false),
-            multiplier * 100.0,
-            unique_names.join(", "),
-            bgr_label(self.bet(), false),
-            bgr_label(self.pot_size(), false),
+            "The sardines game started by {creator_name} was ended by {loser_name} failing to join. They were still charged.\n{winner_mention} won {payout_label} with a payout multiplier of **{multiplier_pct:.0}%**.\n\n{bettor_names} all bet {bet_label} for a total pot of {pot_label}."
         ))
     }
 }

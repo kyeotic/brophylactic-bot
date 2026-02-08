@@ -1,3 +1,3 @@
 pub mod command;
-pub mod sardines;
+pub mod game;
 pub mod store;

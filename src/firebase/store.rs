@@ -1,5 +1,5 @@
 use firestore::*;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 
 /// Generic Firestore document store that encapsulates common CRUD operations.
 #[derive(Clone)]
@@ -38,22 +38,6 @@ impl FirestoreStore {
             .fluent()
             .insert()
             .into(self.collection)
-            .document_id(id)
-            .object(obj)
-            .execute::<()>()
-            .await?;
-        Ok(())
-    }
-
-    pub async fn update<T: Serialize + DeserializeOwned + Sync + Send>(
-        &self,
-        id: &str,
-        obj: &T,
-    ) -> anyhow::Result<()> {
-        self.db
-            .fluent()
-            .update()
-            .in_col(self.collection)
             .document_id(id)
             .object(obj)
             .execute::<()>()

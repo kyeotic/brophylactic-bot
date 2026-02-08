@@ -1,7 +1,8 @@
 use chrono::Utc;
 
 use crate::context::Context;
-use crate::discord::helpers::{bgr_label, to_guild_member};
+use crate::discord::helpers::bgr_label;
+use crate::discord::types::GuildMember;
 use crate::util::dates::{format_distance_to_now, get_day_string, is_today};
 use crate::util::random::seeded_random_inclusive;
 
@@ -79,52 +80,52 @@ pub async fn guess(
 ) -> Result<(), anyhow::Error> {
     let data = ctx.data();
     let timezone = data.config.discord.timezone;
-    let guild_id = ctx.guild_id().ok_or_else(|| anyhow::anyhow!("Not in a guild"))?;
+    let guild_id = ctx
+        .guild_id()
+        .ok_or_else(|| anyhow::anyhow!("Not in a guild"))?;
 
     let member_data = ctx
         .author_member()
         .await
         .ok_or_else(|| anyhow::anyhow!("Could not get member info"))?;
-    let member = to_guild_member(guild_id, ctx.author(), member_data.joined_at);
+    let member = GuildMember::from_serenity(guild_id, ctx.author(), member_data.joined_at);
     let member_name = &member.username;
 
     let last_guess = data.user_store.get_user_last_guess(&member).await?;
 
-    if number < 1 || number > 100 {
+    if !(1..=100).contains(&number) {
         let last_guess_str = match last_guess {
             Some(dt) => format_distance_to_now(dt),
             None => "never".to_string(),
         };
+        let reward_label = bgr_label(MAGIC_NUMBER_REWARD, false);
         ctx.send(
             poise::CreateReply::default().content(format!(
-                "Guess a number between 1-100 to win {}. Only guess allowed per day.\n{} made their last Guess {}",
-                bgr_label(MAGIC_NUMBER_REWARD, false),
-                member_name,
-                last_guess_str
+                "Guess a number between 1-100 to win {reward_label}. Only guess allowed per day.\n{member_name} made their last Guess {last_guess_str}"
             )),
         )
         .await?;
         return Ok(());
     }
 
-    if let Some(last) = last_guess {
-        if is_today(timezone, last) {
-            ctx.send(
-                poise::CreateReply::default()
-                    .content("You already guessed today")
-                    .ephemeral(true),
-            )
-            .await?;
-            return Ok(());
-        }
+    if let Some(last) = last_guess
+        && is_today(timezone, last)
+    {
+        ctx.send(
+            poise::CreateReply::default()
+                .content("You already guessed today")
+                .ephemeral(true),
+        )
+        .await?;
+        return Ok(());
     }
 
     let now = Utc::now();
     data.user_store.set_user_last_guess(&member, now).await?;
 
-    let seed = format!("{}:{}", member_name, get_day_string(timezone, now));
-    let magic_number =
-        seeded_random_inclusive(1, 100, &seed, &data.config.random_seed);
+    let day = get_day_string(timezone, now);
+    let seed = format!("{member_name}:{day}");
+    let magic_number = seeded_random_inclusive(1, 100, &seed, &data.config.random_seed);
 
     let matched_rule = RULES.iter().find(|r| (r.predicate)(magic_number, number));
 
@@ -134,13 +135,11 @@ pub async fn guess(
                 .increment_user_rep(&member, rule.reward)
                 .await?;
             let msg = (rule.message)(magic_number, number);
-            ctx.send(poise::CreateReply::default().content(msg))
-                .await?;
+            ctx.send(poise::CreateReply::default().content(msg)).await?;
         }
         None => {
             ctx.send(poise::CreateReply::default().content(format!(
-                "You guessed **{}** but the correct number was **{}**",
-                number, magic_number
+                "You guessed **{number}** but the correct number was **{magic_number}**"
             )))
             .await?;
         }

@@ -19,23 +19,22 @@ pub async fn roll(
             let total: u32 = results.iter().sum();
             let msg = if verbose {
                 let rolls: Vec<String> = results.iter().map(|r| r.to_string()).collect();
-                format!(
-                    "{} rolled {} and got {} with {}",
-                    username,
-                    dice_input,
-                    total,
-                    rolls.join(", ")
-                )
+                let rolls = rolls.join(", ");
+                format!("{username} rolled {dice_input} and got {total} with {rolls}")
             } else {
-                format!("{} rolled {} and got {}", username, dice_input, total)
+                format!("{username} rolled {dice_input} and got {total}")
             };
-            ctx.send(poise::CreateReply::default().content(msg).ephemeral(ephemeral))
-                .await?;
+            ctx.send(
+                poise::CreateReply::default()
+                    .content(msg)
+                    .ephemeral(ephemeral),
+            )
+            .await?;
         }
         Err(e) => {
             ctx.send(
                 poise::CreateReply::default()
-                    .content(format!("Error rolling: {}", e))
+                    .content(format!("Error rolling: {e}"))
                     .ephemeral(true),
             )
             .await?;

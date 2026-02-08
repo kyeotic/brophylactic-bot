@@ -11,10 +11,10 @@ use tokio::sync::RwLock;
 use tracing::{error, info};
 
 use crate::context::Context;
-use crate::discord::helpers::{bgr_label, encode_custom_id, parse_custom_id, to_guild_member};
-use crate::discord::types::InteractionType;
+use crate::discord::helpers::{bgr_label, encode_custom_id, parse_custom_id};
+use crate::discord::types::{GuildMember, InteractionType};
 use crate::jobs::{JobQueue, JobType};
-use crate::roulette::roulette::{Roulette, RouletteJobPayload, ROULETTE_TIME_MS};
+use crate::roulette::game::{ROULETTE_TIME_MS, Roulette, RouletteJobPayload};
 use crate::users::UserStore;
 const COUNTDOWN_INTERVAL_MS: u64 = 5000;
 
@@ -24,33 +24,39 @@ pub async fn roulette(
     ctx: Context<'_>,
     #[description = "Amount of rep for the buy-in. Cannot exceed your total rep"] bet: i64,
 ) -> Result<(), anyhow::Error> {
-    let guild_id = ctx.guild_id().ok_or_else(|| anyhow::anyhow!("Must be in a guild"))?;
+    let guild_id = ctx
+        .guild_id()
+        .ok_or_else(|| anyhow::anyhow!("Must be in a guild"))?;
     let author = ctx.author();
     let member = ctx
         .author_member()
         .await
         .ok_or_else(|| anyhow::anyhow!("Could not get member info"))?;
-    let guild_member = to_guild_member(guild_id, author, member.joined_at);
+    let guild_member = GuildMember::from_serenity(guild_id, author, member.joined_at);
 
     let data = ctx.data();
     let member_rep = data.user_store.get_user_rep(&guild_member).await?;
 
-    let mut roulette = match Roulette::init(&data.db, &guild_member, bet) {
+    let mut roulette = match Roulette::init(data.db.clone(), &guild_member, bet) {
         Ok(r) => r,
         Err(e) => {
-            ctx.send(poise::CreateReply::default().content(e.to_string()).ephemeral(true)).await?;
+            ctx.send(
+                poise::CreateReply::default()
+                    .content(e.to_string())
+                    .ephemeral(true),
+            )
+            .await?;
             return Ok(());
         }
     };
 
     if member_rep < roulette.buy_in() {
+        let username = &guild_member.username;
+        let buy_in_label = bgr_label(roulette.buy_in(), false);
         ctx.send(
             poise::CreateReply::default()
                 .content(format!(
-                    "{} only has {} and cannot bet in a roulette game whose buy-in is {}",
-                    guild_member.username,
-                    member_rep,
-                    bgr_label(roulette.buy_in(), false),
+                    "{username} only has {member_rep} and cannot bet in a roulette game whose buy-in is {buy_in_label}"
                 ))
                 .ephemeral(true),
         )
@@ -70,7 +76,7 @@ pub async fn roulette(
     };
 
     let job_queue = data.job_queue.read().await;
-    roulette.start(&interaction_token, &*job_queue).await?;
+    roulette.start(&interaction_token, &job_queue).await?;
 
     // Send the initial message
     let (content, button) = roulette_message_parts(&roulette);
@@ -111,9 +117,10 @@ pub async fn handle_roulette_join(
         .member
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("No member data"))?;
-    let guild_member = to_guild_member(guild_id, &interaction.user, member_info.joined_at);
+    let guild_member =
+        GuildMember::from_serenity(guild_id, &interaction.user, member_info.joined_at);
 
-    let mut game = match Roulette::load(&data.db, game_id).await {
+    let mut game = match Roulette::load(data.db.clone(), game_id).await {
         Ok(r) => r,
         Err(_) => {
             interaction
@@ -123,34 +130,8 @@ pub async fn handle_roulette_join(
         }
     };
 
-    // Check if already in game
-    if game.players().iter().any(|p| p.id == guild_member.id) {
-        interaction
-            .create_response(
-                ctx,
-                CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new()
-                        .content("Cannot join a roulette game you are already in")
-                        .ephemeral(true),
-                ),
-            )
-            .await?;
-        return Ok(());
-    }
-
-    // Check rep
-    let member_rep = data.user_store.get_user_rep(&guild_member).await?;
-    if member_rep < game.buy_in() {
-        interaction
-            .create_response(
-                ctx,
-                CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new()
-                        .content("You do not have enough rep")
-                        .ephemeral(true),
-                ),
-            )
-            .await?;
+    if let Some(error_msg) = validate_roulette_join(&game, &guild_member, data).await? {
+        respond_ephemeral(ctx, interaction, error_msg).await?;
         return Ok(());
     }
 
@@ -178,6 +159,45 @@ pub async fn handle_roulette_join(
     Ok(())
 }
 
+/// Validate whether a player can join a roulette game. Returns an error message if invalid.
+async fn validate_roulette_join(
+    game: &Roulette,
+    guild_member: &GuildMember,
+    data: &crate::context::AppContext,
+) -> Result<Option<String>, anyhow::Error> {
+    if game.players().iter().any(|p| p.id == guild_member.id) {
+        return Ok(Some(
+            "Cannot join a roulette game you are already in".to_string(),
+        ));
+    }
+
+    let member_rep = data.user_store.get_user_rep(guild_member).await?;
+    if member_rep < game.buy_in() {
+        return Ok(Some("You do not have enough rep".to_string()));
+    }
+
+    Ok(None)
+}
+
+/// Send an ephemeral error response to an interaction.
+async fn respond_ephemeral(
+    ctx: &serenity::Context,
+    interaction: &serenity::ComponentInteraction,
+    content: impl Into<String>,
+) -> Result<(), anyhow::Error> {
+    interaction
+        .create_response(
+            ctx,
+            CreateInteractionResponse::Message(
+                CreateInteractionResponseMessage::new()
+                    .content(content)
+                    .ephemeral(true),
+            ),
+        )
+        .await?;
+    Ok(())
+}
+
 /// Job handler for roulette:finish
 pub async fn finish_roulette(
     payload: serde_json::Value,
@@ -187,7 +207,7 @@ pub async fn finish_roulette(
 ) -> anyhow::Result<()> {
     let payload: RouletteJobPayload = serde_json::from_value(payload)?;
 
-    let game = Roulette::load(db, &payload.id).await?;
+    let game = Roulette::load(db.clone(), &payload.id).await?;
     let final_message = game.finish(user_store).await?;
 
     // Update Discord message with final result (no button)
@@ -236,7 +256,7 @@ pub async fn recover_countdowns(
             }
         };
 
-        match Roulette::load(db, &payload.id).await {
+        match Roulette::load(db.clone(), &payload.id).await {
             Ok(game) => {
                 if let Some(start_time) = game.start_time() {
                     info!(id = payload.id, "Recovering countdown for roulette");
@@ -271,6 +291,17 @@ fn start_countdown(
     };
 
     tokio::spawn(async move {
+        // Load game state once for countdown display. The join handler
+        // updates the message with fresh player data on each join, so
+        // a slightly stale player list between ticks is acceptable.
+        let game = match Roulette::load(db, &game_id).await {
+            Ok(g) => g,
+            Err(_) => return,
+        };
+        let creator_name = game.creator().username.clone();
+        let bet = game.bet();
+        let players = game.players().to_vec();
+
         tokio::time::sleep(tokio::time::Duration::from_millis(COUNTDOWN_INTERVAL_MS)).await;
 
         loop {
@@ -280,19 +311,9 @@ fn start_countdown(
                 break;
             }
 
-            // Load fresh game state for current player list
-            let game = match Roulette::load(&db, &game_id).await {
-                Ok(g) => g,
-                Err(_) => break,
-            };
-
-            let content = build_roulette_content(
-                &game.creator().username,
-                game.bet(),
-                remaining_secs,
-                game.players(),
-            );
-            let button = CreateButton::new(encode_custom_id(InteractionType::Roulette, game.id())).label("Join Roulette");
+            let content = build_roulette_content(&creator_name, bet, remaining_secs, &players);
+            let button = CreateButton::new(encode_custom_id(InteractionType::Roulette, &game_id))
+                .label("Join Roulette");
             let row = CreateActionRow::Buttons(vec![button]);
 
             let edit = EditInteractionResponse::new()
@@ -326,7 +347,8 @@ fn roulette_message_parts(game: &Roulette) -> (String, CreateButton) {
         remaining,
         game.players(),
     );
-    let button = CreateButton::new(encode_custom_id(InteractionType::Roulette, game.id())).label("Join Roulette");
+    let button = CreateButton::new(encode_custom_id(InteractionType::Roulette, game.id()))
+        .label("Join Roulette");
     (content, button)
 }
 
@@ -334,19 +356,18 @@ fn build_roulette_content(
     creator_name: &str,
     bet: i64,
     remaining_secs: i64,
-    players: &[crate::games::lottery::StoredPlayer],
+    players: &[crate::games::lottery::PersistedPlayer],
 ) -> String {
+    let bet_label = bgr_label(bet, false);
     let banner = format!(
-        "{} has started a roulette game for {}. Click the button below within {} seconds to place an equal bet and join the game.",
-        creator_name,
-        bgr_label(bet, false),
-        remaining_secs,
+        "{creator_name} has started a roulette game for {bet_label}. Click the button below within {remaining_secs} seconds to place an equal bet and join the game."
     );
 
     if players.len() < 2 {
         banner
     } else {
         let player_names: Vec<&str> = players.iter().map(|p| p.username.as_str()).collect();
-        format!("{}\n\n**Players**\n{}", banner, player_names.join("\n"))
+        let player_list = player_names.join("\n");
+        format!("{banner}\n\n**Players**\n{player_list}")
     }
 }

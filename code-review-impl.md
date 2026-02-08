@@ -29,64 +29,64 @@
 
 ## sardines/command.rs
 
-- [ ] Replace `to_guild_member` free function with `GuildMember::from_serenity(guild_id, user, joined_at)` constructor
-- [ ] Break up `handle_sardines_join` — extract validation logic, response building, etc.
+- [x] Replace `to_guild_member` free function with `GuildMember::from_serenity(guild_id, user, joined_at)` constructor
+- [x] Break up `handle_sardines_join` — extract validation logic, response building, etc.
 
 ## sardines/sardines.rs
 
 - [x] Move `min_players_before_rejoin` threshold into Config (remove function)
-- [ ] Rewrite `join_failure_chance` comment to describe the curve behavior (low chance at few players, approaching 100% asymptotically) instead of showing TS algebraic derivation
-- [ ] Change `Sardines::init` and `Sardines::load` to take `FirestoreDb` by value (or document the clone) — don't hide ownership behind `&`
-- [ ] `Sardines.load`: have it take all needed dependencies at load time rather than some at init and some later
+- [x] Rewrite `join_failure_chance` comment to describe the curve behavior (low chance at few players, approaching 100% asymptotically) instead of showing TS algebraic derivation
+- [x] Change `Sardines::init` and `Sardines::load` to take `FirestoreDb` by value (or document the clone) — don't hide ownership behind `&`
+- [x] `Sardines.load`: have it take all needed dependencies at load time rather than some at init and some later
 - [x] Stop using bot token as random seed — use the new `Config.random_seed` field instead
-- [ ] Extract "pick a seeded-random element from a slice" into a utility function in `util/random.rs`
-- [ ] Rewrite `finish` result message (line 212) to pre-allocate variables and use inline format style
-- [ ] Verify `pot_size` (+1 for loser) is intentional and add a clarifying comment
+- [x] Extract "pick a seeded-random element from a slice" into a utility function in `util/random.rs`
+- [x] Rewrite `finish` result message (line 212) to pre-allocate variables and use inline format style
+- [x] Verify `pot_size` (+1 for loser) is intentional and add a clarifying comment
 
 ## roulette/command.rs
 
-- [ ] Break up `roulette` command — separate game logic from display/message building
-- [ ] Break up `handle_roulette_join` similarly
-- [ ] **Fix double-charge bug**: players are charged on join AND again by `Lottery::finish` payouts. Either remove join-time deduction and rely solely on `Lottery::finish` payouts, or keep join-time deduction and adjust finish to only pay the winner (not re-charge losers)
+- [x] Break up `roulette` command — separate game logic from display/message building
+- [x] Break up `handle_roulette_join` similarly
+- [x] **Fix double-charge bug**: players are charged on join AND again by `Lottery::finish` payouts. Either remove join-time deduction and rely solely on `Lottery::finish` payouts, or keep join-time deduction and adjust finish to only pay the winner (not re-charge losers)
 
 ## roulette/roulette.rs
 
-- [ ] Same `init`/`load` ownership fix as sardines — take `FirestoreDb` by value
+- [x] Same `init`/`load` ownership fix as sardines — take `FirestoreDb` by value
 
 ## games/lottery.rs
 
-- [ ] Rename `StoredPlayer` to something more descriptive (`PersistedPlayer`, `SerializedPlayer`, `DbPlayer`, etc.)
-- [ ] Delete `from_parts` — it's genuinely dead code (deserialization goes through serde, not this constructor)
+- [x] Rename `StoredPlayer` to something more descriptive (`PersistedPlayer`, `SerializedPlayer`, `DbPlayer`, etc.)
+- [x] Delete `from_parts` — it's genuinely dead code (deserialization goes through serde, not this constructor)
 
 ## games/dice.rs
 
-- [ ] No changes needed — regex for simple "NdX" parsing is fine
+- [x] No changes needed — regex for simple "NdX" parsing is fine
 
 ## discord/helpers.rs
 
-- [ ] Remove `message()` and `message_with_button()` dead code (or gate behind a feature flag if HTTP gateway is planned)
-- [ ] `to_guild_member` replaced by `GuildMember::from_serenity` (see sardines/command.rs entry)
+- [x] Remove `message()` and `message_with_button()` dead code (or gate behind a feature flag if HTTP gateway is planned)
+- [x] `to_guild_member` replaced by `GuildMember::from_serenity` (see sardines/command.rs entry)
 
 ## commands/ (module organization)
 
-- [ ] Restructure: create a single `commands.rs` in `src/` that collects all commands via thin mappings
-- [ ] Move `guess` and `roll` handlers into `games/`
-- [ ] Find a home for `bgr` and `debug` (either their own modules or a `misc/` / `admin/` grouping)
+- [x] Restructure: create a single `commands.rs` in `src/` that collects all commands via thin mappings
+- [x] Move `guess` and `roll` handlers into `games/`
+- [x] Find a home for `bgr` and `debug` (`bgr` → `users/`, `debug` → `discord/`)
 
 ## jobs/queue.rs
 
-- [ ] Replace job type `String` with an enum (same enum as main.rs registration)
-- [ ] Replace job status `String` ("pending"/"running"/"failed") with a `#[derive(Serialize, Deserialize)]` enum
-- [ ] Address lack of graceful shutdown — wire up `JobQueue::stop()` to bot disconnect/signal handling
+- [x] Replace job type `String` with an enum (same enum as main.rs registration)
+- [x] Replace job status `String` ("pending"/"running"/"failed") with a `#[derive(Serialize, Deserialize)]` enum
+- [x] Address lack of graceful shutdown — wire up `JobQueue::stop()` to bot disconnect/signal handling
 
 ## sardines/store.rs
 
-- [ ] Fix `set_players` race condition — wrap the read-modify-write in a Firestore transaction (like `increment_user_reps` does)
+- [x] Fix `set_players` race condition — wrap the read-modify-write in a Firestore transaction (like `increment_user_reps` does)
 
 ## roulette countdown
 
-- [ ] Consider replacing per-tick Firestore reads in `start_countdown` with in-memory shared state, or skip player list updates in countdown ticks
+- [x] Consider replacing per-tick Firestore reads in `start_countdown` with in-memory shared state, or skip player list updates in countdown ticks
 
 ## Format style (applies globally)
 
-- [ ] Prefer `format!("name {name}")` inline style over `format!("name {}", name)` unless heavy pre-allocation is needed (3+ computed values)
+- [x] Prefer `format!("name {name}")` inline style over `format!("name {}", name)` unless heavy pre-allocation is needed (3+ computed values)

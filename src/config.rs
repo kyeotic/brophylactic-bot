@@ -66,5 +66,5 @@ impl Config {
 }
 
 fn required_env(name: &str) -> anyhow::Result<String> {
-    env::var(name).map_err(|_| anyhow::anyhow!("ENV VAR {} is required", name))
+    env::var(name).map_err(|_| anyhow::anyhow!("ENV VAR {name} is required"))
 }

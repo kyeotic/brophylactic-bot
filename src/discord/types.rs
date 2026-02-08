@@ -2,6 +2,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use chrono::{DateTime, Utc};
+use serenity::all::{GuildId, Timestamp, User};
 
 /// Types of button interactions dispatched via component custom IDs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -41,4 +42,16 @@ pub struct GuildMember {
     pub guild_id: String,
     pub username: String,
     pub joined_at: Option<DateTime<Utc>>,
+}
+
+impl GuildMember {
+    /// Convert serenity types into our GuildMember type.
+    pub fn from_serenity(guild_id: GuildId, user: &User, joined_at: Option<Timestamp>) -> Self {
+        Self {
+            id: user.id.to_string(),
+            guild_id: guild_id.to_string(),
+            username: user.name.clone(),
+            joined_at: joined_at.and_then(|ts| DateTime::from_timestamp(ts.unix_timestamp(), 0)),
+        }
+    }
 }

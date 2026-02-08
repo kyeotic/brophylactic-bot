@@ -48,6 +48,10 @@ async fn main() -> anyhow::Result<()> {
     let guild_id = serenity::GuildId::new(config.discord.server_id.parse()?);
     let token = config.discord.bot_token.clone();
 
+    // Create job queue before framework so we can stop it on shutdown
+    let job_queue = Arc::new(RwLock::new(JobQueue::new(db.clone())));
+    let shutdown_job_queue = job_queue.clone();
+
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: commands::all(),
@@ -64,7 +68,9 @@ async fn main() -> anyhow::Result<()> {
             ..Default::default()
         })
         .setup(move |ctx, _ready, framework| {
-            Box::pin(build_app_context(ctx, framework, guild_id, config, db))
+            Box::pin(build_app_context(
+                ctx, framework, guild_id, config, db, job_queue,
+            ))
         })
         .build();
 
@@ -74,7 +80,13 @@ async fn main() -> anyhow::Result<()> {
         .framework(framework)
         .await?;
 
-    client.start().await?;
+    tokio::select! {
+        result = client.start() => { result?; }
+        _ = tokio::signal::ctrl_c() => {
+            info!("Received shutdown signal, stopping...");
+            shutdown_job_queue.write().await.stop();
+        }
+    }
 
     Ok(())
 }
@@ -85,6 +97,7 @@ async fn build_app_context(
     guild_id: serenity::GuildId,
     config: Config,
     db: FirestoreDb,
+    job_queue: Arc<RwLock<JobQueue>>,
 ) -> anyhow::Result<AppContext> {
     info!("Successfully connected to gateway");
     poise::builtins::register_in_guild(ctx, &framework.options().commands, guild_id).await?;
@@ -92,25 +105,25 @@ async fn build_app_context(
 
     let http = ctx.http.clone();
     let user_store = UserStore::new(db.clone());
-    let mut job_queue = JobQueue::new(db.clone());
 
-    // Register roulette:finish job handler
-    let finish_http = http.clone();
-    let finish_db = db.clone();
-    let finish_user_store = UserStore::new(db.clone());
-    job_queue
-        .register(JobType::RouletteFinish, move |payload| {
-            let http = finish_http.clone();
-            let db = finish_db.clone();
-            let user_store = finish_user_store.clone();
-            async move {
-                roulette::command::finish_roulette(payload, &http, &db, &user_store).await
-            }
-        })
-        .await;
-
-    job_queue.start(config.job_queue_poll_interval_ms);
-    let job_queue = Arc::new(RwLock::new(job_queue));
+    // Register roulette:finish job handler and start polling
+    {
+        let finish_http = http.clone();
+        let finish_db = db.clone();
+        let finish_user_store = UserStore::new(db.clone());
+        let mut queue = job_queue.write().await;
+        queue
+            .register(JobType::RouletteFinish, move |payload| {
+                let http = finish_http.clone();
+                let db = finish_db.clone();
+                let user_store = finish_user_store.clone();
+                async move {
+                    roulette::command::finish_roulette(payload, &http, &db, &user_store).await
+                }
+            })
+            .await;
+        queue.start(config.job_queue_poll_interval_ms);
+    }
 
     // Recover any pending roulette countdowns
     roulette::command::recover_countdowns(&db, &http, &job_queue).await;
@@ -138,7 +151,7 @@ async fn event_handler(
 
         match id_type.parse::<InteractionType>() {
             Ok(InteractionType::Debug) => {
-                commands::debug::handle_debug_button(ctx, component).await?
+                discord::debug::handle_debug_button(ctx, component).await?
             }
             Ok(InteractionType::Roulette) => {
                 roulette::command::handle_roulette_join(ctx, component, data).await?

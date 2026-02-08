@@ -32,8 +32,9 @@ mod tests {
     #[test]
     fn deck_contains_ace_of_spades() {
         let deck = poker_deck();
-        assert!(deck
-            .iter()
-            .any(|c| c.starts_with("A") && c.contains('\u{2660}')));
+        assert!(
+            deck.iter()
+                .any(|c| c.starts_with("A") && c.contains('\u{2660}'))
+        );
     }
 }

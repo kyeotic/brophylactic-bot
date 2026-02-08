@@ -12,7 +12,8 @@ use serenity::{
 #[poise::command(slash_command, guild_only)]
 pub async fn debug(ctx: Context<'_>) -> Result<(), anyhow::Error> {
     let id = nanoid::nanoid!();
-    let content = format!("This is a content debug: {}", bgr_label(200, true));
+    let label = bgr_label(200, true);
+    let content = format!("This is a content debug: {label}");
     let button = CreateButton::new(encode_custom_id(InteractionType::Debug, &id)).label("Debug");
     let row = CreateActionRow::Buttons(vec![button]);
 
@@ -35,13 +36,12 @@ pub async fn handle_debug_button(
     let user_id = interaction.user.id;
     let value = random_inclusive(50, 100);
 
-    let content = format!(
-        "This is a content debug: {}. Hey {}",
-        bgr_label(value, true),
-        mention(user_id)
-    );
+    let label = bgr_label(value, true);
+    let user_mention = mention(user_id);
+    let content = format!("This is a content debug: {label}. Hey {user_mention}");
 
-    let button = CreateButton::new(encode_custom_id(InteractionType::Debug, custom_id)).label("Debug");
+    let button =
+        CreateButton::new(encode_custom_id(InteractionType::Debug, custom_id)).label("Debug");
     let row = CreateActionRow::Buttons(vec![button]);
 
     interaction

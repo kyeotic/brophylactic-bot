@@ -8,7 +8,7 @@ use crate::util::random::random_inclusive;
 /// Uses String for joined_at (not DateTime) to match existing Firestore data format.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct StoredPlayer {
+pub struct PersistedPlayer {
     pub id: String,
     pub guild_id: String,
     pub username: String,
@@ -16,9 +16,9 @@ pub struct StoredPlayer {
     pub joined_at: Option<String>,
 }
 
-impl From<&GuildMember> for StoredPlayer {
+impl From<&GuildMember> for PersistedPlayer {
     fn from(m: &GuildMember) -> Self {
-        StoredPlayer {
+        PersistedPlayer {
             id: m.id.clone(),
             guild_id: m.guild_id.clone(),
             username: m.username.clone(),
@@ -27,8 +27,8 @@ impl From<&GuildMember> for StoredPlayer {
     }
 }
 
-impl From<&StoredPlayer> for GuildMember {
-    fn from(p: &StoredPlayer) -> Self {
+impl From<&PersistedPlayer> for GuildMember {
+    fn from(p: &PersistedPlayer) -> Self {
         GuildMember {
             id: p.id.clone(),
             guild_id: p.guild_id.clone(),
@@ -54,7 +54,6 @@ pub struct Lottery<Player: Clone + PartialEq> {
 
 pub struct LotteryResult<Player> {
     pub winner: Player,
-    pub payouts: Vec<(Player, i64)>,
 }
 
 impl<Player: Clone + PartialEq> Lottery<Player> {
@@ -70,24 +69,6 @@ impl<Player: Clone + PartialEq> Lottery<Player> {
             players: Vec::new(),
             start_time: None,
         })
-    }
-
-    /// Restore a lottery from persisted data.
-    #[allow(dead_code)]
-    pub fn from_parts(
-        id: String,
-        creator: Player,
-        bet: i64,
-        players: Vec<Player>,
-        start_time: Option<String>,
-    ) -> Self {
-        Self {
-            id,
-            bet,
-            creator,
-            players,
-            start_time,
-        }
     }
 
     pub fn buy_in(&self) -> i64 {
@@ -118,30 +99,10 @@ impl<Player: Clone + PartialEq> Lottery<Player> {
         self.players.len() > 1
     }
 
-    /// The winner's payout: bet * (n - 1) because they don't pay themselves.
-    pub fn get_payout(&self) -> i64 {
-        self.bet.abs() * (self.players.len() as i64 - 1)
-    }
-
-    /// Finish the lottery: pick a random winner and compute payouts.
-    /// Winners receive `bet * (n-1)`, losers receive `-bet`.
+    /// Finish the lottery: pick a random winner.
     pub fn finish(&self) -> LotteryResult<Player> {
         let idx = random_inclusive(0, self.players.len() as i64 - 1) as usize;
         let winner = self.players[idx].clone();
-
-        let payouts = self
-            .players
-            .iter()
-            .map(|player| {
-                let amount = if player == &winner {
-                    self.get_payout()
-                } else {
-                    -self.bet
-                };
-                (player.clone(), amount)
-            })
-            .collect();
-
-        LotteryResult { winner, payouts }
+        LotteryResult { winner }
     }
 }

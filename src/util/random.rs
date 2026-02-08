@@ -23,6 +23,12 @@ pub fn seeded_weighted_random(min: i64, max: i64, seed: &str, base_seed: &str) -
     (max as f64 / (rand * max as f64 + min as f64)).round() as i64
 }
 
+/// Pick a random element from a slice using weighted seeded randomness (biased toward earlier elements).
+pub fn seeded_weighted_random_element<'a, T>(slice: &'a [T], seed: &str, base_seed: &str) -> &'a T {
+    let idx = seeded_weighted_random(1, slice.len() as i64, seed, base_seed) as usize - 1;
+    &slice[idx.min(slice.len() - 1)]
+}
+
 fn make_seeded_rng(seed: &str, base_seed: &str) -> ChaCha8Rng {
     let combined = format!("{}{}", seed, base_seed);
     let mut hasher = DefaultHasher::new();

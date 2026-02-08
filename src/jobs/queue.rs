@@ -27,6 +27,14 @@ impl fmt::Display for JobType {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum JobStatus {
+    Pending,
+    Running,
+    Failed,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Job {
@@ -36,7 +44,7 @@ pub struct Job {
     pub payload: serde_json::Value,
     #[serde(with = "firestore::serialize_as_timestamp")]
     pub execute_at: DateTime<Utc>,
-    pub status: String,
+    pub status: JobStatus,
 }
 
 /// Async handler function type for processing jobs.
@@ -67,8 +75,9 @@ impl JobQueue {
         F: Fn(serde_json::Value) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = anyhow::Result<()>> + Send + 'static,
     {
-        let wrapped: JobHandler =
-            Arc::new(move |payload| Box::pin(handler(payload)) as Pin<Box<dyn Future<Output = _> + Send>>);
+        let wrapped: JobHandler = Arc::new(move |payload| {
+            Box::pin(handler(payload)) as Pin<Box<dyn Future<Output = _> + Send>>
+        });
         self.handlers.write().await.insert(job_type, wrapped);
     }
 
@@ -89,7 +98,7 @@ impl JobQueue {
             job_type,
             payload,
             execute_at,
-            status: "pending".to_string(),
+            status: JobStatus::Pending,
         };
 
         self.db
@@ -117,6 +126,14 @@ impl JobQueue {
         Ok(jobs)
     }
 
+    /// Stop the polling loop.
+    pub fn stop(&mut self) {
+        if let Some(handle) = self.poll_handle.take() {
+            handle.abort();
+            info!("Job queue stopped");
+        }
+    }
+
     /// Start the polling loop. Processes immediately on startup for recovery,
     /// then polls at the given interval.
     pub fn start(&mut self, poll_interval_ms: u64) {
@@ -142,15 +159,6 @@ impl JobQueue {
         });
 
         self.poll_handle = Some(handle);
-    }
-
-    /// Stop the polling loop.
-    #[allow(dead_code)]
-    pub fn stop(&mut self) {
-        if let Some(handle) = self.poll_handle.take() {
-            handle.abort();
-            info!("Job queue stopped");
-        }
     }
 }
 
@@ -197,7 +205,7 @@ async fn execute_job(
 
     // Mark as running
     let running = Job {
-        status: "running".to_string(),
+        status: JobStatus::Running,
         ..job.clone()
     };
     if let Err(e) = db
@@ -232,7 +240,7 @@ async fn execute_job(
         Err(e) => {
             error!(error = %e, job_type = %job.job_type, id = job.id, "Job failed");
             let failed = Job {
-                status: "failed".to_string(),
+                status: JobStatus::Failed,
                 ..job.clone()
             };
             if let Err(e) = db
