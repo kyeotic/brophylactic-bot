@@ -24,8 +24,8 @@
 
 ## users/store.rs
 
-- [ ] Refactor `increment_user_reps` to use Firestore field-level update (`.fields(paths!(User::reputation_offset))`) instead of reconstructing the full `User` struct
-- [ ] Extract common Firestore fluent API patterns into a generic store trait or helper (`get_by_id`, `upsert`, `delete`)
+- [x] Refactor `increment_user_reps` to use Firestore field-level update (`.fields(paths!(User::reputation_offset))`) instead of reconstructing the full `User` struct
+- [x] Extract common Firestore fluent API patterns into a generic store trait or helper (`get_by_id`, `upsert`, `delete`)
 
 ## sardines/command.rs
 

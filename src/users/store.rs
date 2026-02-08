@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 use crate::discord::types::GuildMember;
+use crate::firebase::FirestoreStore;
 
 const COLLECTION: &str = "users";
 const DELIMITER: char = '.';
@@ -25,25 +26,20 @@ pub struct User {
 
 #[derive(Clone)]
 pub struct UserStore {
-    db: FirestoreDb,
+    store: FirestoreStore,
 }
 
 impl UserStore {
     pub fn new(db: FirestoreDb) -> Self {
-        Self { db }
+        Self {
+            store: FirestoreStore::new(db, COLLECTION),
+        }
     }
 
     /// Get a user document, initializing it if it doesn't exist.
     pub async fn get_user(&self, member: &GuildMember) -> anyhow::Result<User> {
         let doc_id = get_id(member);
-        let user: Option<User> = self
-            .db
-            .fluent()
-            .select()
-            .by_id_in(COLLECTION)
-            .obj()
-            .one(&doc_id)
-            .await?;
+        let user: Option<User> = self.store.get(&doc_id).await?;
 
         match user {
             Some(u) => Ok(u),
@@ -63,15 +59,7 @@ impl UserStore {
         };
 
         debug!(doc_id, "Initializing new user document");
-
-        self.db
-            .fluent()
-            .insert()
-            .into(COLLECTION)
-            .document_id(&doc_id)
-            .object(&user)
-            .execute::<()>()
-            .await?;
+        self.store.put(&doc_id, &user).await?;
 
         Ok(user)
     }
@@ -94,7 +82,8 @@ impl UserStore {
 
     /// Atomically increment reputation offsets for multiple users in a single transaction.
     pub async fn increment_user_reps(&self, updates: &[(GuildMember, i64)]) -> anyhow::Result<()> {
-        self.db
+        self.store
+            .db()
             .run_transaction(|db, tx| {
                 let updates = updates.to_vec();
                 Box::pin(async move {
@@ -112,26 +101,40 @@ impl UserStore {
                         user_states.push((doc_id, member.clone(), *offset, existing));
                     }
 
-                    // Write phase: update all users
+                    // Write phase: update only reputation_offset (and name) for existing users,
+                    // or create the full document for new users
                     for (doc_id, member, offset, existing) in &user_states {
-                        let current_offset =
-                            existing.as_ref().map(|u| u.reputation_offset).unwrap_or(0);
-                        let updated = User {
-                            id: doc_id.clone(),
-                            name: member.username.clone(),
-                            last_guess_date: existing.as_ref().and_then(|u| u.last_guess_date),
-                            last_sardines_date: existing
-                                .as_ref()
-                                .and_then(|u| u.last_sardines_date),
-                            reputation_offset: current_offset + offset,
-                        };
-
-                        db.fluent()
-                            .update()
-                            .in_col(COLLECTION)
-                            .document_id(doc_id)
-                            .object(&updated)
-                            .add_to_transaction(tx)?;
+                        match existing {
+                            Some(user) => {
+                                let updated = User {
+                                    reputation_offset: user.reputation_offset + offset,
+                                    name: member.username.clone(),
+                                    ..user.clone()
+                                };
+                                db.fluent()
+                                    .update()
+                                    .fields(paths!(User::reputation_offset, User::name))
+                                    .in_col(COLLECTION)
+                                    .document_id(doc_id)
+                                    .object(&updated)
+                                    .add_to_transaction(tx)?;
+                            }
+                            None => {
+                                let new_user = User {
+                                    id: doc_id.clone(),
+                                    name: member.username.clone(),
+                                    last_guess_date: None,
+                                    last_sardines_date: None,
+                                    reputation_offset: *offset,
+                                };
+                                db.fluent()
+                                    .update()
+                                    .in_col(COLLECTION)
+                                    .document_id(doc_id)
+                                    .object(&new_user)
+                                    .add_to_transaction(tx)?;
+                            }
+                        }
                     }
 
                     Ok(())
@@ -164,7 +167,8 @@ impl UserStore {
             name: member.username.clone(),
             ..user
         };
-        self.db
+        self.store
+            .db()
             .fluent()
             .update()
             .fields(paths!(User::last_guess_date, User::name))
@@ -198,7 +202,8 @@ impl UserStore {
             name: member.username.clone(),
             ..user
         };
-        self.db
+        self.store
+            .db()
             .fluent()
             .update()
             .fields(paths!(User::last_sardines_date, User::name))
