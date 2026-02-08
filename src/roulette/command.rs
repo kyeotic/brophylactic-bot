@@ -12,11 +12,10 @@ use tracing::{error, info};
 
 use crate::context::Context;
 use crate::discord::helpers::{bgr_label, encode_custom_id, parse_custom_id, to_guild_member};
-use crate::jobs::JobQueue;
+use crate::discord::types::InteractionType;
+use crate::jobs::{JobQueue, JobType};
 use crate::roulette::roulette::{Roulette, RouletteJobPayload, ROULETTE_TIME_MS};
 use crate::users::UserStore;
-
-pub const ID_TYPE: &str = "ROULETTE";
 const COUNTDOWN_INTERVAL_MS: u64 = 5000;
 
 /// Start a game of roulette
@@ -225,7 +224,7 @@ pub async fn recover_countdowns(
 
     let roulette_jobs: Vec<_> = jobs
         .into_iter()
-        .filter(|j| j.job_type == "roulette:finish")
+        .filter(|j| j.job_type == JobType::RouletteFinish)
         .collect();
 
     for job in roulette_jobs {
@@ -293,7 +292,7 @@ fn start_countdown(
                 remaining_secs,
                 game.players(),
             );
-            let button = CreateButton::new(encode_custom_id(ID_TYPE, game.id())).label("Join Roulette");
+            let button = CreateButton::new(encode_custom_id(InteractionType::Roulette, game.id())).label("Join Roulette");
             let row = CreateActionRow::Buttons(vec![button]);
 
             let edit = EditInteractionResponse::new()
@@ -327,7 +326,7 @@ fn roulette_message_parts(game: &Roulette) -> (String, CreateButton) {
         remaining,
         game.players(),
     );
-    let button = CreateButton::new(encode_custom_id(ID_TYPE, game.id())).label("Join Roulette");
+    let button = CreateButton::new(encode_custom_id(InteractionType::Roulette, game.id())).label("Join Roulette");
     (content, button)
 }
 

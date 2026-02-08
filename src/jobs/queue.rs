@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -12,12 +13,26 @@ use tracing::{error, info};
 
 const COLLECTION: &str = "jobs";
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum JobType {
+    #[serde(rename = "roulette:finish")]
+    RouletteFinish,
+}
+
+impl fmt::Display for JobType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::RouletteFinish => write!(f, "roulette:finish"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Job {
     pub id: String,
     #[serde(rename = "type")]
-    pub job_type: String,
+    pub job_type: JobType,
     pub payload: serde_json::Value,
     #[serde(with = "firestore::serialize_as_timestamp")]
     pub execute_at: DateTime<Utc>,
@@ -33,7 +48,7 @@ pub type JobHandler = Arc<
 
 pub struct JobQueue {
     db: FirestoreDb,
-    handlers: Arc<RwLock<HashMap<String, JobHandler>>>,
+    handlers: Arc<RwLock<HashMap<JobType, JobHandler>>>,
     poll_handle: Option<JoinHandle<()>>,
 }
 
@@ -47,32 +62,31 @@ impl JobQueue {
     }
 
     /// Register a handler for a given job type.
-    pub async fn register<F, Fut>(&self, job_type: &str, handler: F)
+    pub async fn register<F, Fut>(&self, job_type: JobType, handler: F)
     where
         F: Fn(serde_json::Value) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = anyhow::Result<()>> + Send + 'static,
     {
         let wrapped: JobHandler =
             Arc::new(move |payload| Box::pin(handler(payload)) as Pin<Box<dyn Future<Output = _> + Send>>);
-        self.handlers
-            .write()
-            .await
-            .insert(job_type.to_string(), wrapped);
+        self.handlers.write().await.insert(job_type, wrapped);
     }
 
     /// Enqueue a job to run after `delay_seconds`.
     pub async fn enqueue(
         &self,
-        job_type: &str,
+        job_type: JobType,
         payload: serde_json::Value,
         delay_seconds: u64,
     ) -> anyhow::Result<()> {
         let execute_at = Utc::now() + chrono::Duration::seconds(delay_seconds as i64);
         let id = format!("{}-{}", job_type, Utc::now().timestamp_millis());
 
+        info!(%job_type, %id, %execute_at, "Job enqueued");
+
         let job = Job {
-            id: id.clone(),
-            job_type: job_type.to_string(),
+            id,
+            job_type,
             payload,
             execute_at,
             status: "pending".to_string(),
@@ -82,12 +96,10 @@ impl JobQueue {
             .fluent()
             .insert()
             .into(COLLECTION)
-            .document_id(&id)
+            .document_id(&job.id)
             .object(&job)
             .execute::<()>()
             .await?;
-
-        info!(job_type, id, %execute_at, "Job enqueued");
         Ok(())
     }
 
@@ -145,7 +157,7 @@ impl JobQueue {
 /// Poll for due jobs and execute them.
 async fn process_due_jobs(
     db: &FirestoreDb,
-    handlers: &Arc<RwLock<HashMap<String, JobHandler>>>,
+    handlers: &Arc<RwLock<HashMap<JobType, JobHandler>>>,
 ) -> anyhow::Result<()> {
     let jobs: Vec<Job> = db
         .fluent()
@@ -170,16 +182,16 @@ async fn process_due_jobs(
 /// Execute a single job: mark running, call handler, delete on success or mark failed.
 async fn execute_job(
     db: &FirestoreDb,
-    handlers: &Arc<RwLock<HashMap<String, JobHandler>>>,
+    handlers: &Arc<RwLock<HashMap<JobType, JobHandler>>>,
     job: &Job,
-) -> () {
+) {
     let handler = {
         let map = handlers.read().await;
         map.get(&job.job_type).cloned()
     };
 
     let Some(handler) = handler else {
-        error!(job_type = job.job_type, "No handler registered for job type");
+        error!(job_type = %job.job_type, "No handler registered for job type");
         return;
     };
 
@@ -215,10 +227,10 @@ async fn execute_job(
             {
                 error!(error = %e, id = job.id, "Failed to delete completed job");
             }
-            info!(job_type = job.job_type, id = job.id, "Job completed");
+            info!(job_type = %job.job_type, id = job.id, "Job completed");
         }
         Err(e) => {
-            error!(error = %e, job_type = job.job_type, id = job.id, "Job failed");
+            error!(error = %e, job_type = %job.job_type, id = job.id, "Job failed");
             let failed = Job {
                 status: "failed".to_string(),
                 ..job.clone()

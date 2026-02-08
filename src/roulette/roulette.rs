@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::discord::helpers::bgr_label;
 use crate::discord::types::GuildMember;
 use crate::games::lottery::{Lottery, StoredPlayer};
+use crate::jobs::JobType;
 use crate::roulette::store::{RouletteStore, RouletteLottery};
 use crate::users::UserStore;
 
@@ -57,7 +58,7 @@ impl Roulette {
 
         job_queue
             .enqueue(
-                "roulette:finish",
+                JobType::RouletteFinish,
                 serde_json::to_value(&payload)?,
                 ROULETTE_TIME_SECONDS,
             )

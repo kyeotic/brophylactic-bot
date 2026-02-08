@@ -1,5 +1,6 @@
 use crate::context::Context;
 use crate::discord::helpers::{bgr_label, encode_custom_id, mention};
+use crate::discord::types::InteractionType;
 use crate::util::random::random_inclusive;
 
 use poise::serenity_prelude as serenity;
@@ -7,14 +8,12 @@ use serenity::{
     CreateActionRow, CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage,
 };
 
-const ID_TYPE: &str = "DEBUG";
-
 /// Run debug commands
 #[poise::command(slash_command, guild_only)]
 pub async fn debug(ctx: Context<'_>) -> Result<(), anyhow::Error> {
     let id = nanoid::nanoid!();
     let content = format!("This is a content debug: {}", bgr_label(200, true));
-    let button = CreateButton::new(encode_custom_id(ID_TYPE, &id)).label("Debug");
+    let button = CreateButton::new(encode_custom_id(InteractionType::Debug, &id)).label("Debug");
     let row = CreateActionRow::Buttons(vec![button]);
 
     ctx.send(
@@ -42,7 +41,7 @@ pub async fn handle_debug_button(
         mention(user_id)
     );
 
-    let button = CreateButton::new(encode_custom_id(ID_TYPE, custom_id)).label("Debug");
+    let button = CreateButton::new(encode_custom_id(InteractionType::Debug, custom_id)).label("Debug");
     let row = CreateActionRow::Buttons(vec![button]);
 
     interaction

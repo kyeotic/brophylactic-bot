@@ -5,6 +5,7 @@ pub struct Config {
     #[allow(dead_code)] // used by HTTP gateway (http is not implemented yet)
     pub port: u16,
     pub stage: String,
+    pub job_queue_poll_interval_ms: u64,
     pub discord: DiscordConfig,
     pub firebase: FirebaseConfig,
 }
@@ -36,6 +37,7 @@ impl Config {
         Ok(Config {
             port: 8006,
             stage,
+            job_queue_poll_interval_ms: 5000,
             discord: DiscordConfig {
                 timezone: "America/Los_Angeles".to_string(),
                 bot_token,

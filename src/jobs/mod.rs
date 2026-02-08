@@ -1,3 +1,3 @@
 pub mod queue;
 
-pub use queue::JobQueue;
+pub use queue::{JobQueue, JobType};

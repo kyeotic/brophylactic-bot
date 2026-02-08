@@ -1,4 +1,38 @@
+use std::fmt;
+use std::str::FromStr;
+
 use chrono::{DateTime, Utc};
+
+/// Types of button interactions dispatched via component custom IDs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InteractionType {
+    Debug,
+    Roulette,
+    Sardines,
+}
+
+impl fmt::Display for InteractionType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Debug => write!(f, "DEBUG"),
+            Self::Roulette => write!(f, "ROULETTE"),
+            Self::Sardines => write!(f, "SARDINES"),
+        }
+    }
+}
+
+impl FromStr for InteractionType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "DEBUG" => Ok(Self::Debug),
+            "ROULETTE" => Ok(Self::Roulette),
+            "SARDINES" => Ok(Self::Sardines),
+            other => Err(anyhow::anyhow!("Unknown interaction type: {other}")),
+        }
+    }
+}
 
 /// Simplified guild member info extracted from Discord interactions.
 #[derive(Debug, Clone)]

@@ -5,10 +5,9 @@ use serenity::{
 
 use crate::context::Context;
 use crate::discord::helpers::{bgr_label, encode_custom_id, parse_custom_id, to_guild_member};
+use crate::discord::types::InteractionType;
 use crate::sardines::sardines::{join_failure_chance, Sardines};
 use crate::util::dates::is_today;
-
-pub const ID_TYPE: &str = "SARDINES";
 
 /// Start a game of sardines
 #[poise::command(slash_command, guild_only)]
@@ -192,7 +191,7 @@ fn sardines_message_parts(game: &Sardines) -> (String, CreateButton) {
         game.bet(),
         game.players(),
     );
-    let button = CreateButton::new(encode_custom_id(ID_TYPE, game.id())).label("Join Sardines");
+    let button = CreateButton::new(encode_custom_id(InteractionType::Sardines, game.id())).label("Join Sardines");
     (content, button)
 }
 

@@ -4,7 +4,7 @@ use serenity::all::{
     GuildId, Timestamp, User,
 };
 
-use crate::discord::types::GuildMember;
+use crate::discord::types::{GuildMember, InteractionType};
 
 /// Build a simple text response message.
 #[allow(dead_code)]
@@ -48,8 +48,8 @@ pub fn mention(user_id: impl std::fmt::Display) -> String {
 }
 
 /// Encode a type and id into a custom_id for message components.
-pub fn encode_custom_id(id_type: &str, id: &str) -> String {
-    format!("{}:{}", id_type, id)
+pub fn encode_custom_id(id_type: InteractionType, id: &str) -> String {
+    format!("{id_type}:{id}")
 }
 
 /// Parse an encoded custom_id into (type, id).
