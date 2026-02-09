@@ -52,7 +52,6 @@ impl UserStore {
             last_guess_date: None,
             last_sardines_date: None,
             reputation_offset: 0,
-            ..Default::default()
         };
 
         debug!(doc_id, "Initializing new user document");
@@ -122,7 +121,6 @@ impl UserStore {
                                     last_guess_date: None,
                                     last_sardines_date: None,
                                     reputation_offset: *offset,
-                                    ..Default::default()
                                 };
                                 db.fluent()
                                     .update()

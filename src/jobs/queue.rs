@@ -11,6 +11,8 @@ use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 use tracing::{error, info};
 
+use crate::context::AppContext;
+
 const COLLECTION: &str = "jobs";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -71,22 +73,13 @@ impl JobQueue {
         }
     }
 
-    /// Register a handler for a given job type. The payload is automatically
-    /// deserialized from JSON into `T` before the handler is called.
-    pub async fn register<T, F, Fut>(&self, job_type: JobType, handler: F)
-    where
-        T: for<'de> Deserialize<'de> + Send + 'static,
-        F: Fn(T) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = anyhow::Result<()>> + Send + 'static,
-    {
-        let wrapped: JobHandler = Arc::new(move |payload: serde_json::Value| {
-            let parsed: T = match serde_json::from_value(payload) {
-                Ok(v) => v,
-                Err(e) => return Box::pin(async move { Err(e.into()) }),
-            };
-            Box::pin(handler(parsed)) as Pin<Box<dyn Future<Output = _> + Send>>
-        });
-        self.handlers.write().await.insert(job_type, wrapped);
+    /// Create a fluent registrar for batch-registering job handlers.
+    pub fn registrar(&self, ctx: AppContext) -> JobRegistrar<'_> {
+        JobRegistrar {
+            ctx,
+            handlers: Vec::new(),
+            queue: self,
+        }
     }
 
     /// Enqueue a job to run after `delay_seconds`. The payload is automatically
@@ -260,6 +253,39 @@ async fn execute_job(
             {
                 error!(error = %e, id = job.id, "Failed to delete failed job");
             }
+        }
+    }
+}
+
+pub struct JobRegistrar<'a> {
+    ctx: AppContext,
+    handlers: Vec<(JobType, JobHandler)>,
+    queue: &'a JobQueue,
+}
+
+impl<'a> JobRegistrar<'a> {
+    pub fn handler<T, F, Fut>(mut self, job_type: JobType, handler: F) -> Self
+    where
+        T: for<'de> Deserialize<'de> + Send + 'static,
+        F: Fn(AppContext, T) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = anyhow::Result<()>> + Send + 'static,
+    {
+        let ctx = self.ctx.clone();
+        let wrapped: JobHandler = Arc::new(move |payload: serde_json::Value| {
+            let parsed: T = match serde_json::from_value(payload) {
+                Ok(v) => v,
+                Err(e) => return Box::pin(async move { Err(e.into()) }),
+            };
+            Box::pin(handler(ctx.clone(), parsed)) as Pin<Box<dyn Future<Output = _> + Send>>
+        });
+        self.handlers.push((job_type, wrapped));
+        self
+    }
+
+    pub async fn apply(self) {
+        let mut map = self.queue.handlers.write().await;
+        for (job_type, handler) in self.handlers {
+            map.insert(job_type, handler);
         }
     }
 }

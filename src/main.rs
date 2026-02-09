@@ -117,23 +117,12 @@ async fn build_app_context(
     // Register job handlers and start polling
     {
         let mut queue = app_context.job_queue.write().await;
-
-        let ctx = app_context.clone();
         queue
-            .register(JobType::RouletteFinish, move |payload| {
-                let ctx = ctx.clone();
-                async move { roulette::command::finish_roulette(&ctx, payload).await }
-            })
+            .registrar(app_context.clone())
+            .handler(JobType::RouletteFinish, roulette::command::finish_roulette)
+            .handler(JobType::SardinesFinish, sardines::command::finish_sardines)
+            .apply()
             .await;
-
-        let ctx = app_context.clone();
-        queue
-            .register(JobType::SardinesFinish, move |payload| {
-                let ctx = ctx.clone();
-                async move { sardines::command::finish_sardines(&ctx, payload).await }
-            })
-            .await;
-
         queue.start(app_context.config.job_queue_poll_interval_ms);
     }
 

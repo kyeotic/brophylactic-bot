@@ -245,14 +245,14 @@ async fn respond_ephemeral(
 
 /// Job handler for sardines:finish (timeout)
 pub async fn finish_sardines(
-    ctx: &crate::context::AppContext,
+    ctx: crate::context::AppContext,
     payload: SardinesJobPayload,
 ) -> anyhow::Result<()> {
     // Acquire per-game write lock to prevent joins during finish
     let game_lock = get_game_lock(&ctx.game_locks, &payload.id);
     let guard = game_lock.write().await;
 
-    let result = do_finish_sardines(ctx, &payload).await;
+    let result = do_finish_sardines(&ctx, &payload).await;
 
     drop(guard);
     remove_game_lock(&ctx.game_locks, &payload.id);
