@@ -71,23 +71,30 @@ impl JobQueue {
         }
     }
 
-    /// Register a handler for a given job type.
-    pub async fn register<F, Fut>(&self, job_type: JobType, handler: F)
+    /// Register a handler for a given job type. The payload is automatically
+    /// deserialized from JSON into `T` before the handler is called.
+    pub async fn register<T, F, Fut>(&self, job_type: JobType, handler: F)
     where
-        F: Fn(serde_json::Value) -> Fut + Send + Sync + 'static,
+        T: for<'de> Deserialize<'de> + Send + 'static,
+        F: Fn(T) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = anyhow::Result<()>> + Send + 'static,
     {
-        let wrapped: JobHandler = Arc::new(move |payload| {
-            Box::pin(handler(payload)) as Pin<Box<dyn Future<Output = _> + Send>>
+        let wrapped: JobHandler = Arc::new(move |payload: serde_json::Value| {
+            let parsed: T = match serde_json::from_value(payload) {
+                Ok(v) => v,
+                Err(e) => return Box::pin(async move { Err(e.into()) }),
+            };
+            Box::pin(handler(parsed)) as Pin<Box<dyn Future<Output = _> + Send>>
         });
         self.handlers.write().await.insert(job_type, wrapped);
     }
 
-    /// Enqueue a job to run after `delay_seconds`.
-    pub async fn enqueue(
+    /// Enqueue a job to run after `delay_seconds`. The payload is automatically
+    /// serialized to JSON.
+    pub async fn enqueue<T: Serialize>(
         &self,
         job_type: JobType,
-        payload: serde_json::Value,
+        payload: &T,
         delay_seconds: u64,
     ) -> anyhow::Result<()> {
         let execute_at = Utc::now() + chrono::Duration::seconds(delay_seconds as i64);
@@ -98,7 +105,7 @@ impl JobQueue {
         let job = Job {
             id,
             job_type,
-            payload,
+            payload: serde_json::to_value(payload)?,
             execute_at,
             status: JobStatus::Pending,
         };

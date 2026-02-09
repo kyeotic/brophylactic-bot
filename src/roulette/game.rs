@@ -57,11 +57,7 @@ impl Roulette {
         };
 
         job_queue
-            .enqueue(
-                JobType::RouletteFinish,
-                serde_json::to_value(&payload)?,
-                ROULETTE_TIME_SECONDS,
-            )
+            .enqueue(JobType::RouletteFinish, &payload, ROULETTE_TIME_SECONDS)
             .await?;
 
         Ok(start_time)

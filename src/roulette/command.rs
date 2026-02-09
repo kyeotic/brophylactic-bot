@@ -210,14 +210,12 @@ async fn respond_ephemeral(
 
 /// Job handler for roulette:finish
 pub async fn finish_roulette(
-    payload: serde_json::Value,
+    payload: RouletteJobPayload,
     http: &serenity::Http,
     db: &FirestoreDb,
     user_store: &UserStore,
     game_locks: &GameLocks,
 ) -> anyhow::Result<()> {
-    let payload: RouletteJobPayload = serde_json::from_value(payload)?;
-
     // Acquire per-game write lock to prevent joins during finish
     let game_lock = get_game_lock(game_locks, &payload.id);
     let guard = game_lock.write().await;

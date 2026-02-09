@@ -126,11 +126,7 @@ impl Sardines {
             message_id,
         };
         job_queue
-            .enqueue(
-                JobType::SardinesFinish,
-                serde_json::to_value(&payload)?,
-                expiry_seconds,
-            )
+            .enqueue(JobType::SardinesFinish, &payload, expiry_seconds)
             .await
     }
 

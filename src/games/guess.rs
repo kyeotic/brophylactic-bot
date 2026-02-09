@@ -23,22 +23,17 @@ const RULES: &[Rule] = &[
         predicate: |answer, guess| answer == guess,
         reward: MAGIC_NUMBER_REWARD,
         message: |answer, _guess| {
-            format!(
-                "# Winner \u{1f680}\n\n**{}** is the right number! You won {}",
-                answer,
-                rep_label(MAGIC_NUMBER_REWARD, false)
-            )
+            let reward = rep_label(MAGIC_NUMBER_REWARD, false);
+            format!("# Winner 🚀\n\n**{answer}** is the right number! You won {reward}",)
         },
     },
     Rule {
         predicate: |answer, guess| is_magic_pair(answer, guess),
         reward: PAIRWISE_REWARD,
         message: |answer, guess| {
+            let reward = rep_label(PAIRWISE_REWARD, false);
             format!(
-                "## Magic Number Match \u{1fa84}\n\nYour guess of **{}** magically pairs with the correct answer **{}**. You won {}",
-                guess,
-                answer,
-                rep_label(PAIRWISE_REWARD, false)
+                "## Magic Number Match 🪄\n\nYour guess of **{guess}** magically pairs with the correct answer **{answer}**. You won {reward}"
             )
         },
     },
@@ -46,12 +41,9 @@ const RULES: &[Rule] = &[
         predicate: |answer, guess| is_within(guess, answer, MAGIC_NUMBER_RANGE),
         reward: RANGE_REWARD,
         message: |answer, guess| {
+            let reward = rep_label(RANGE_REWARD, false);
             format!(
-                "### Near Correct \n\nYour guess of **{}** is within {} of the correct answer **{}**. You won {}",
-                guess,
-                MAGIC_NUMBER_RANGE,
-                answer,
-                rep_label(RANGE_REWARD, false)
+                "### Near Correct \n\nYour guess of **{guess}** is within {MAGIC_NUMBER_RANGE} of the correct answer **{answer}**. You won {reward}"
             )
         },
     },
@@ -59,11 +51,9 @@ const RULES: &[Rule] = &[
         predicate: |answer, guess| last_digit(answer) == last_digit(guess),
         reward: LAST_DIGIT_REWARD,
         message: |answer, guess| {
+            let reward = rep_label(LAST_DIGIT_REWARD, false);
             format!(
-                "### Last Digit\n\nYour guess of **{}** matches the last digit of the correct answer **{}**. You won {}",
-                guess,
-                answer,
-                rep_label(LAST_DIGIT_REWARD, false)
+                "### Last Digit\n\nYour guess of **{guess}** matches the last digit of the correct answer **{answer}**. You won {reward}"
             )
         },
     },
