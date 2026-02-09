@@ -1,24 +1,19 @@
 use std::collections::HashSet;
-use std::sync::Arc;
 
-use firestore::FirestoreDb;
 use poise::serenity_prelude as serenity;
 use serenity::{
     CreateActionRow, CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage,
     EditMessage,
 };
-use tokio::sync::RwLock;
 use tracing::{error, info};
 
-use crate::config::Config;
-use crate::context::{Context, GameLocks, get_game_lock, remove_game_lock};
+use crate::context::{Context, get_game_lock, remove_game_lock};
 use crate::discord::helpers::{encode_custom_id, parse_custom_id, rep_label};
 use crate::discord::types::{GuildMember, InteractionType};
-use crate::jobs::{JobQueue, JobType};
+use crate::jobs::JobType;
 use crate::sardines::game::join_failure_chance;
 use crate::sardines::game::{Sardines, SardinesJobPayload};
 use crate::sardines::store::SardinesStore;
-use crate::users::UserStore;
 use crate::util::dates::is_today;
 
 /// Start a game of sardines
@@ -250,33 +245,33 @@ async fn respond_ephemeral(
 
 /// Job handler for sardines:finish (timeout)
 pub async fn finish_sardines(
+    ctx: &crate::context::AppContext,
     payload: SardinesJobPayload,
-    http: &serenity::Http,
-    db: &FirestoreDb,
-    config: &Config,
-    user_store: &UserStore,
-    game_locks: &GameLocks,
 ) -> anyhow::Result<()> {
     // Acquire per-game write lock to prevent joins during finish
-    let game_lock = get_game_lock(game_locks, &payload.id);
+    let game_lock = get_game_lock(&ctx.game_locks, &payload.id);
     let guard = game_lock.write().await;
 
-    let result = do_finish_sardines(&payload, http, db, config, user_store).await;
+    let result = do_finish_sardines(ctx, &payload).await;
 
     drop(guard);
-    remove_game_lock(game_locks, &payload.id);
+    remove_game_lock(&ctx.game_locks, &payload.id);
 
     result
 }
 
 async fn do_finish_sardines(
+    ctx: &crate::context::AppContext,
     payload: &SardinesJobPayload,
-    http: &serenity::Http,
-    db: &FirestoreDb,
-    config: &Config,
-    user_store: &UserStore,
 ) -> anyhow::Result<()> {
-    let game = match Sardines::load(db.clone(), config, user_store.clone(), &payload.id).await {
+    let game = match Sardines::load(
+        ctx.db.clone(),
+        &ctx.config,
+        ctx.user_store.clone(),
+        &payload.id,
+    )
+    .await
+    {
         Ok(g) => g,
         Err(_) => {
             // Game was already finished by a player joining — expected case
@@ -302,7 +297,7 @@ async fn do_finish_sardines(
 
     let edit = EditMessage::new().content(final_message).components(vec![]);
 
-    if let Err(e) = channel_id.edit_message(http, message_id, edit).await {
+    if let Err(e) = channel_id.edit_message(&*ctx.http, message_id, edit).await {
         error!(error = %e, "Failed to update sardines timeout message");
     }
 
@@ -312,13 +307,8 @@ async fn do_finish_sardines(
 /// Recover orphaned sardines games on startup.
 /// Games with pending jobs are handled by the job queue's startup poll.
 /// Games without jobs (orphaned) are finished immediately.
-pub async fn recover_sardines(
-    db: &FirestoreDb,
-    config: &Config,
-    user_store: &UserStore,
-    job_queue: &Arc<RwLock<JobQueue>>,
-) {
-    let store = SardinesStore::new(db.clone());
+pub async fn recover_sardines(ctx: &crate::context::AppContext) {
+    let store = SardinesStore::new(ctx.db.clone());
     let all_games = match store.list_all().await {
         Ok(games) => games,
         Err(e) => {
@@ -338,7 +328,7 @@ pub async fn recover_sardines(
 
     // Collect IDs of games that have pending sardines:finish jobs
     let pending_jobs = {
-        let queue = job_queue.read().await;
+        let queue = ctx.job_queue.read().await;
         match queue.get_pending_jobs().await {
             Ok(jobs) => jobs,
             Err(e) => {
@@ -368,7 +358,8 @@ pub async fn recover_sardines(
             id = game.id,
             "Finishing orphaned sardines game (no pending job)"
         );
-        let sardines = Sardines::from_lottery(db.clone(), config, user_store.clone(), game);
+        let sardines =
+            Sardines::from_lottery(ctx.db.clone(), &ctx.config, ctx.user_store.clone(), game);
         if let Err(e) = sardines.finish(None).await {
             error!(error = %e, "Failed to finish orphaned sardines game");
         }

@@ -7,15 +7,13 @@ use serenity::{
     CreateActionRow, CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage,
     EditInteractionResponse,
 };
-use tokio::sync::RwLock;
 use tracing::{error, info};
 
-use crate::context::{Context, GameLocks, get_game_lock, remove_game_lock};
+use crate::context::{Context, get_game_lock, remove_game_lock};
 use crate::discord::helpers::{encode_custom_id, parse_custom_id, rep_label};
 use crate::discord::types::{GuildMember, InteractionType};
-use crate::jobs::{JobQueue, JobType};
+use crate::jobs::JobType;
 use crate::roulette::game::{ROULETTE_TIME_MS, Roulette, RouletteJobPayload};
-use crate::users::UserStore;
 const COUNTDOWN_INTERVAL_MS: u64 = 5000;
 
 /// Start a game of roulette
@@ -210,31 +208,26 @@ async fn respond_ephemeral(
 
 /// Job handler for roulette:finish
 pub async fn finish_roulette(
+    ctx: &crate::context::AppContext,
     payload: RouletteJobPayload,
-    http: &serenity::Http,
-    db: &FirestoreDb,
-    user_store: &UserStore,
-    game_locks: &GameLocks,
 ) -> anyhow::Result<()> {
     // Acquire per-game write lock to prevent joins during finish
-    let game_lock = get_game_lock(game_locks, &payload.id);
+    let game_lock = get_game_lock(&ctx.game_locks, &payload.id);
     let guard = game_lock.write().await;
 
-    let result = do_finish_roulette(&payload, http, db, user_store).await;
+    let result = do_finish_roulette(ctx, &payload).await;
 
     drop(guard);
-    remove_game_lock(game_locks, &payload.id);
+    remove_game_lock(&ctx.game_locks, &payload.id);
 
     result
 }
 
 async fn do_finish_roulette(
+    ctx: &crate::context::AppContext,
     payload: &RouletteJobPayload,
-    http: &serenity::Http,
-    db: &FirestoreDb,
-    user_store: &UserStore,
 ) -> anyhow::Result<()> {
-    let game = match Roulette::load(db.clone(), &payload.id).await {
+    let game = match Roulette::load(ctx.db.clone(), &payload.id).await {
         Ok(g) => g,
         Err(e) => {
             error!(error = %e, id = payload.id, "Failed to load roulette game for finish");
@@ -249,7 +242,7 @@ async fn do_finish_roulette(
         "Finishing roulette game"
     );
 
-    let final_message = match game.finish(user_store).await {
+    let final_message = match game.finish(&ctx.user_store).await {
         Ok(msg) => msg,
         Err(e) => {
             error!(error = %e, id = payload.id, "Roulette finish failed, cleaning up game");
@@ -268,7 +261,8 @@ async fn do_finish_roulette(
         .content(final_message)
         .components(vec![]);
 
-    if let Err(e) = http
+    if let Err(e) = ctx
+        .http
         .edit_original_interaction_response(&payload.interaction_token, &edit, vec![])
         .await
     {
@@ -279,13 +273,9 @@ async fn do_finish_roulette(
 }
 
 /// Recover pending roulette countdowns on startup.
-pub async fn recover_countdowns(
-    db: &FirestoreDb,
-    http: &Arc<serenity::Http>,
-    job_queue: &Arc<RwLock<JobQueue>>,
-) {
+pub async fn recover_countdowns(ctx: &crate::context::AppContext) {
     let jobs = {
-        let queue = job_queue.read().await;
+        let queue = ctx.job_queue.read().await;
         match queue.get_pending_jobs().await {
             Ok(jobs) => jobs,
             Err(e) => {
@@ -309,7 +299,7 @@ pub async fn recover_countdowns(
             }
         };
 
-        match Roulette::load(db.clone(), &payload.id).await {
+        match Roulette::load(ctx.db.clone(), &payload.id).await {
             Ok(game) => {
                 if let Some(start_time) = game.start_time() {
                     info!(id = payload.id, "Recovering countdown for roulette");
@@ -317,8 +307,8 @@ pub async fn recover_countdowns(
                         game.id().to_string(),
                         start_time.clone(),
                         payload.interaction_token,
-                        http.clone(),
-                        db.clone(),
+                        ctx.http.clone(),
+                        ctx.db.clone(),
                     );
                 }
             }

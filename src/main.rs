@@ -10,12 +10,11 @@ mod sardines;
 mod users;
 mod util;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
-use std::collections::HashMap;
-
 use config::Config;
-use context::{AppContext, GameLocks};
+use context::AppContext;
 use firestore::FirestoreDb;
 use jobs::{JobQueue, JobType};
 use users::UserStore;
@@ -105,86 +104,46 @@ async fn build_app_context(
     poise::builtins::register_in_guild(ctx, &framework.options().commands, guild_id).await?;
     info!("Commands registered");
 
-    let http = ctx.http.clone();
     let user_store = UserStore::new(db.clone());
-    let game_locks: GameLocks = Arc::new(std::sync::Mutex::new(HashMap::new()));
+    let app_context = AppContext {
+        config,
+        db,
+        http: ctx.http.clone(),
+        user_store,
+        job_queue,
+        game_locks: Arc::new(std::sync::Mutex::new(HashMap::new())),
+    };
 
     // Register job handlers and start polling
     {
-        let mut queue = job_queue.write().await;
+        let mut queue = app_context.job_queue.write().await;
 
-        // roulette:finish handler
-        {
-            let finish_http = http.clone();
-            let finish_db = db.clone();
-            let finish_user_store = UserStore::new(db.clone());
-            let finish_game_locks = game_locks.clone();
-            queue
-                .register(JobType::RouletteFinish, move |payload| {
-                    let http = finish_http.clone();
-                    let db = finish_db.clone();
-                    let user_store = finish_user_store.clone();
-                    let game_locks = finish_game_locks.clone();
-                    async move {
-                        roulette::command::finish_roulette(
-                            payload,
-                            &http,
-                            &db,
-                            &user_store,
-                            &game_locks,
-                        )
-                        .await
-                    }
-                })
-                .await;
-        }
+        let ctx = app_context.clone();
+        queue
+            .register(JobType::RouletteFinish, move |payload| {
+                let ctx = ctx.clone();
+                async move { roulette::command::finish_roulette(&ctx, payload).await }
+            })
+            .await;
 
-        // sardines:finish handler
-        {
-            let finish_http = http.clone();
-            let finish_db = db.clone();
-            let finish_config = config.clone();
-            let finish_user_store = UserStore::new(db.clone());
-            let finish_game_locks = game_locks.clone();
-            queue
-                .register(JobType::SardinesFinish, move |payload| {
-                    let http = finish_http.clone();
-                    let db = finish_db.clone();
-                    let config = finish_config.clone();
-                    let user_store = finish_user_store.clone();
-                    let game_locks = finish_game_locks.clone();
-                    async move {
-                        sardines::command::finish_sardines(
-                            payload,
-                            &http,
-                            &db,
-                            &config,
-                            &user_store,
-                            &game_locks,
-                        )
-                        .await
-                    }
-                })
-                .await;
-        }
+        let ctx = app_context.clone();
+        queue
+            .register(JobType::SardinesFinish, move |payload| {
+                let ctx = ctx.clone();
+                async move { sardines::command::finish_sardines(&ctx, payload).await }
+            })
+            .await;
 
-        queue.start(config.job_queue_poll_interval_ms);
+        queue.start(app_context.config.job_queue_poll_interval_ms);
     }
 
     // Recover any pending roulette countdowns
-    roulette::command::recover_countdowns(&db, &http, &job_queue).await;
+    roulette::command::recover_countdowns(&app_context).await;
 
     // Recover orphaned sardines games
-    sardines::command::recover_sardines(&db, &config, &user_store, &job_queue).await;
+    sardines::command::recover_sardines(&app_context).await;
 
-    Ok(AppContext {
-        config,
-        db,
-        http,
-        user_store,
-        job_queue,
-        game_locks,
-    })
+    Ok(app_context)
 }
 
 async fn event_handler(

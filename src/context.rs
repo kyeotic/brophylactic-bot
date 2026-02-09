@@ -14,6 +14,7 @@ use firestore::FirestoreDb;
 pub type GameLocks = Arc<Mutex<HashMap<String, Arc<RwLock<()>>>>>;
 
 /// Shared application state passed to all command handlers via poise's Data.
+#[derive(Clone)]
 pub struct AppContext {
     pub config: Config,
     pub db: FirestoreDb,
