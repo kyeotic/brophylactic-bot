@@ -1,10 +1,10 @@
 use crate::firebase::FirestoreStore;
-use crate::games::lottery::{Lottery, PersistedPlayer};
+use crate::games::lottery::{DbPlayer, Lottery};
 use firestore::*;
 
-const COLLECTION: &str = "lotteries";
+const COLLECTION: &str = "roulettes";
 
-pub type RouletteLottery = Lottery<PersistedPlayer>;
+pub type RouletteLottery = Lottery<DbPlayer>;
 
 pub struct RouletteStore {
     store: FirestoreStore,
@@ -29,14 +29,17 @@ impl RouletteStore {
         self.store.delete(id).await
     }
 
-    pub async fn set_players(&self, id: &str, players: &[PersistedPlayer]) -> anyhow::Result<()> {
+    /// Atomically add a player to the lottery inside a Firestore transaction.
+    /// Returns the updated player list. Skips the add if the player already exists.
+    pub async fn add_player(&self, id: &str, player: &DbPlayer) -> anyhow::Result<Vec<DbPlayer>> {
         let id = id.to_string();
-        let players = players.to_vec();
-        self.store
+        let player = player.clone();
+        let result: Option<Vec<DbPlayer>> = self
+            .store
             .db()
             .run_transaction(|db, tx| {
                 let id = id.clone();
-                let players = players.clone();
+                let player = player.clone();
                 Box::pin(async move {
                     let lottery: Option<RouletteLottery> = db
                         .fluent()
@@ -47,18 +50,23 @@ impl RouletteStore {
                         .await?;
 
                     if let Some(mut lottery) = lottery {
-                        lottery.players = players;
+                        if !lottery.players.iter().any(|p| p.id == player.id) {
+                            lottery.players.push(player);
+                        }
+                        let players = lottery.players.clone();
                         db.fluent()
                             .update()
                             .in_col(COLLECTION)
                             .document_id(&id)
                             .object(&lottery)
                             .add_to_transaction(tx)?;
+                        Ok(Some(players))
+                    } else {
+                        Ok(None)
                     }
-                    Ok(())
                 })
             })
             .await?;
-        Ok(())
+        result.ok_or_else(|| anyhow::anyhow!("Roulette lottery not found"))
     }
 }

@@ -25,7 +25,7 @@ just deploy        # Build Docker image and push + stack-sync
 
 **Application context:** `src/context.rs` defines `AppContext` (holds Config, FirestoreDb, Http, UserStore, JobQueue) and the poise `Context<'a>` type alias. All command handlers receive this context.
 
-**Command registration:** `src/commands/mod.rs` collects all commands via `all()`. Commands: debug, roll, bgr (reputation), guess, roulette, sardines.
+**Command registration:** `src/commands/mod.rs` collects all commands via `all()`. Commands: debug, roll, rep (reputation), guess, roulette, sardines.
 
 **Game pattern:** Both Sardines and Roulette follow the same module structure: `command.rs` (poise command handler + button interaction handler), `store.rs` (Firestore persistence), and a main logic file (`sardines.rs`/`roulette.rs`). Roulette uses the job queue for delayed completion.
 

@@ -8,7 +8,7 @@ use crate::util::random::random_inclusive;
 /// Uses String for joined_at (not DateTime) to match existing Firestore data format.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PersistedPlayer {
+pub struct DbPlayer {
     pub id: String,
     pub guild_id: String,
     pub username: String,
@@ -16,9 +16,9 @@ pub struct PersistedPlayer {
     pub joined_at: Option<String>,
 }
 
-impl From<&GuildMember> for PersistedPlayer {
+impl From<&GuildMember> for DbPlayer {
     fn from(m: &GuildMember) -> Self {
-        PersistedPlayer {
+        DbPlayer {
             id: m.id.clone(),
             guild_id: m.guild_id.clone(),
             username: m.username.clone(),
@@ -27,8 +27,8 @@ impl From<&GuildMember> for PersistedPlayer {
     }
 }
 
-impl From<&PersistedPlayer> for GuildMember {
-    fn from(p: &PersistedPlayer) -> Self {
+impl From<&DbPlayer> for GuildMember {
+    fn from(p: &DbPlayer) -> Self {
         GuildMember {
             id: p.id.clone(),
             guild_id: p.guild_id.clone(),

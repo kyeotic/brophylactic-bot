@@ -55,4 +55,16 @@ impl FirestoreStore {
             .await?;
         Ok(())
     }
+
+    pub async fn list_all<T: DeserializeOwned + Send>(&self) -> anyhow::Result<Vec<T>> {
+        let results: Vec<T> = self
+            .db
+            .fluent()
+            .select()
+            .from(self.collection)
+            .obj()
+            .query()
+            .await?;
+        Ok(results)
+    }
 }

@@ -10,8 +10,8 @@ use serenity::{
 use tokio::sync::RwLock;
 use tracing::{error, info};
 
-use crate::context::Context;
-use crate::discord::helpers::{bgr_label, encode_custom_id, parse_custom_id};
+use crate::context::{Context, GameLocks, get_game_lock, remove_game_lock};
+use crate::discord::helpers::{encode_custom_id, parse_custom_id, rep_label};
 use crate::discord::types::{GuildMember, InteractionType};
 use crate::jobs::{JobQueue, JobType};
 use crate::roulette::game::{ROULETTE_TIME_MS, Roulette, RouletteJobPayload};
@@ -32,7 +32,9 @@ pub async fn roulette(
         .author_member()
         .await
         .ok_or_else(|| anyhow::anyhow!("Could not get member info"))?;
-    let guild_member = GuildMember::from_serenity(guild_id, author, member.joined_at);
+    info!("Starting roulette game {}", member);
+    let guild_member =
+        GuildMember::from_serenity(guild_id, author, member.joined_at, member.nick.as_deref());
 
     let data = ctx.data();
     let member_rep = data.user_store.get_user_rep(&guild_member).await?;
@@ -52,7 +54,7 @@ pub async fn roulette(
 
     if member_rep < roulette.buy_in() {
         let username = &guild_member.username;
-        let buy_in_label = bgr_label(roulette.buy_in(), false);
+        let buy_in_label = rep_label(roulette.buy_in(), false);
         ctx.send(
             poise::CreateReply::default()
                 .content(format!(
@@ -117,8 +119,16 @@ pub async fn handle_roulette_join(
         .member
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("No member data"))?;
-    let guild_member =
-        GuildMember::from_serenity(guild_id, &interaction.user, member_info.joined_at);
+    let guild_member = GuildMember::from_serenity(
+        guild_id,
+        &interaction.user,
+        member_info.joined_at,
+        member_info.nick.as_deref(),
+    );
+
+    // Acquire per-game write lock to serialize join operations
+    let game_lock = get_game_lock(&data.game_locks, game_id);
+    let _guard = game_lock.write().await;
 
     let mut game = match Roulette::load(data.db.clone(), game_id).await {
         Ok(r) => r,
@@ -204,11 +214,56 @@ pub async fn finish_roulette(
     http: &serenity::Http,
     db: &FirestoreDb,
     user_store: &UserStore,
+    game_locks: &GameLocks,
 ) -> anyhow::Result<()> {
     let payload: RouletteJobPayload = serde_json::from_value(payload)?;
 
-    let game = Roulette::load(db.clone(), &payload.id).await?;
-    let final_message = game.finish(user_store).await?;
+    // Acquire per-game write lock to prevent joins during finish
+    let game_lock = get_game_lock(game_locks, &payload.id);
+    let guard = game_lock.write().await;
+
+    let result = do_finish_roulette(&payload, http, db, user_store).await;
+
+    drop(guard);
+    remove_game_lock(game_locks, &payload.id);
+
+    result
+}
+
+async fn do_finish_roulette(
+    payload: &RouletteJobPayload,
+    http: &serenity::Http,
+    db: &FirestoreDb,
+    user_store: &UserStore,
+) -> anyhow::Result<()> {
+    let game = match Roulette::load(db.clone(), &payload.id).await {
+        Ok(g) => g,
+        Err(e) => {
+            error!(error = %e, id = payload.id, "Failed to load roulette game for finish");
+            // Game document may not exist or is corrupted — nothing to clean up
+            return Err(e);
+        }
+    };
+
+    info!(
+        id = payload.id,
+        players = game.players().len(),
+        "Finishing roulette game"
+    );
+
+    let final_message = match game.finish(user_store).await {
+        Ok(msg) => msg,
+        Err(e) => {
+            error!(error = %e, id = payload.id, "Roulette finish failed, cleaning up game");
+            // finish() failed partway — ensure the game document is removed
+            if let Err(del_err) = game.force_cleanup().await {
+                error!(error = %del_err, id = payload.id, "Failed to clean up roulette game after error");
+            }
+            return Err(e);
+        }
+    };
+
+    info!(id = payload.id, "Roulette game finished, updating message");
 
     // Update Discord message with final result (no button)
     let edit = EditInteractionResponse::new()
@@ -291,17 +346,6 @@ fn start_countdown(
     };
 
     tokio::spawn(async move {
-        // Load game state once for countdown display. The join handler
-        // updates the message with fresh player data on each join, so
-        // a slightly stale player list between ticks is acceptable.
-        let game = match Roulette::load(db, &game_id).await {
-            Ok(g) => g,
-            Err(_) => return,
-        };
-        let creator_name = game.creator().username.clone();
-        let bet = game.bet();
-        let players = game.players().to_vec();
-
         tokio::time::sleep(tokio::time::Duration::from_millis(COUNTDOWN_INTERVAL_MS)).await;
 
         loop {
@@ -311,7 +355,19 @@ fn start_countdown(
                 break;
             }
 
-            let content = build_roulette_content(&creator_name, bet, remaining_secs, &players);
+            // Reload game from Firestore each tick to get the current player list.
+            // If the game was already finished and deleted, stop the countdown.
+            let game = match Roulette::load(db.clone(), &game_id).await {
+                Ok(g) => g,
+                Err(_) => break,
+            };
+
+            let content = build_roulette_content(
+                &game.creator().username,
+                game.bet(),
+                remaining_secs,
+                game.players(),
+            );
             let button = CreateButton::new(encode_custom_id(InteractionType::Roulette, &game_id))
                 .label("Join Roulette");
             let row = CreateActionRow::Buttons(vec![button]);
@@ -356,9 +412,9 @@ fn build_roulette_content(
     creator_name: &str,
     bet: i64,
     remaining_secs: i64,
-    players: &[crate::games::lottery::PersistedPlayer],
+    players: &[crate::games::lottery::DbPlayer],
 ) -> String {
-    let bet_label = bgr_label(bet, false);
+    let bet_label = rep_label(bet, false);
     let banner = format!(
         "{creator_name} has started a roulette game for {bet_label}. Click the button below within {remaining_secs} seconds to place an equal bet and join the game."
     );

@@ -1,13 +1,24 @@
+use std::collections::HashSet;
+use std::sync::Arc;
+
+use firestore::FirestoreDb;
 use poise::serenity_prelude as serenity;
 use serenity::{
     CreateActionRow, CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage,
+    EditMessage,
 };
+use tokio::sync::RwLock;
+use tracing::{error, info};
 
-use crate::context::Context;
-use crate::discord::helpers::{bgr_label, encode_custom_id, parse_custom_id};
+use crate::config::Config;
+use crate::context::{Context, GameLocks, get_game_lock, remove_game_lock};
+use crate::discord::helpers::{encode_custom_id, parse_custom_id, rep_label};
 use crate::discord::types::{GuildMember, InteractionType};
-use crate::sardines::game::Sardines;
+use crate::jobs::{JobQueue, JobType};
 use crate::sardines::game::join_failure_chance;
+use crate::sardines::game::{Sardines, SardinesJobPayload};
+use crate::sardines::store::SardinesStore;
+use crate::users::UserStore;
 use crate::util::dates::is_today;
 
 /// Start a game of sardines
@@ -24,7 +35,8 @@ pub async fn sardines(
         .author_member()
         .await
         .ok_or_else(|| anyhow::anyhow!("Could not get member info"))?;
-    let guild_member = GuildMember::from_serenity(guild_id, author, member.joined_at);
+    let guild_member =
+        GuildMember::from_serenity(guild_id, author, member.joined_at, member.nick.as_deref());
 
     let data = ctx.data();
 
@@ -68,7 +80,7 @@ pub async fn sardines(
     let member_rep = data.user_store.get_user_rep(&guild_member).await?;
     if member_rep < sardines.buy_in() {
         let username = &guild_member.username;
-        let buy_in_label = bgr_label(sardines.buy_in(), false);
+        let buy_in_label = rep_label(sardines.buy_in(), false);
         ctx.send(
             poise::CreateReply::default()
                 .content(format!(
@@ -80,8 +92,8 @@ pub async fn sardines(
         return Ok(());
     }
 
-    // Start the game (saves to Firestore, deducts creator bet)
-    sardines.start().await?;
+    // Save the game (saves to Firestore, deducts creator bet)
+    sardines.save().await?;
 
     // Record last sardines date
     data.user_store
@@ -91,12 +103,29 @@ pub async fn sardines(
     // Send initial message with join button
     let (content, button) = sardines_message_parts(&sardines);
     let row = CreateActionRow::Buttons(vec![button]);
-    ctx.send(
-        poise::CreateReply::default()
-            .content(content)
-            .components(vec![row]),
-    )
-    .await?;
+    let reply = ctx
+        .send(
+            poise::CreateReply::default()
+                .content(content)
+                .components(vec![row]),
+        )
+        .await?;
+
+    // Capture message coordinates for the timeout job
+    let message = reply.message().await?;
+    let channel_id = message.channel_id.get();
+    let message_id = message.id.get();
+
+    // Enqueue the timeout job
+    let job_queue = data.job_queue.read().await;
+    sardines
+        .enqueue_timeout(
+            channel_id,
+            message_id,
+            &job_queue,
+            data.config.sardines_expiry_seconds,
+        )
+        .await?;
 
     Ok(())
 }
@@ -118,8 +147,16 @@ pub async fn handle_sardines_join(
         .member
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("No member data"))?;
-    let guild_member =
-        GuildMember::from_serenity(guild_id, &interaction.user, member_info.joined_at);
+    let guild_member = GuildMember::from_serenity(
+        guild_id,
+        &interaction.user,
+        member_info.joined_at,
+        member_info.nick.as_deref(),
+    );
+
+    // Acquire per-game write lock to serialize join operations
+    let game_lock = get_game_lock(&data.game_locks, game_id);
+    let _guard = game_lock.write().await;
 
     let mut game = match Sardines::load(
         data.db.clone(),
@@ -143,15 +180,21 @@ pub async fn handle_sardines_join(
         return Ok(());
     }
 
-    let response = if game.can_add_player() {
-        game.add_player(&guild_member).await?;
+    // Check if this join will end the game BEFORE adding the player
+    let game_continues = game.can_add_player();
+
+    // Always add the player (charges their bet)
+    game.add_player(&guild_member).await?;
+
+    let response = if game_continues {
         let (content, button) = sardines_message_parts(&game);
         let row = CreateActionRow::Buttons(vec![button]);
         CreateInteractionResponseMessage::new()
             .content(content)
             .components(vec![row])
     } else {
-        let final_message = game.finish(&guild_member).await?;
+        // Game ends — joiner is already in the player pool
+        let final_message = game.finish(Some(&guild_member.username)).await?;
         CreateInteractionResponseMessage::new()
             .content(final_message)
             .components(vec![])
@@ -205,6 +248,135 @@ async fn respond_ephemeral(
     Ok(())
 }
 
+/// Job handler for sardines:finish (timeout)
+pub async fn finish_sardines(
+    payload: serde_json::Value,
+    http: &serenity::Http,
+    db: &FirestoreDb,
+    config: &Config,
+    user_store: &UserStore,
+    game_locks: &GameLocks,
+) -> anyhow::Result<()> {
+    let payload: SardinesJobPayload = serde_json::from_value(payload)?;
+
+    // Acquire per-game write lock to prevent joins during finish
+    let game_lock = get_game_lock(game_locks, &payload.id);
+    let guard = game_lock.write().await;
+
+    let result = do_finish_sardines(&payload, http, db, config, user_store).await;
+
+    drop(guard);
+    remove_game_lock(game_locks, &payload.id);
+
+    result
+}
+
+async fn do_finish_sardines(
+    payload: &SardinesJobPayload,
+    http: &serenity::Http,
+    db: &FirestoreDb,
+    config: &Config,
+    user_store: &UserStore,
+) -> anyhow::Result<()> {
+    let game = match Sardines::load(db.clone(), config, user_store.clone(), &payload.id).await {
+        Ok(g) => g,
+        Err(_) => {
+            // Game was already finished by a player joining — expected case
+            info!(
+                id = payload.id,
+                "Sardines game not found for timeout (likely already ended)"
+            );
+            return Ok(());
+        }
+    };
+
+    info!(
+        id = payload.id,
+        players = game.players().len(),
+        "Finishing sardines game via timeout"
+    );
+
+    let final_message = game.finish(None).await?;
+
+    // Edit the original Discord message
+    let channel_id = serenity::ChannelId::new(payload.channel_id);
+    let message_id = serenity::MessageId::new(payload.message_id);
+
+    let edit = EditMessage::new().content(final_message).components(vec![]);
+
+    if let Err(e) = channel_id.edit_message(http, message_id, edit).await {
+        error!(error = %e, "Failed to update sardines timeout message");
+    }
+
+    Ok(())
+}
+
+/// Recover orphaned sardines games on startup.
+/// Games with pending jobs are handled by the job queue's startup poll.
+/// Games without jobs (orphaned) are finished immediately.
+pub async fn recover_sardines(
+    db: &FirestoreDb,
+    config: &Config,
+    user_store: &UserStore,
+    job_queue: &Arc<RwLock<JobQueue>>,
+) {
+    let store = SardinesStore::new(db.clone());
+    let all_games = match store.list_all().await {
+        Ok(games) => games,
+        Err(e) => {
+            error!(error = %e, "Failed to list sardines games for recovery");
+            return;
+        }
+    };
+
+    if all_games.is_empty() {
+        return;
+    }
+
+    info!(
+        count = all_games.len(),
+        "Checking sardines games for recovery"
+    );
+
+    // Collect IDs of games that have pending sardines:finish jobs
+    let pending_jobs = {
+        let queue = job_queue.read().await;
+        match queue.get_pending_jobs().await {
+            Ok(jobs) => jobs,
+            Err(e) => {
+                error!(error = %e, "Failed to get pending jobs for sardines recovery");
+                return;
+            }
+        }
+    };
+
+    let sardines_job_game_ids: HashSet<String> = pending_jobs
+        .iter()
+        .filter(|j| j.job_type == JobType::SardinesFinish)
+        .filter_map(|j| {
+            serde_json::from_value::<SardinesJobPayload>(j.payload.clone())
+                .ok()
+                .map(|p| p.id)
+        })
+        .collect();
+
+    // Finish orphaned games (no pending job)
+    for game in all_games {
+        if sardines_job_game_ids.contains(&game.id) {
+            continue; // Job exists, it will handle this game
+        }
+
+        info!(
+            id = game.id,
+            "Finishing orphaned sardines game (no pending job)"
+        );
+        let sardines = Sardines::from_lottery(db.clone(), config, user_store.clone(), game);
+        if let Err(e) = sardines.finish(None).await {
+            error!(error = %e, "Failed to finish orphaned sardines game");
+        }
+    }
+}
+
 fn sardines_message_parts(game: &Sardines) -> (String, CreateButton) {
     let content = build_sardines_content(&game.creator().username, game.bet(), game.players());
     let button = CreateButton::new(encode_custom_id(InteractionType::Sardines, game.id()))
@@ -215,13 +387,13 @@ fn sardines_message_parts(game: &Sardines) -> (String, CreateButton) {
 fn build_sardines_content(
     creator_name: &str,
     bet: i64,
-    players: &[crate::games::lottery::PersistedPlayer],
+    players: &[crate::games::lottery::DbPlayer],
 ) -> String {
     let failure_chance = join_failure_chance(players.len()) * 100.0;
-    let bet_label = bgr_label(bet, false);
+    let bet_label = rep_label(bet, false);
 
     let banner = format!(
-        "{creator_name} has started a sardines game for {bet_label}. Click the button below to pay the buy-in and attempt to join the game.\nThere is currently a {failure_chance:.2}% chance of ending the game when joining. A winner is randomly selected among all players in the game _before_ it ends."
+        "{creator_name} has started a sardines game for {bet_label}. Click the button below to pay the buy-in and attempt to join the game.\nThere is currently a {failure_chance:.2}% chance of ending the game when joining. A winner is randomly selected among all players in the game."
     );
 
     if players.len() < 2 {

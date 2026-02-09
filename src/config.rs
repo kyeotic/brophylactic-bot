@@ -7,6 +7,7 @@ pub struct Config {
     pub port: u16,
     pub job_queue_poll_interval_ms: u64,
     pub min_players_before_rejoin: usize,
+    pub sardines_expiry_seconds: u64,
     pub random_seed: String,
     pub discord: DiscordConfig,
     pub firebase: FirebaseConfig,
@@ -44,10 +45,17 @@ impl Config {
             4
         };
 
+        let sardines_expiry_seconds = if stage == "local" || stage == "dev" {
+            300 // 5 minutes for development
+        } else {
+            86400 // 24 hours for production
+        };
+
         Ok(Config {
             port: 8006,
             job_queue_poll_interval_ms: 5000,
             min_players_before_rejoin,
+            sardines_expiry_seconds,
             random_seed,
             discord: DiscordConfig {
                 timezone: "America/Los_Angeles"

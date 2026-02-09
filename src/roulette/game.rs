@@ -1,9 +1,9 @@
 use firestore::FirestoreDb;
 use serde::{Deserialize, Serialize};
 
-use crate::discord::helpers::bgr_label;
+use crate::discord::helpers::rep_label;
 use crate::discord::types::GuildMember;
-use crate::games::lottery::{Lottery, PersistedPlayer};
+use crate::games::lottery::{DbPlayer, Lottery};
 use crate::jobs::JobType;
 use crate::roulette::store::{RouletteLottery, RouletteStore};
 use crate::users::UserStore;
@@ -24,7 +24,7 @@ pub struct Roulette {
 
 impl Roulette {
     pub fn init(db: FirestoreDb, creator: &GuildMember, bet: i64) -> anyhow::Result<Self> {
-        let stored_creator = PersistedPlayer::from(creator);
+        let stored_creator = DbPlayer::from(creator);
         let mut lottery = Lottery::new(stored_creator.clone(), bet)?;
         lottery.add_player(stored_creator);
         Ok(Self {
@@ -79,11 +79,11 @@ impl Roulette {
         self.lottery.bet
     }
 
-    pub fn creator(&self) -> &PersistedPlayer {
+    pub fn creator(&self) -> &DbPlayer {
         &self.lottery.creator
     }
 
-    pub fn players(&self) -> &[PersistedPlayer] {
+    pub fn players(&self) -> &[DbPlayer] {
         &self.lottery.players
     }
 
@@ -92,12 +92,15 @@ impl Roulette {
     }
 
     pub async fn add_player(&mut self, player: &GuildMember) -> anyhow::Result<()> {
-        let stored = PersistedPlayer::from(player);
-        self.lottery.add_player(stored);
-        self.store
-            .set_players(&self.lottery.id, &self.lottery.players)
-            .await?;
+        let stored = DbPlayer::from(player);
+        let updated_players = self.store.add_player(&self.lottery.id, &stored).await?;
+        self.lottery.players = updated_players;
         Ok(())
+    }
+
+    /// Delete the game document without processing results. Used for cleanup on failure.
+    pub async fn force_cleanup(&self) -> anyhow::Result<()> {
+        self.store.delete(&self.lottery.id).await
     }
 
     pub async fn finish(&self, user_store: &UserStore) -> anyhow::Result<String> {
@@ -134,8 +137,8 @@ impl Roulette {
 
         self.store.delete(&self.lottery.id).await?;
 
-        let bet_label = bgr_label(self.bet(), false);
-        let pot_label = bgr_label(self.lottery.pot_size(), false);
+        let bet_label = rep_label(self.bet(), false);
+        let pot_label = rep_label(self.lottery.pot_size(), false);
         let player_names = names.join(", ");
         let winner_name = &result.winner.username;
         Ok(format!(

@@ -1,7 +1,7 @@
 use crate::discord::types::InteractionType;
 
-/// Format a BGR (reputation) label.
-pub fn bgr_label(amount: impl std::fmt::Display, bold: bool) -> String {
+/// Format a reputation label.
+pub fn rep_label(amount: impl std::fmt::Display, bold: bool) -> String {
     if bold {
         format!("**\u{211e}{amount}**")
     } else {

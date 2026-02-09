@@ -7,12 +7,9 @@ use crate::discord::types::GuildMember;
 use crate::firebase::FirestoreStore;
 
 const COLLECTION: &str = "users";
-const DELIMITER: char = '.';
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
-    pub id: String,
     pub name: String,
     #[serde(default)]
     #[serde(with = "firestore::serialize_as_optional_timestamp")]
@@ -38,7 +35,7 @@ impl UserStore {
 
     /// Get a user document, initializing it if it doesn't exist.
     pub async fn get_user(&self, member: &GuildMember) -> anyhow::Result<User> {
-        let doc_id = get_id(member);
+        let doc_id = member.doc_id();
         let user: Option<User> = self.store.get(&doc_id).await?;
 
         match user {
@@ -49,13 +46,13 @@ impl UserStore {
 
     /// Initialize a user document with default values.
     async fn init_user(&self, member: &GuildMember) -> anyhow::Result<User> {
-        let doc_id = get_id(member);
+        let doc_id = member.doc_id();
         let user = User {
-            id: doc_id.clone(),
             name: member.username.clone(),
             last_guess_date: None,
             last_sardines_date: None,
             reputation_offset: 0,
+            ..Default::default()
         };
 
         debug!(doc_id, "Initializing new user document");
@@ -90,7 +87,7 @@ impl UserStore {
                     // Read phase: fetch all users first
                     let mut user_states: Vec<(String, GuildMember, i64, Option<User>)> = Vec::new();
                     for (member, offset) in &updates {
-                        let doc_id = get_id(member);
+                        let doc_id = member.doc_id();
                         let existing: Option<User> = db
                             .fluent()
                             .select()
@@ -113,7 +110,7 @@ impl UserStore {
                                 };
                                 db.fluent()
                                     .update()
-                                    .fields(paths!(User::reputation_offset, User::name))
+                                    .fields(paths_camel_case!(User::reputation_offset, User::name))
                                     .in_col(COLLECTION)
                                     .document_id(doc_id)
                                     .object(&updated)
@@ -121,11 +118,11 @@ impl UserStore {
                             }
                             None => {
                                 let new_user = User {
-                                    id: doc_id.clone(),
                                     name: member.username.clone(),
                                     last_guess_date: None,
                                     last_sardines_date: None,
                                     reputation_offset: *offset,
+                                    ..Default::default()
                                 };
                                 db.fluent()
                                     .update()
@@ -160,7 +157,7 @@ impl UserStore {
         member: &GuildMember,
         last_guess_date: DateTime<Utc>,
     ) -> anyhow::Result<()> {
-        let doc_id = get_id(member);
+        let doc_id = member.doc_id();
         let user = self.get_user(member).await?;
         let updated = User {
             last_guess_date: Some(last_guess_date),
@@ -171,7 +168,7 @@ impl UserStore {
             .db()
             .fluent()
             .update()
-            .fields(paths!(User::last_guess_date, User::name))
+            .fields(paths_camel_case!(User::last_guess_date, User::name))
             .in_col(COLLECTION)
             .document_id(&doc_id)
             .object(&updated)
@@ -195,7 +192,7 @@ impl UserStore {
         member: &GuildMember,
         last_sardines_date: DateTime<Utc>,
     ) -> anyhow::Result<()> {
-        let doc_id = get_id(member);
+        let doc_id = member.doc_id();
         let user = self.get_user(member).await?;
         let updated = User {
             last_sardines_date: Some(last_sardines_date),
@@ -206,7 +203,7 @@ impl UserStore {
             .db()
             .fluent()
             .update()
-            .fields(paths!(User::last_sardines_date, User::name))
+            .fields(paths_camel_case!(User::last_sardines_date, User::name))
             .in_col(COLLECTION)
             .document_id(&doc_id)
             .object(&updated)
@@ -214,11 +211,6 @@ impl UserStore {
             .await?;
         Ok(())
     }
-}
-
-/// Build the Firestore document ID: "{guild_id}.{user_id}"
-fn get_id(member: &GuildMember) -> String {
-    format!("{}{}{}", member.guild_id, DELIMITER, member.id)
 }
 
 /// Calculate base reputation from how many days since the member joined the guild.

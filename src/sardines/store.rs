@@ -1,10 +1,10 @@
 use crate::firebase::FirestoreStore;
-use crate::games::lottery::{Lottery, PersistedPlayer};
+use crate::games::lottery::{DbPlayer, Lottery};
 use firestore::*;
 
-const COLLECTION: &str = "lotteries";
+const COLLECTION: &str = "sardines";
 
-pub type SardinesLottery = Lottery<PersistedPlayer>;
+pub type SardinesLottery = Lottery<DbPlayer>;
 
 pub struct SardinesStore {
     store: FirestoreStore,
@@ -29,7 +29,11 @@ impl SardinesStore {
         self.store.delete(id).await
     }
 
-    pub async fn set_players(&self, id: &str, players: &[PersistedPlayer]) -> anyhow::Result<()> {
+    pub async fn list_all(&self) -> anyhow::Result<Vec<SardinesLottery>> {
+        self.store.list_all().await
+    }
+
+    pub async fn set_players(&self, id: &str, players: &[DbPlayer]) -> anyhow::Result<()> {
         let id = id.to_string();
         let players = players.to_vec();
         self.store

@@ -12,8 +12,10 @@ mod util;
 
 use std::sync::Arc;
 
+use std::collections::HashMap;
+
 use config::Config;
-use context::AppContext;
+use context::{AppContext, GameLocks};
 use firestore::FirestoreDb;
 use jobs::{JobQueue, JobType};
 use users::UserStore;
@@ -105,28 +107,75 @@ async fn build_app_context(
 
     let http = ctx.http.clone();
     let user_store = UserStore::new(db.clone());
+    let game_locks: GameLocks = Arc::new(std::sync::Mutex::new(HashMap::new()));
 
-    // Register roulette:finish job handler and start polling
+    // Register job handlers and start polling
     {
-        let finish_http = http.clone();
-        let finish_db = db.clone();
-        let finish_user_store = UserStore::new(db.clone());
         let mut queue = job_queue.write().await;
-        queue
-            .register(JobType::RouletteFinish, move |payload| {
-                let http = finish_http.clone();
-                let db = finish_db.clone();
-                let user_store = finish_user_store.clone();
-                async move {
-                    roulette::command::finish_roulette(payload, &http, &db, &user_store).await
-                }
-            })
-            .await;
+
+        // roulette:finish handler
+        {
+            let finish_http = http.clone();
+            let finish_db = db.clone();
+            let finish_user_store = UserStore::new(db.clone());
+            let finish_game_locks = game_locks.clone();
+            queue
+                .register(JobType::RouletteFinish, move |payload| {
+                    let http = finish_http.clone();
+                    let db = finish_db.clone();
+                    let user_store = finish_user_store.clone();
+                    let game_locks = finish_game_locks.clone();
+                    async move {
+                        roulette::command::finish_roulette(
+                            payload,
+                            &http,
+                            &db,
+                            &user_store,
+                            &game_locks,
+                        )
+                        .await
+                    }
+                })
+                .await;
+        }
+
+        // sardines:finish handler
+        {
+            let finish_http = http.clone();
+            let finish_db = db.clone();
+            let finish_config = config.clone();
+            let finish_user_store = UserStore::new(db.clone());
+            let finish_game_locks = game_locks.clone();
+            queue
+                .register(JobType::SardinesFinish, move |payload| {
+                    let http = finish_http.clone();
+                    let db = finish_db.clone();
+                    let config = finish_config.clone();
+                    let user_store = finish_user_store.clone();
+                    let game_locks = finish_game_locks.clone();
+                    async move {
+                        sardines::command::finish_sardines(
+                            payload,
+                            &http,
+                            &db,
+                            &config,
+                            &user_store,
+                            &game_locks,
+                        )
+                        .await
+                    }
+                })
+                .await;
+        }
+
         queue.start(config.job_queue_poll_interval_ms);
     }
 
     // Recover any pending roulette countdowns
     roulette::command::recover_countdowns(&db, &http, &job_queue).await;
+
+    // Recover orphaned sardines games
+    sardines::command::recover_sardines(&db, &config, &user_store, &job_queue).await;
 
     Ok(AppContext {
         config,
@@ -134,6 +183,7 @@ async fn build_app_context(
         http,
         user_store,
         job_queue,
+        game_locks,
     })
 }
 

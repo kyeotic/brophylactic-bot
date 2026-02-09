@@ -17,12 +17,15 @@ const COLLECTION: &str = "jobs";
 pub enum JobType {
     #[serde(rename = "roulette:finish")]
     RouletteFinish,
+    #[serde(rename = "sardines:finish")]
+    SardinesFinish,
 }
 
 impl fmt::Display for JobType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::RouletteFinish => write!(f, "roulette:finish"),
+            Self::SardinesFinish => write!(f, "sardines:finish"),
         }
     }
 }
@@ -32,7 +35,6 @@ impl fmt::Display for JobType {
 pub enum JobStatus {
     Pending,
     Running,
-    Failed,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -239,20 +241,17 @@ async fn execute_job(
         }
         Err(e) => {
             error!(error = %e, job_type = %job.job_type, id = job.id, "Job failed");
-            let failed = Job {
-                status: JobStatus::Failed,
-                ..job.clone()
-            };
+            // Delete failed jobs — there is no retry mechanism, so leaving
+            // them in Firestore just leaks documents.
             if let Err(e) = db
                 .fluent()
-                .update()
-                .in_col(COLLECTION)
+                .delete()
+                .from(COLLECTION)
                 .document_id(&job.id)
-                .object(&failed)
-                .execute::<()>()
+                .execute()
                 .await
             {
-                error!(error = %e, id = job.id, "Failed to mark job as failed");
+                error!(error = %e, id = job.id, "Failed to delete failed job");
             }
         }
     }

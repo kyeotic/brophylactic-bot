@@ -1,7 +1,7 @@
 use chrono::Utc;
 
 use crate::context::Context;
-use crate::discord::helpers::bgr_label;
+use crate::discord::helpers::rep_label;
 use crate::discord::types::GuildMember;
 use crate::util::dates::{format_distance_to_now, get_day_string, is_today};
 use crate::util::random::seeded_random_inclusive;
@@ -26,7 +26,7 @@ const RULES: &[Rule] = &[
             format!(
                 "# Winner \u{1f680}\n\n**{}** is the right number! You won {}",
                 answer,
-                bgr_label(MAGIC_NUMBER_REWARD, false)
+                rep_label(MAGIC_NUMBER_REWARD, false)
             )
         },
     },
@@ -38,7 +38,7 @@ const RULES: &[Rule] = &[
                 "## Magic Number Match \u{1fa84}\n\nYour guess of **{}** magically pairs with the correct answer **{}**. You won {}",
                 guess,
                 answer,
-                bgr_label(PAIRWISE_REWARD, false)
+                rep_label(PAIRWISE_REWARD, false)
             )
         },
     },
@@ -51,7 +51,7 @@ const RULES: &[Rule] = &[
                 guess,
                 MAGIC_NUMBER_RANGE,
                 answer,
-                bgr_label(RANGE_REWARD, false)
+                rep_label(RANGE_REWARD, false)
             )
         },
     },
@@ -63,7 +63,7 @@ const RULES: &[Rule] = &[
                 "### Last Digit\n\nYour guess of **{}** matches the last digit of the correct answer **{}**. You won {}",
                 guess,
                 answer,
-                bgr_label(LAST_DIGIT_REWARD, false)
+                rep_label(LAST_DIGIT_REWARD, false)
             )
         },
     },
@@ -88,7 +88,12 @@ pub async fn guess(
         .author_member()
         .await
         .ok_or_else(|| anyhow::anyhow!("Could not get member info"))?;
-    let member = GuildMember::from_serenity(guild_id, ctx.author(), member_data.joined_at);
+    let member = GuildMember::from_serenity(
+        guild_id,
+        ctx.author(),
+        member_data.joined_at,
+        member_data.nick.as_deref(),
+    );
     let member_name = &member.username;
 
     let last_guess = data.user_store.get_user_last_guess(&member).await?;
@@ -98,7 +103,7 @@ pub async fn guess(
             Some(dt) => format_distance_to_now(dt),
             None => "never".to_string(),
         };
-        let reward_label = bgr_label(MAGIC_NUMBER_REWARD, false);
+        let reward_label = rep_label(MAGIC_NUMBER_REWARD, false);
         ctx.send(
             poise::CreateReply::default().content(format!(
                 "Guess a number between 1-100 to win {reward_label}. Only guess allowed per day.\n{member_name} made their last Guess {last_guess_str}"
