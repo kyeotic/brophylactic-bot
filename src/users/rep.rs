@@ -4,6 +4,7 @@ use tracing::error;
 use crate::context::Context;
 use crate::discord::helpers::rep_label;
 use crate::discord::types::GuildMember;
+use crate::util::dates::get_day_string;
 
 /// Server Reputation (℞); currency for games
 #[poise::command(slash_command, guild_only, subcommands("view", "send"))]
@@ -38,16 +39,15 @@ async fn view(
     let rep = ctx.data().user_store.get_user_rep(&member).await?;
 
     let joined = match member.joined_at {
-        Some(dt) => dt.format("%Y-%m-%d").to_string(),
+        Some(dt) => get_day_string(ctx.data().config.discord.timezone, dt),
         None => "<join date missing>".to_string(),
     };
 
     let username = &member.username;
     let rep_label = rep_label(rep, false);
-    let msg = format!("{username} joined on {joined} has {rep_label}");
     ctx.send(
         poise::CreateReply::default()
-            .content(msg)
+            .content(format!("{username} joined on {joined} has {rep_label}"))
             .ephemeral(!is_public),
     )
     .await?;

@@ -10,6 +10,7 @@ use crate::users::UserStore;
 
 pub const ROULETTE_TIME_SECONDS: u64 = 30;
 pub const ROULETTE_TIME_MS: u64 = ROULETTE_TIME_SECONDS * 1000;
+pub const ROULETTE_FINISH_DELAY_SECONDS: u64 = 3;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RouletteJobPayload {
@@ -57,7 +58,7 @@ impl Roulette {
         };
 
         job_queue
-            .enqueue(JobType::RouletteFinish, &payload, ROULETTE_TIME_SECONDS)
+            .enqueue(JobType::RouletteClose, &payload, ROULETTE_TIME_SECONDS)
             .await?;
 
         Ok(start_time)
@@ -85,6 +86,15 @@ impl Roulette {
 
     pub fn start_time(&self) -> Option<&String> {
         self.lottery.start_time.as_ref()
+    }
+
+    pub fn is_closed(&self) -> bool {
+        self.lottery.is_closed()
+    }
+
+    pub async fn close(&mut self) -> anyhow::Result<()> {
+        self.lottery.closed = true;
+        self.store.update(&self.lottery).await
     }
 
     pub async fn add_player(&mut self, player: &GuildMember) -> anyhow::Result<()> {

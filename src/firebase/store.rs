@@ -45,6 +45,22 @@ impl FirestoreStore {
         Ok(())
     }
 
+    pub async fn update<T: Serialize + DeserializeOwned + Sync + Send>(
+        &self,
+        id: &str,
+        obj: &T,
+    ) -> anyhow::Result<()> {
+        self.db
+            .fluent()
+            .update()
+            .in_col(self.collection)
+            .document_id(id)
+            .object(obj)
+            .execute::<()>()
+            .await?;
+        Ok(())
+    }
+
     pub async fn delete(&self, id: &str) -> anyhow::Result<()> {
         self.db
             .fluent()

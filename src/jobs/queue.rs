@@ -17,6 +17,8 @@ const COLLECTION: &str = "jobs";
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum JobType {
+    #[serde(rename = "roulette:close")]
+    RouletteClose,
     #[serde(rename = "roulette:finish")]
     RouletteFinish,
     #[serde(rename = "sardines:finish")]
@@ -26,6 +28,7 @@ pub enum JobType {
 impl fmt::Display for JobType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::RouletteClose => write!(f, "roulette:close"),
             Self::RouletteFinish => write!(f, "roulette:finish"),
             Self::SardinesFinish => write!(f, "sardines:finish"),
         }

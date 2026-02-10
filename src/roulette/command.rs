@@ -9,11 +9,13 @@ use serenity::{
 };
 use tracing::{error, info};
 
-use crate::context::{Context, get_game_lock, remove_game_lock};
+use crate::context::{Context, GameLocks, get_game_lock, remove_game_lock};
 use crate::discord::helpers::{encode_custom_id, parse_custom_id, rep_label};
 use crate::discord::types::{GuildMember, InteractionType};
 use crate::jobs::JobType;
-use crate::roulette::game::{ROULETTE_TIME_MS, Roulette, RouletteJobPayload};
+use crate::roulette::game::{
+    ROULETTE_FINISH_DELAY_SECONDS, ROULETTE_TIME_MS, Roulette, RouletteJobPayload,
+};
 const COUNTDOWN_INTERVAL_MS: u64 = 5000;
 
 /// Start a game of roulette
@@ -95,6 +97,7 @@ pub async fn roulette(
         interaction_token,
         data.http.clone(),
         data.db.clone(),
+        data.game_locks.clone(),
     );
 
     Ok(())
@@ -137,6 +140,13 @@ pub async fn handle_roulette_join(
             return Ok(());
         }
     };
+
+    if game.is_closed() {
+        interaction
+            .create_response(ctx, CreateInteractionResponse::Acknowledge)
+            .await?;
+        return Ok(());
+    }
 
     if let Some(error_msg) = validate_roulette_join(&game, &guild_member, data).await? {
         respond_ephemeral(ctx, interaction, error_msg).await?;
@@ -203,6 +213,57 @@ async fn respond_ephemeral(
             ),
         )
         .await?;
+    Ok(())
+}
+
+/// Job handler for roulette:close
+pub async fn close_roulette(
+    ctx: crate::context::AppContext,
+    payload: RouletteJobPayload,
+) -> anyhow::Result<()> {
+    let game_lock = get_game_lock(&ctx.game_locks, &payload.id);
+    let _guard = game_lock.write().await;
+
+    let mut game = match Roulette::load(ctx.db.clone(), &payload.id).await {
+        Ok(g) => g,
+        Err(e) => {
+            error!(error = %e, id = payload.id, "Failed to load roulette game for close");
+            return Err(e);
+        }
+    };
+
+    info!(id = payload.id, "Closing roulette game");
+
+    game.close().await?;
+
+    // Edit Discord message to show "selecting winner..." with no button
+    let creator_name = &game.creator().username;
+    let bet_label = rep_label(game.bet(), false);
+    let content = format!(
+        "{creator_name}'s roulette game for {bet_label} is now closed. Selecting a winner..."
+    );
+    let edit = EditInteractionResponse::new()
+        .content(content)
+        .components(vec![]);
+
+    if let Err(e) = ctx
+        .http
+        .edit_original_interaction_response(&payload.interaction_token, &edit, vec![])
+        .await
+    {
+        error!(error = %e, "Failed to update roulette close message");
+    }
+
+    // Enqueue the finish job with a short delay
+    let job_queue = ctx.job_queue.read().await;
+    job_queue
+        .enqueue(
+            JobType::RouletteFinish,
+            &payload,
+            ROULETTE_FINISH_DELAY_SECONDS,
+        )
+        .await?;
+
     Ok(())
 }
 
@@ -287,7 +348,7 @@ pub async fn recover_countdowns(ctx: &crate::context::AppContext) {
 
     let roulette_jobs: Vec<_> = jobs
         .into_iter()
-        .filter(|j| j.job_type == JobType::RouletteFinish)
+        .filter(|j| j.job_type == JobType::RouletteClose)
         .collect();
 
     for job in roulette_jobs {
@@ -309,6 +370,7 @@ pub async fn recover_countdowns(ctx: &crate::context::AppContext) {
                         payload.interaction_token,
                         ctx.http.clone(),
                         ctx.db.clone(),
+                        ctx.game_locks.clone(),
                     );
                 }
             }
@@ -325,6 +387,7 @@ fn start_countdown(
     interaction_token: String,
     http: Arc<serenity::Http>,
     db: FirestoreDb,
+    game_locks: GameLocks,
 ) {
     let end_time_ms = {
         let start = DateTime::parse_from_rfc3339(&start_time_str)
@@ -339,16 +402,26 @@ fn start_countdown(
         loop {
             let now_ms = chrono::Utc::now().timestamp_millis();
             let remaining_secs = (end_time_ms - now_ms) / 1000;
-            if remaining_secs <= 0 {
+
+            // Stop if within one interval of ending — close handler takes over
+            if remaining_secs <= (COUNTDOWN_INTERVAL_MS / 1000) as i64 {
                 break;
             }
 
+            // Acquire read lock so we block during write locks (join/close/finish)
+            let game_lock = get_game_lock(&game_locks, &game_id);
+            let guard = game_lock.read().await;
+
             // Reload game from Firestore each tick to get the current player list.
-            // If the game was already finished and deleted, stop the countdown.
+            // If the game was already finished/deleted or closed, stop the countdown.
             let game = match Roulette::load(db.clone(), &game_id).await {
                 Ok(g) => g,
                 Err(_) => break,
             };
+
+            if game.is_closed() {
+                break;
+            }
 
             let content = build_roulette_content(
                 &game.creator().username,
@@ -370,6 +443,9 @@ fn start_countdown(
             {
                 error!(error = %e, "Countdown update failed");
             }
+
+            // Explicitly drop guard before sleeping
+            drop(guard);
 
             tokio::time::sleep(tokio::time::Duration::from_millis(COUNTDOWN_INTERVAL_MS)).await;
         }

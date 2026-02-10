@@ -119,6 +119,7 @@ async fn build_app_context(
         let mut queue = app_context.job_queue.write().await;
         queue
             .registrar(app_context.clone())
+            .handler(JobType::RouletteClose, roulette::command::close_roulette)
             .handler(JobType::RouletteFinish, roulette::command::finish_roulette)
             .handler(JobType::SardinesFinish, sardines::command::finish_sardines)
             .apply()

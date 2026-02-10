@@ -50,6 +50,8 @@ pub struct Lottery<Player: Clone + PartialEq> {
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub start_time: Option<String>,
+    #[serde(default)]
+    pub closed: bool,
 }
 
 pub struct LotteryResult<Player> {
@@ -68,6 +70,7 @@ impl<Player: Clone + PartialEq> Lottery<Player> {
             creator,
             players: Vec::new(),
             start_time: None,
+            closed: false,
         })
     }
 
@@ -97,6 +100,10 @@ impl<Player: Clone + PartialEq> Lottery<Player> {
     /// A lottery can finish only with more than 1 player.
     pub fn can_finish(&self) -> bool {
         self.players.len() > 1
+    }
+
+    pub fn is_closed(&self) -> bool {
+        self.closed
     }
 
     /// Finish the lottery: pick a random winner.

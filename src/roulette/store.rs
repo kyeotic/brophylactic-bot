@@ -25,6 +25,10 @@ impl RouletteStore {
         self.store.put(&lottery.id, lottery).await
     }
 
+    pub async fn update(&self, lottery: &RouletteLottery) -> anyhow::Result<()> {
+        self.store.update(&lottery.id, lottery).await
+    }
+
     pub async fn delete(&self, id: &str) -> anyhow::Result<()> {
         self.store.delete(id).await
     }
