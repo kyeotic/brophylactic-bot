@@ -3,6 +3,9 @@ name = "discord-bot"
 version = "0.1.0"
 edition = "2024"
 
+[profile.release]
+strip = true
+
 [dependencies]
 # Discord
 poise = "0.6"
