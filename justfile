@@ -17,6 +17,9 @@ infra-deploy:
 get-tunnel-token:
     terraform -chdir=infra/terraform output -raw tunnel_token
 
+docker-build:
+    docker build --platform linux/amd64 -t docker.local.kye.dev/discord-bot:latest .
+
 deploy:
     docker build --platform linux/amd64 -t docker.local.kye.dev/discord-bot:latest .
     docker push docker.local.kye.dev/discord-bot:latest
@@ -25,6 +28,7 @@ deploy:
 # Build the Docker image with Nix
 nix-image:
     nix build .#docker-image
+    docker load < result
 
 # Build, load, push, and deploy with Nix
 nix-deploy:
@@ -39,10 +43,6 @@ deploy-stack *args:
 # Run the CLI
 run *args:
     cargo run -- {{ args }}
-
-# Build in release mode
-build:
-    cargo build --release
 
 # Check compilation without building
 check:

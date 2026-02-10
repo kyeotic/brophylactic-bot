@@ -16,7 +16,9 @@
         overlays = [ (import rust-overlay) ];
       };
 
-      rustToolchain = pkgs.rust-bin.stable."1.93.0".minimal;
+      rustToolchain = pkgs.rust-bin.stable."1.93.0".minimal.override {
+        targets = [ "x86_64-unknown-linux-musl" ];
+      };
 
       craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
 
@@ -27,14 +29,13 @@
         inherit src;
         strictDeps = true;
 
-        # Native dependencies needed at build time
-        nativeBuildInputs = with pkgs; [
-          pkg-config
-        ];
+        CARGO_BUILD_TARGET = "x86_64-unknown-linux-musl";
+        CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
 
-        buildInputs = with pkgs; [
-          openssl
-        ];
+        # Size optimizations (only for nix image builds, not local/Docker dev)
+        CARGO_PROFILE_RELEASE_LTO = "true";
+        CARGO_PROFILE_RELEASE_CODEGEN_UNITS = "1";
+        CARGO_PROFILE_RELEASE_OPT_LEVEL = "z";
       };
 
       # Build only the cargo dependencies for caching

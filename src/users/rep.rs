@@ -5,7 +5,7 @@ use crate::context::Context;
 use crate::discord::helpers::rep_label;
 use crate::discord::types::GuildMember;
 
-/// Server Reputation (℞), the server currency
+/// Server Reputation (℞); currency for games
 #[poise::command(slash_command, guild_only, subcommands("view", "send"))]
 pub async fn rep(_ctx: Context<'_>) -> Result<(), anyhow::Error> {
     Ok(())
