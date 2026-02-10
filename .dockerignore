@@ -1,0 +1,14 @@
+target
+.git
+.vscode
+.claude
+.env
+.env.*
+*.md
+justfile
+bacon.toml
+infra
+.DS_Store
+.gitignore
+.stack-sync.toml
+.vault-sync.toml

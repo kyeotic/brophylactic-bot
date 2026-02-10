@@ -19,8 +19,8 @@ get-tunnel-token:
 
 deploy:
     docker build --platform linux/amd64 -t docker.local.kye.dev/discord-bot:latest .
-    docker push docker.local.kye.dev/discord-bot:latest
-    stack-sync sync discord-bot
+    # docker push docker.local.kye.dev/discord-bot:latest
+    # stack-sync sync discord-bot
 
 deploy-stack *args:
     stack-sync sync  {{ args }}
