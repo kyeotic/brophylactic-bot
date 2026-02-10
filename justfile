@@ -22,6 +22,17 @@ deploy:
     docker push docker.local.kye.dev/discord-bot:latest
     stack-sync sync discord-bot
 
+# Build the Docker image with Nix
+nix-image:
+    nix build .#docker-image
+
+# Build, load, push, and deploy with Nix
+nix-deploy:
+    nix build .#docker-image
+    docker load < result
+    docker push docker.local.kye.dev/discord-bot:latest
+    stack-sync sync discord-bot
+
 deploy-stack *args:
     stack-sync sync  {{ args }}
 
