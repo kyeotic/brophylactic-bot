@@ -15,15 +15,16 @@ services:
       - FIREBASE_64=${FIREBASE_64:?err}
       - LOG_LEVEL=${LOG_LEVEL:-info}
 
-  tunnel:
-    image: cloudflare/cloudflared:latest
-    container_name: discord-tunnel
-    restart: unless-stopped
-    command: tunnel run
-    environment:
-      - TUNNEL_TOKEN=${TUNNEL_TOKEN:?err}
-    logging:
-      driver: json-file
-      options:
-        max-size: '1m'
-        max-file: '3'
+  # the rust version currently uses the gateway, not HTTP
+  # tunnel:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: discord-tunnel
+  #   restart: unless-stopped
+  #   command: tunnel run
+  #   environment:
+  #     - TUNNEL_TOKEN=${TUNNEL_TOKEN:?err}
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: '1m'
+  #       max-file: '3'
