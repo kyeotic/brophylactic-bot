@@ -30,7 +30,7 @@ pub struct FirebaseConfig {
 
 impl Config {
     pub fn load() -> anyhow::Result<Self> {
-        let stage = env::var("stage").unwrap_or_else(|_| "dev".to_string());
+        let stage = env::var("STAGE").unwrap_or_else(|_| "prod".to_string());
 
         let bot_token = required_env("BOT_TOKEN")?;
         let public_key = required_env("DISCORD_PUBLIC_KEY")?;

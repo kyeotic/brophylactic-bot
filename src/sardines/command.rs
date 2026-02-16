@@ -382,7 +382,7 @@ fn build_sardines_content(
     let bet_label = rep_label(bet, false);
 
     let banner = format!(
-        "{creator_name} has started a sardines game for {bet_label}. Click the button below to pay the buy-in and attempt to join the game.\nThere is currently a {failure_chance:.2}% chance of ending the game when joining. A winner is randomly selected among all players in the game."
+        "## Sardines\n{creator_name} has started a game for {bet_label}. Click the button below to pay the buy-in and attempt to join the game.\nThere is currently a {failure_chance:.2}% chance of ending the game when joining. A winner is randomly selected among all players in the game."
     );
 
     if players.len() < 2 {

@@ -6,7 +6,7 @@ dev:
     #!/usr/bin/env bash
     set -euo pipefail
     set -o allexport; source .env.dev; set +o allexport
-    cargo watch -x run
+    STAGE=dev cargo watch -x run
 
 command-deploy env="dev":
     ./scripts/command-deploy {{ env }}
