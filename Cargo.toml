@@ -53,3 +53,6 @@ regex = "1"
 
 # ID generation
 nanoid = "0.4"
+
+# Async traits (enables dyn dispatch on async trait methods)
+async-trait = "0.1"

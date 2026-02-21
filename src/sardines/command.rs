@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::sync::Arc;
 
 use poise::serenity_prelude as serenity;
 use serenity::{
@@ -53,9 +54,9 @@ pub async fn sardines(
     }
 
     let mut sardines = match Sardines::init(
-        data.db.clone(),
+        Arc::new(SardinesStore::new(data.db.clone())),
         &data.config,
-        data.user_store.clone(),
+        Arc::clone(&data.user_store),
         &guild_member,
         bet,
     ) {
@@ -154,9 +155,9 @@ pub async fn handle_sardines_join(
     let _guard = game_lock.write().await;
 
     let mut game = match Sardines::load(
-        data.db.clone(),
+        Arc::new(SardinesStore::new(data.db.clone())),
         &data.config,
-        data.user_store.clone(),
+        Arc::clone(&data.user_store),
         game_id,
     )
     .await
@@ -170,7 +171,9 @@ pub async fn handle_sardines_join(
         }
     };
 
-    if let Some(error_msg) = validate_join(&game, &guild_member, data).await? {
+    if let Some(error_msg) =
+        validate_join(&game, &guild_member, &data.config, data.user_store.as_ref()).await?
+    {
         respond_ephemeral(ctx, interaction, error_msg).await?;
         return Ok(());
     }
@@ -206,17 +209,18 @@ pub async fn handle_sardines_join(
 async fn validate_join(
     game: &Sardines,
     guild_member: &GuildMember,
-    data: &crate::context::AppContext,
+    config: &crate::config::Config,
+    user_store: &dyn crate::users::UserStoreApi,
 ) -> Result<Option<String>, anyhow::Error> {
-    if game.players().iter().any(|p| p.id == guild_member.id) && !game.can_join_repeat(&data.config)
-    {
-        let min_players = data.config.min_players_before_rejoin;
+    let player_in_game = game.players().iter().any(|p| p.id == guild_member.id);
+    if player_in_game && !game.can_join_repeat(config) {
+        let min_players = config.min_players_before_rejoin;
         return Ok(Some(format!(
             "Cannot join a sardines game you are already in until the minimum player count of {min_players} is met."
         )));
     }
 
-    let member_rep = data.user_store.get_user_rep(guild_member).await?;
+    let member_rep = user_store.get_user_rep(guild_member).await?;
     if member_rep < game.buy_in() {
         return Ok(Some("You do not have enough rep".to_string()));
     }
@@ -265,9 +269,9 @@ async fn do_finish_sardines(
     payload: &SardinesJobPayload,
 ) -> anyhow::Result<()> {
     let game = match Sardines::load(
-        ctx.db.clone(),
+        Arc::new(SardinesStore::new(ctx.db.clone())),
         &ctx.config,
-        ctx.user_store.clone(),
+        Arc::clone(&ctx.user_store),
         &payload.id,
     )
     .await
@@ -358,8 +362,12 @@ pub async fn recover_sardines(ctx: &crate::context::AppContext) {
             id = game.id,
             "Finishing orphaned sardines game (no pending job)"
         );
-        let sardines =
-            Sardines::from_lottery(ctx.db.clone(), &ctx.config, ctx.user_store.clone(), game);
+        let sardines = Sardines::from_lottery(
+            Arc::new(SardinesStore::new(ctx.db.clone())),
+            &ctx.config,
+            Arc::clone(&ctx.user_store),
+            game,
+        );
         if let Err(e) = sardines.finish(None).await {
             error!(error = %e, "Failed to finish orphaned sardines game");
         }
@@ -391,5 +399,234 @@ fn build_sardines_content(
         let player_names: Vec<&str> = players.iter().map(|p| p.username.as_str()).collect();
         let player_list = player_names.join("\n");
         format!("{banner}\n\n**Players**\n{player_list}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::{Config, DiscordConfig, FirebaseConfig};
+    use crate::games::lottery::Lottery;
+    use crate::sardines::store::{SardinesLottery, SardinesStoreApi};
+    use crate::users::UserStoreApi;
+    use chrono::{DateTime, Utc};
+
+    // ── No-op sardines store ─────────────────────────────────────────────────
+
+    struct NoOpSardinesStore;
+
+    #[async_trait::async_trait]
+    impl SardinesStoreApi for NoOpSardinesStore {
+        async fn get(&self, _id: &str) -> anyhow::Result<Option<SardinesLottery>> {
+            Ok(None)
+        }
+        async fn put(&self, _lottery: &SardinesLottery) -> anyhow::Result<()> {
+            Ok(())
+        }
+        async fn delete(&self, _id: &str) -> anyhow::Result<()> {
+            Ok(())
+        }
+        async fn set_players(
+            &self,
+            _id: &str,
+            _players: &[crate::games::lottery::DbPlayer],
+        ) -> anyhow::Result<()> {
+            Ok(())
+        }
+    }
+
+    // ── Fixed-rep user store ─────────────────────────────────────────────────
+
+    struct FixedRepStore {
+        rep: i64,
+    }
+
+    #[async_trait::async_trait]
+    impl UserStoreApi for FixedRepStore {
+        async fn get_user_rep(&self, _member: &GuildMember) -> anyhow::Result<i64> {
+            Ok(self.rep)
+        }
+        async fn increment_user_rep(
+            &self,
+            _member: &GuildMember,
+            _offset: i64,
+        ) -> anyhow::Result<()> {
+            Ok(())
+        }
+        async fn increment_user_reps(&self, _updates: &[(GuildMember, i64)]) -> anyhow::Result<()> {
+            Ok(())
+        }
+        async fn get_user_last_guess(
+            &self,
+            _member: &GuildMember,
+        ) -> anyhow::Result<Option<DateTime<Utc>>> {
+            Ok(None)
+        }
+        async fn set_user_last_guess(
+            &self,
+            _member: &GuildMember,
+            _date: DateTime<Utc>,
+        ) -> anyhow::Result<()> {
+            Ok(())
+        }
+        async fn get_user_last_sardines(
+            &self,
+            _member: &GuildMember,
+        ) -> anyhow::Result<Option<DateTime<Utc>>> {
+            Ok(None)
+        }
+        async fn set_user_last_sardines(
+            &self,
+            _member: &GuildMember,
+            _date: DateTime<Utc>,
+        ) -> anyhow::Result<()> {
+            Ok(())
+        }
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    fn test_config(min_players: usize) -> Config {
+        Config {
+            port: 8006,
+            job_queue_poll_interval_ms: 5000,
+            min_players_before_rejoin: min_players,
+            sardines_expiry_seconds: 86400,
+            random_seed: "test".to_string(),
+            discord: DiscordConfig {
+                timezone: "America/Los_Angeles".parse().unwrap(),
+                bot_token: "test".to_string(),
+                public_key: "test".to_string(),
+                server_id: "test".to_string(),
+            },
+            firebase: FirebaseConfig {
+                project_id: "test".to_string(),
+                cert_base64: "test".to_string(),
+            },
+        }
+    }
+
+    fn make_player(id: &str) -> crate::games::lottery::DbPlayer {
+        crate::games::lottery::DbPlayer {
+            id: id.to_string(),
+            guild_id: "guild1".to_string(),
+            username: id.to_string(),
+            joined_at: None,
+        }
+    }
+
+    fn make_member(id: &str) -> GuildMember {
+        GuildMember {
+            id: id.to_string(),
+            guild_id: "guild1".to_string(),
+            username: id.to_string(),
+            joined_at: None,
+        }
+    }
+
+    /// Build a Sardines instance with the given player IDs already in the game.
+    /// The first ID is treated as the creator (matches Sardines::init behaviour).
+    fn make_sardines(player_ids: &[&str], bet: i64, min_players: usize) -> Sardines {
+        let store: Arc<dyn SardinesStoreApi> = Arc::new(NoOpSardinesStore);
+        let user_store: Arc<dyn UserStoreApi> = Arc::new(FixedRepStore { rep: 9999 });
+        let config = test_config(min_players);
+
+        let creator = make_player(player_ids[0]);
+        let mut lottery: SardinesLottery = Lottery::new(creator, bet).unwrap();
+        for &id in player_ids {
+            lottery.add_player(make_player(id));
+        }
+
+        Sardines::from_lottery(store, &config, user_store, lottery)
+    }
+
+    // ── Tests ────────────────────────────────────────────────────────────────
+
+    /// Creator cannot rejoin their own game when below the minimum player count.
+    #[tokio::test]
+    async fn test_rejoin_blocked_below_min_players() {
+        let game = make_sardines(&["creator"], 100, 4);
+        let member = make_member("creator");
+        let config = test_config(4);
+        let store = FixedRepStore { rep: 9999 };
+
+        let result = validate_join(&game, &member, &config, &store)
+            .await
+            .unwrap();
+        assert!(
+            result.is_some(),
+            "creator should be blocked from rejoining with only 1 player (min=4)"
+        );
+    }
+
+    /// Creator is allowed to rejoin once the minimum player count is met.
+    #[tokio::test]
+    async fn test_rejoin_allowed_at_min_players() {
+        let game = make_sardines(&["creator", "p2", "p3", "p4"], 100, 4);
+        let member = make_member("creator");
+        let config = test_config(4);
+        let store = FixedRepStore { rep: 9999 };
+
+        let result = validate_join(&game, &member, &config, &store)
+            .await
+            .unwrap();
+        assert!(
+            result.is_none(),
+            "creator should be allowed to rejoin with 4 players (min=4)"
+        );
+    }
+
+    /// A brand-new player (not yet in the game) is never blocked by the rejoin check.
+    #[tokio::test]
+    async fn test_new_player_not_blocked_by_rejoin_check() {
+        let game = make_sardines(&["creator"], 100, 4);
+        let member = make_member("newcomer");
+        let config = test_config(4);
+        let store = FixedRepStore { rep: 9999 };
+
+        let result = validate_join(&game, &member, &config, &store)
+            .await
+            .unwrap();
+        assert!(
+            result.is_none(),
+            "new player should never be blocked by the rejoin check"
+        );
+    }
+
+    /// A player with insufficient rep is blocked regardless of rejoin rules.
+    #[tokio::test]
+    async fn test_blocked_by_insufficient_rep() {
+        let game = make_sardines(&["creator"], 100, 4);
+        let member = make_member("broke");
+        let config = test_config(4);
+        let store = FixedRepStore { rep: 50 }; // buy-in is 100
+
+        let result = validate_join(&game, &member, &config, &store)
+            .await
+            .unwrap();
+        assert!(
+            result.is_some(),
+            "player with 50 rep should be blocked from a 100-rep game"
+        );
+    }
+
+    /// Verifies the ID field used for comparison: DbPlayer.id must match GuildMember.id.
+    #[tokio::test]
+    async fn test_player_id_field_matches_guild_member_id() {
+        // Both DbPlayer and GuildMember use the raw Discord user ID (not the composite doc_id).
+        let discord_user_id = "987654321";
+        let game = make_sardines(&[discord_user_id], 100, 4);
+        let member = make_member(discord_user_id);
+        let config = test_config(4);
+        let store = FixedRepStore { rep: 9999 };
+
+        // Player is in game (1 player, min=4) → should be blocked
+        let result = validate_join(&game, &member, &config, &store)
+            .await
+            .unwrap();
+        assert!(
+            result.is_some(),
+            "player ID comparison should find the match and block the rejoin"
+        );
     }
 }

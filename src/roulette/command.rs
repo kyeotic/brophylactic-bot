@@ -303,7 +303,7 @@ async fn do_finish_roulette(
         "Finishing roulette game"
     );
 
-    let final_message = match game.finish(&ctx.user_store).await {
+    let final_message = match game.finish(ctx.user_store.as_ref()).await {
         Ok(msg) => msg,
         Err(e) => {
             error!(error = %e, id = payload.id, "Roulette finish failed, cleaning up game");

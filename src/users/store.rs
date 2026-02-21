@@ -7,6 +7,32 @@ use crate::discord::types::GuildMember;
 use crate::firebase::FirestoreStore;
 
 const COLLECTION: &str = "users";
+
+/// Trait abstracting user-store operations, enabling mock implementations in tests.
+#[async_trait::async_trait]
+pub trait UserStoreApi: Send + Sync {
+    async fn get_user_rep(&self, member: &GuildMember) -> anyhow::Result<i64>;
+    async fn increment_user_rep(&self, member: &GuildMember, offset: i64) -> anyhow::Result<()>;
+    async fn increment_user_reps(&self, updates: &[(GuildMember, i64)]) -> anyhow::Result<()>;
+    async fn get_user_last_guess(
+        &self,
+        member: &GuildMember,
+    ) -> anyhow::Result<Option<DateTime<Utc>>>;
+    async fn set_user_last_guess(
+        &self,
+        member: &GuildMember,
+        last_guess_date: DateTime<Utc>,
+    ) -> anyhow::Result<()>;
+    async fn get_user_last_sardines(
+        &self,
+        member: &GuildMember,
+    ) -> anyhow::Result<Option<DateTime<Utc>>>;
+    async fn set_user_last_sardines(
+        &self,
+        member: &GuildMember,
+        last_sardines_date: DateTime<Utc>,
+    ) -> anyhow::Result<()>;
+}
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
@@ -208,6 +234,51 @@ impl UserStore {
             .execute::<()>()
             .await?;
         Ok(())
+    }
+}
+
+#[async_trait::async_trait]
+impl UserStoreApi for UserStore {
+    async fn get_user_rep(&self, member: &GuildMember) -> anyhow::Result<i64> {
+        self.get_user_rep(member).await
+    }
+
+    async fn increment_user_rep(&self, member: &GuildMember, offset: i64) -> anyhow::Result<()> {
+        self.increment_user_rep(member, offset).await
+    }
+
+    async fn increment_user_reps(&self, updates: &[(GuildMember, i64)]) -> anyhow::Result<()> {
+        self.increment_user_reps(updates).await
+    }
+
+    async fn get_user_last_guess(
+        &self,
+        member: &GuildMember,
+    ) -> anyhow::Result<Option<DateTime<Utc>>> {
+        self.get_user_last_guess(member).await
+    }
+
+    async fn set_user_last_guess(
+        &self,
+        member: &GuildMember,
+        last_guess_date: DateTime<Utc>,
+    ) -> anyhow::Result<()> {
+        self.set_user_last_guess(member, last_guess_date).await
+    }
+
+    async fn get_user_last_sardines(
+        &self,
+        member: &GuildMember,
+    ) -> anyhow::Result<Option<DateTime<Utc>>> {
+        self.get_user_last_sardines(member).await
+    }
+
+    async fn set_user_last_sardines(
+        &self,
+        member: &GuildMember,
+        last_sardines_date: DateTime<Utc>,
+    ) -> anyhow::Result<()> {
+        self.set_user_last_sardines(member, last_sardines_date).await
     }
 }
 

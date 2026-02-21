@@ -1,13 +1,13 @@
-use firestore::FirestoreDb;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::config::Config;
 use crate::discord::helpers::{mention, rep_label};
 use crate::discord::types::GuildMember;
 use crate::games::lottery::{DbPlayer, Lottery};
 use crate::jobs::JobType;
-use crate::sardines::store::{SardinesLottery, SardinesStore};
-use crate::users::UserStore;
+use crate::sardines::store::{SardinesLottery, SardinesStoreApi};
+use crate::users::UserStoreApi;
 use crate::util::random::seeded_weighted_random_element;
 
 const A: f64 = 0.4;
@@ -39,16 +39,16 @@ fn does_player_lose(n: usize) -> bool {
 
 pub struct Sardines {
     pub lottery: SardinesLottery,
-    store: SardinesStore,
-    user_store: UserStore,
+    store: Arc<dyn SardinesStoreApi>,
+    user_store: Arc<dyn UserStoreApi>,
     random_seed: String,
 }
 
 impl Sardines {
     pub fn init(
-        db: FirestoreDb,
+        store: Arc<dyn SardinesStoreApi>,
         config: &Config,
-        user_store: UserStore,
+        user_store: Arc<dyn UserStoreApi>,
         creator: &GuildMember,
         bet: i64,
     ) -> anyhow::Result<Self> {
@@ -57,19 +57,18 @@ impl Sardines {
         lottery.add_player(stored_creator);
         Ok(Self {
             lottery,
-            store: SardinesStore::new(db),
+            store,
             user_store,
             random_seed: config.random_seed.clone(),
         })
     }
 
     pub async fn load(
-        db: FirestoreDb,
+        store: Arc<dyn SardinesStoreApi>,
         config: &Config,
-        user_store: UserStore,
+        user_store: Arc<dyn UserStoreApi>,
         id: &str,
     ) -> anyhow::Result<Self> {
-        let store = SardinesStore::new(db);
         let lottery = store
             .get(id)
             .await?
@@ -85,14 +84,14 @@ impl Sardines {
     /// Create a Sardines instance from an already-loaded lottery.
     /// Used by recovery to wrap games loaded via list_all().
     pub fn from_lottery(
-        db: FirestoreDb,
+        store: Arc<dyn SardinesStoreApi>,
         config: &Config,
-        user_store: UserStore,
+        user_store: Arc<dyn UserStoreApi>,
         lottery: SardinesLottery,
     ) -> Self {
         Self {
             lottery,
-            store: SardinesStore::new(db),
+            store,
             user_store,
             random_seed: config.random_seed.clone(),
         }

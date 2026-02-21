@@ -33,8 +33,8 @@ impl Config {
     pub fn load() -> anyhow::Result<Self> {
         let stage = env::var("STAGE").unwrap_or_else(|_| "prod".to_string());
         info!("Loading config for stage: {stage}");
-        let isDev = stage == "local" || stage == "dev";
-        let isProd = !isDev;
+        let is_dev = stage == "local" || stage == "dev";
+        // let isProd = !is_dev;
 
         let bot_token = required_env("BOT_TOKEN")?;
         let public_key = required_env("DISCORD_PUBLIC_KEY")?;
@@ -43,9 +43,9 @@ impl Config {
         let random_seed =
             env::var("RANDOM_SEED").unwrap_or_else(|_| "discord-bot-default-seed".to_string());
 
-        let min_players_before_rejoin = if isDev { 1 } else { 4 };
+        let min_players_before_rejoin = if is_dev { 1 } else { 4 };
 
-        let sardines_expiry_seconds = if isDev {
+        let sardines_expiry_seconds = if is_dev {
             300 // 5 minutes for development
         } else {
             86400 // 24 hours for production

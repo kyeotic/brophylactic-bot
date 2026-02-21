@@ -4,6 +4,16 @@ use firestore::*;
 
 const COLLECTION: &str = "sardines";
 
+/// Trait abstracting sardines-store operations, enabling mock implementations in tests.
+#[async_trait::async_trait]
+pub trait SardinesStoreApi: Send + Sync {
+    async fn get(&self, id: &str) -> anyhow::Result<Option<SardinesLottery>>;
+    async fn put(&self, lottery: &SardinesLottery) -> anyhow::Result<()>;
+    async fn delete(&self, id: &str) -> anyhow::Result<()>;
+    // async fn list_all(&self) -> anyhow::Result<Vec<SardinesLottery>>;
+    async fn set_players(&self, id: &str, players: &[DbPlayer]) -> anyhow::Result<()>;
+}
+
 pub type SardinesLottery = Lottery<DbPlayer>;
 
 pub struct SardinesStore {
@@ -64,5 +74,28 @@ impl SardinesStore {
             })
             .await?;
         Ok(())
+    }
+}
+
+#[async_trait::async_trait]
+impl SardinesStoreApi for SardinesStore {
+    async fn get(&self, id: &str) -> anyhow::Result<Option<SardinesLottery>> {
+        self.get(id).await
+    }
+
+    async fn put(&self, lottery: &SardinesLottery) -> anyhow::Result<()> {
+        self.put(lottery).await
+    }
+
+    async fn delete(&self, id: &str) -> anyhow::Result<()> {
+        self.delete(id).await
+    }
+
+    // async fn list_all(&self) -> anyhow::Result<Vec<SardinesLottery>> {
+    //     self.list_all().await
+    // }
+
+    async fn set_players(&self, id: &str, players: &[DbPlayer]) -> anyhow::Result<()> {
+        self.set_players(id, players).await
     }
 }

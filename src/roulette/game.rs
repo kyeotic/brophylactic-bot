@@ -6,7 +6,7 @@ use crate::discord::types::GuildMember;
 use crate::games::lottery::{DbPlayer, Lottery};
 use crate::jobs::JobType;
 use crate::roulette::store::{RouletteLottery, RouletteStore};
-use crate::users::UserStore;
+use crate::users::UserStoreApi;
 
 pub const ROULETTE_TIME_SECONDS: u64 = 30;
 pub const ROULETTE_TIME_MS: u64 = ROULETTE_TIME_SECONDS * 1000;
@@ -109,7 +109,7 @@ impl Roulette {
         self.store.delete(&self.lottery.id).await
     }
 
-    pub async fn finish(&self, user_store: &UserStore) -> anyhow::Result<String> {
+    pub async fn finish(&self, user_store: &dyn UserStoreApi) -> anyhow::Result<String> {
         if !self.lottery.can_finish() {
             // Refund all players since the game didn't happen
             let refunds: Vec<(GuildMember, i64)> = self

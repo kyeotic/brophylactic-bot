@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 
 use crate::config::Config;
 use crate::jobs::JobQueue;
-use crate::users::UserStore;
+use crate::users::UserStoreApi;
 use firestore::FirestoreDb;
 
 /// Per-game lock to serialize concurrent join operations.
@@ -19,7 +19,7 @@ pub struct AppContext {
     pub config: Config,
     pub db: FirestoreDb,
     pub http: Arc<serenity::Http>,
-    pub user_store: UserStore,
+    pub user_store: Arc<dyn UserStoreApi>,
     pub job_queue: Arc<RwLock<JobQueue>>,
     pub game_locks: GameLocks,
 }

@@ -17,7 +17,7 @@ use config::Config;
 use context::AppContext;
 use firestore::FirestoreDb;
 use jobs::{JobQueue, JobType};
-use users::UserStore;
+use users::{UserStore, UserStoreApi};
 
 use poise::serenity_prelude as serenity;
 use tokio::sync::RwLock;
@@ -104,7 +104,7 @@ async fn build_app_context(
     poise::builtins::register_in_guild(ctx, &framework.options().commands, guild_id).await?;
     info!("Commands registered");
 
-    let user_store = UserStore::new(db.clone());
+    let user_store: Arc<dyn UserStoreApi> = Arc::new(UserStore::new(db.clone()));
     let app_context = AppContext {
         config,
         db,
