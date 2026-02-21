@@ -1,5 +1,6 @@
 use chrono_tz::Tz;
 use std::env;
+use tracing::info;
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -31,6 +32,9 @@ pub struct FirebaseConfig {
 impl Config {
     pub fn load() -> anyhow::Result<Self> {
         let stage = env::var("STAGE").unwrap_or_else(|_| "prod".to_string());
+        info!("Loading config for stage: {stage}");
+        let isDev = stage == "local" || stage == "dev";
+        let isProd = !isDev;
 
         let bot_token = required_env("BOT_TOKEN")?;
         let public_key = required_env("DISCORD_PUBLIC_KEY")?;
@@ -39,17 +43,18 @@ impl Config {
         let random_seed =
             env::var("RANDOM_SEED").unwrap_or_else(|_| "discord-bot-default-seed".to_string());
 
-        let min_players_before_rejoin = if stage == "local" || stage == "dev" {
-            1
-        } else {
-            4
-        };
+        let min_players_before_rejoin = if isDev { 1 } else { 4 };
 
-        let sardines_expiry_seconds = if stage == "local" || stage == "dev" {
+        let sardines_expiry_seconds = if isDev {
             300 // 5 minutes for development
         } else {
             86400 // 24 hours for production
         };
+
+        info!(
+            "Config loaded: min_players_before_rejoin={}, sardines_expiry_seconds={}",
+            min_players_before_rejoin, sardines_expiry_seconds
+        );
 
         Ok(Config {
             port: 8006,

@@ -35,7 +35,7 @@ nix-deploy:
     nix build .#docker-image
     docker load < result
     docker push docker.local.kye.dev/discord-bot:latest
-    stack-sync sync discord-bot
+    stack-sync sync --redeploy discord-bot
 
 deploy-stack *args:
     stack-sync sync  {{ args }}
