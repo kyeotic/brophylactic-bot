@@ -23,7 +23,7 @@ docker-build:
 deploy:
     docker build --platform linux/amd64 -t docker.local.kye.dev/discord-bot:latest .
     docker push docker.local.kye.dev/discord-bot:latest
-    stack-sync sync discord-bot
+    stack-sync sync --redeploy discord-bot
 
 # Build the Docker image with Nix
 nix-image:
